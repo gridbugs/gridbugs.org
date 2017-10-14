@@ -1,0 +1,26 @@
+---
+layout: default
+---
+
+<div class="home">
+
+  {{ content }}
+
+  <ul class="tag-list">
+
+    {% for category in site.categories %}
+      <li>
+        <h2 class="tag-name">{{category[0]}}</h2>
+        <ul class="post-list">
+          {% for post in category[1] %}
+            <li>
+              {% include tag_list_entry.html entry=post %}
+            </li>
+          {% endfor %}
+        </ul>
+      </li>
+
+    {% endfor %}
+
+  </ul>
+</div>

@@ -1,0 +1,25 @@
+<footer class="site-footer">
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="social-media-container">
+
+          {% include icon-rss.html username="feed.xml" %}
+
+          {% if site.github_username %}
+            {% include icon-github.html username=site.github_username %}
+          {% endif %}
+
+          {% include icon-email.html username=site.email %}
+
+          {% if site.twitter_username %}
+            {% include icon-twitter.html username=site.twitter_username %}
+          {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+
+</footer>
