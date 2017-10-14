@@ -1,5 +1,7 @@
-PATH
-  remote: /home/steve/src/minima
+GIT
+  remote: git://github.com/stevebob/minima.git
+  revision: f4e32cd1180f37ba6c4ee16d783dae518405e5d6
+  branch: gridbugs.org
   specs:
     minima (2.1.1)
       jekyll (~> 3.5)
