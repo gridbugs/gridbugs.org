@@ -11,7 +11,7 @@ layout: default
     {% for category in site.categories %}
       <li>
         <h2 class="tag-name"><a name="{{category[0]}}">{{category[0]}}</a></h2>
-        <ul class="post-list">
+        <ul class="tag-post-list">
           {% for post in category[1] %}
             <li>
               {% include tag_list_entry.html entry=post %}
