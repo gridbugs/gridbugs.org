@@ -1,6 +1,9 @@
 ---
 layout: default
 ---
+
+{% include post_pagination.html %}
+
 <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
@@ -19,7 +22,10 @@ layout: default
     {{ content }}
   </div>
 
+
   {% if site.disqus.shortname %}
     {% include disqus_comments.html %}
   {% endif %}
 </article>
+
+{% include post_pagination.html %}

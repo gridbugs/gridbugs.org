@@ -3,7 +3,6 @@ layout: post
 title: "Even Separation Algorithm"
 date: 2016-05-04 23:27:00 +1000
 categories: gamedev roguelikes algorithms
-permalink: even-separation-algorithm
 ---
 
 This post describes an algorithm for evenly spreading out a sequence of items made

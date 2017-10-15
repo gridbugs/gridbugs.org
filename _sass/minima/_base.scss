@@ -249,3 +249,34 @@ table {
     border: 1px solid $grey-color-light;
   }
 }
+
+.pagination {
+  font-size: 24px;
+  text-align: center;
+  .current-page-link {
+    font-weight: bold;
+  }
+  .previous-disabled, .next-disabled {
+    color: $grey-color;
+  }
+}
+
+.post-pagination {
+  margin-top: -10px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  overflow: hidden;
+  .next-container, .previous-container {
+    top: 0px;
+    width: 45%;
+  }
+  .next-container {
+    text-align: left;
+    float: left;
+  }
+  .previous-container {
+    text-align: right;
+    margin-left: auto;
+    margin-right: 0;
+  }
+}

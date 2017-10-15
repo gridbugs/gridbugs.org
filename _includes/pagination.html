@@ -1,0 +1,36 @@
+  <div class="pagination">
+    {% if paginator.previous_page %}
+      <a href="/" class="previous">&lt;&lt;</a>
+      <a href="{{ paginator.previous_page_path }}" class="previous">&lt;</a>
+    {% else %}
+      <span class="previous-disabled">&lt;&lt;</span>
+      <span class="previous-disabled">&lt;</span>
+    {% endif %}
+
+
+    {% for i in (1..paginator.total_pages) %}
+
+      {% if i == 1 %}
+        {% assign url = "/" %}
+      {% else %}
+        {% assign url = site.paginate_path | replace: ":num", i %}
+      {% endif %}
+
+      {% if i == paginator.page %}
+        <a class="current-page-link" href="{{ url }}">{{i}}</a>
+      {% else %}
+        <a class="other-page-link" href="{{ url }}">{{i}}</a>
+      {% endif %}
+    {% endfor %}
+
+
+    {% if paginator.next_page %}
+      <a href="{{ paginator.next_page_path }}" class="next">&gt;</a>
+      {% assign last_url = site.paginate_path | replace: ":num", paginator.total_pages %}
+      <a href="{{ last_url }}" class="next">&gt;&gt;</a>
+    {% else %}
+      <span class="next-disabled">&gt;</span>
+      <span class="next-disabled">&gt;&gt;</span>
+    {% endif %}
+  </div>
+

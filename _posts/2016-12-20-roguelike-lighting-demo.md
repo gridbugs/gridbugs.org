@@ -3,7 +3,6 @@ layout: post
 title: "Roguelike Lighting Demo"
 date: 2016-12-20 09:31:00 +1000
 categories: gamedev roguelikes lighting
-permalink: roguelike-lighting-demo
 ---
 
 This is a demonstration of some lighting techniques I've been experimenting

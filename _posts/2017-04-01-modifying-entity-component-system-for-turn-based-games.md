@@ -3,7 +3,6 @@ layout: post
 title: "Modifying Entity Component System for Turn-Based Games"
 date: 2017-04-01 19:28:01 +1000
 categories: gamedev roguelikes
-permalink: modifying-entity-component-system-for-turn-based-games
 ---
 
 This article describes my modifications to the

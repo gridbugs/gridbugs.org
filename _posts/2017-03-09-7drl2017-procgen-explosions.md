@@ -3,7 +3,6 @@ layout: post
 title: "7 Day Roguelike 2017: Procgen and Explosions"
 date: 2017-03-09 03:03:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2017-procgen-and-explosions
 ---
 
 Today I implemented a procedural generator. Levels are relatively simple,

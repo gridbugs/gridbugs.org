@@ -22,17 +22,18 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  stevebob
 itch_username: gridbugs
 
-home_post_limit: 8
-
 minima:
   date_format: "%b %-d, %Y"
 
+paginate: 4
+paginate_path: "/:num/"
+
 # Build settings
 markdown: kramdown
-#theme: minima
 
 plugins:
   - jekyll-feed
+  - jekyll-paginate
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list

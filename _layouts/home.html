@@ -4,18 +4,14 @@ layout: default
 
 <div class="home">
 
-  {{ content }}
-
   <ul class="post-list">
-    {% for post in site.posts limit:site.home_post_limit %}
+    {% for post in paginator.posts %}
       <li>
-        {% include excerpt.html post=post %}
+        {% include home_excerpt.html post=post %}
       </li>
     {% endfor %}
   </ul>
 
-  {% if site.posts.size > site.home_post_limit %}
-  <p class="more-posts"><a href="{{ "/posts/" | relative_url }}">More Posts...</a></p>
-  {% endif %}
+  {% include pagination.html %}
 
 </div>

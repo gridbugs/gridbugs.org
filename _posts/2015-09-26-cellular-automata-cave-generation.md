@@ -3,7 +3,6 @@ layout: post
 title: "Cellular Automata Cave Generation"
 date: 2015-09-26 12:30:01 +1000
 categories: gamedev roguelikes
-permalink: cellular-automata-cave-generation
 ---
 
 A cellular automata is a collection of cells whose states change over time

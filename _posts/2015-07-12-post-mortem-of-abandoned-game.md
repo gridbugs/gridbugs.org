@@ -3,7 +3,6 @@ layout: post
 title: "Post Mortem of an Abandoned Game"
 date: 2015-07-12 22:46:01 +1000
 categories: gamedev
-permalink: post-mortem-of-abandoned-game
 ---
 
 I spent about 6 months of 2014 working in my spare time 

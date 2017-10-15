@@ -3,7 +3,6 @@ layout: post
 title: "7 Day Roguelike 2016: Pathfinding"
 date: 2016-03-09 1:56:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2016-pathfinding
 ---
 
 The most notable change from tonight is that

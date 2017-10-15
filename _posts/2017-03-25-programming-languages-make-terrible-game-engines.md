@@ -3,7 +3,6 @@ layout: post
 title: "Programming Languages Make Terrible Game Engines"
 date: 2017-03-25 14:26:01 +1000
 categories: gamedev roguelikes
-permalink: programming-languages-make-terrible-game-engines
 ---
 
 This is the first of a series of posts I'm writing to explain the

@@ -3,7 +3,6 @@ layout: post
 title: "7 Day Roguelike 2016: Procedural Generation"
 date: 2016-03-08 3:04:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2016-procedural-generation
 ---
 
 This is my second attempt at a procedurally generated space ship. The first

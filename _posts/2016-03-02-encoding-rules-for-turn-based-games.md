@@ -3,7 +3,6 @@ layout: post
 title: "Encoding Rules for Turn-Based Games"
 date: 2016-03-02 23:20:01 +1000
 categories: gamedev roguelikes
-permalink: encoding-rules-for-turn-based-games
 ---
 
 A key consideration when designing a game engine is how rules of the game will

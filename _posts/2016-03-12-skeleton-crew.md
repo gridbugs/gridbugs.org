@@ -3,7 +3,6 @@ layout: post
 title: "Skeleton Crew"
 date: 2016-03-12 00:19:00 +1000
 categories: gamedev roguelikes project 7drl
-permalink: skeleton-crew
 ---
 
 I wrote this game for the 2016 7 Day Roguelike challenge.
