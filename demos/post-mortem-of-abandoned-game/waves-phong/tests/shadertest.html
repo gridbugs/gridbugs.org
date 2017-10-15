@@ -1,0 +1,86 @@
+<html>
+<head>
+
+    <link rel="stylesheet" type="text/css" href="/stylesheets/canvas.css">
+    
+    <script type="application/x-javascript" src="/engine/lib/jquery.min.js"></script>
+    <script type="application/x-javascript" src="/engine/lib/gl-matrix-min.js"></script>
+    
+    <script type="application/x-javascript" src="/engine/util/language.js"></script>
+    <script type="application/x-javascript" src="/engine/util/util.js"></script>
+    <script type="application/x-javascript" src="/engine/util/array.js"></script>
+    <script type="application/x-javascript" src="/engine/util/async.js"></script>
+    <script type="application/x-javascript" src="/engine/util/heap.js"></script>
+
+    <script type="application/x-javascript" src="/engine/math/math.js"></script>
+    <script type="application/x-javascript" src="/engine/math/algebra.js"></script>
+
+    <script type="application/x-javascript" src="/engine/loaders/file_path.js"></script>
+    <script type="application/x-javascript" src="/engine/loaders/file_loader.js"></script>
+    <script type="application/x-javascript" src="/engine/loaders/image_loader.js"></script>
+    <script type="application/x-javascript" src="/engine/loaders/content_loader.js"></script>
+
+    <script type="application/x-javascript" src="/engine/drawing/transform.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/drawer.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/canvas_drawer.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/webgl_manager.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/webgl_drawer.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/webgl_dynamic.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/webgl_filter.js"></script>
+    <script type="application/x-javascript" src="/engine/drawing/webgl_text.js"></script>
+
+    <script type="application/x-javascript" src="/engine/control/input.js"></script>
+
+</head>
+<body>
+<script>
+$(function() {
+
+    var canvas = document.getElementById('screen');
+    canvas.width = $(window).width();
+    canvas.height = $(window).height();
+    
+
+    Input.set_canvas_offset(0, 0);
+    Input.init();
+
+    var drawer = new WebGLDrawer(canvas);
+    
+    drawer.update_resolution();
+    
+    new AsyncGroup(
+        new FileLoader('testv.glsl', 'testf.glsl')
+        //,new ImageLoader('images/', ['wood.jpg'])
+    ).run(function(shaders) {
+        
+        drawer.standard_shaders(shaders[0], shaders[1]);
+        drawer.init_uniforms();
+
+        var a = drawer.rect([0, 0], [canvas.width, canvas.height], [0,1,0,1]);
+
+        drawer.sync_buffers();
+
+        var u_mouse = drawer.shader_program.uniform2fv('u_mouse');
+        var u_offset = drawer.shader_program.uniform1f('u_offset');
+
+        var offset = 0;
+        function t() {
+            
+            var mouse = Input.get_mouse_pos();
+            u_mouse.set([mouse[0], canvas.height-mouse[1]]);
+            u_offset.set(offset);
+            a.draw();
+
+            offset += 0.05;
+            requestAnimationFrame(t);
+        }
+
+        t();
+
+    }.arr_args());
+ 
+})
+</script>
+<canvas id="screen">
+</canvas>
+</html>

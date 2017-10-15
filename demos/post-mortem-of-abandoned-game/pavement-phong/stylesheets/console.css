@@ -1,0 +1,27 @@
+#console-container {
+    position:absolute;
+    height:200px;
+    left:0px;
+    right:0px;
+    bottom:0px;
+    background-color:rgba(0,0,0,0.2);
+    font: normal normal normal 115%/normal 
+            'Monaco', 'Courier New', 'DejaVu Sans Mono', 
+            'Bitstream Vera Sans Mono', monospace !important;
+}
+#console-output {
+    overflow: auto;
+    position:absolute;
+    top:0px;
+    left:10px;
+    right:10px;
+    bottom:45px;
+    color: white;
+}
+
+#console-input {
+    position:absolute;
+    bottom:0px;
+    left:0px;
+    width:100%;
+}

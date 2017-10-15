@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<link rel="stylesheet" type="text/css" href="stylesheets/console.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/canvas.css">
+
+<script type="application/x-javascript" src="engine/lib/jquery.min.js"></script>
+<script type="application/x-javascript" src="engine/lib/tinycolor.js"></script>
+<script type="application/x-javascript" src="engine/lib/stats.min.js"></script>
+<script type="application/x-javascript" src="engine/lib/gl-matrix-min.js"></script>
+
+<script type="application/x-javascript" src="engine/util/language.js"></script>
+<script type="application/x-javascript" src="engine/util/util.js"></script>
+<script type="application/x-javascript" src="engine/util/array.js"></script>
+<script type="application/x-javascript" src="engine/util/async.js"></script>
+<script type="application/x-javascript" src="engine/util/heap.js"></script>
+
+<script type="application/x-javascript" src="engine/math/math.js"></script>
+<script type="application/x-javascript" src="engine/math/algebra.js"></script>
+
+<script type="application/x-javascript" src="engine/world/map.js"></script>
+<script type="application/x-javascript" src="engine/world/detector_segment.js"></script>
+<script type="application/x-javascript" src="engine/world/region.js"></script>
+<script type="application/x-javascript" src="engine/world/vertex.js"></script>
+<script type="application/x-javascript" src="engine/world/level.js"></script>
+
+<script type="application/x-javascript" src="engine/control/collision.js"></script>
+<script type="application/x-javascript" src="engine/control/input.js"></script>
+<script type="application/x-javascript" src="engine/control/agent.js"></script>
+
+<script type="application/x-javascript" src="engine/debug/colour.js"></script>
+<script type="application/x-javascript" src="engine/debug/graph.js"></script>
+<script type="application/x-javascript" src="engine/debug/console.js"></script>
+<script type="application/x-javascript" src="engine/debug/canvas_util.js"></script>
+
+<script type="application/x-javascript" src="engine/loaders/file_path.js"></script>
+<script type="application/x-javascript" src="engine/loaders/file_loader.js"></script>
+<script type="application/x-javascript" src="engine/loaders/image_loader.js"></script>
+<script type="application/x-javascript" src="engine/loaders/content_loader.js"></script>
+
+<script type="application/x-javascript" src="engine/animation/time_manager.js"></script>
+<script type="application/x-javascript" src="engine/animation/scroll.js"></script>
+<script type="application/x-javascript" src="engine/animation/interpolate.js"></script>
+<script type="application/x-javascript" src="engine/animation/scene_graph.js"></script>
+<script type="application/x-javascript" src="engine/animation/body_model.js"></script>
+<script type="application/x-javascript" src="engine/animation/character.js"></script>
+
+<script type="application/x-javascript" src="engine/drawing/transform.js"></script>
+<script type="application/x-javascript" src="engine/drawing/drawer.js"></script>
+<script type="application/x-javascript" src="engine/drawing/canvas_drawer.js"></script>
+<script type="application/x-javascript" src="engine/drawing/webgl_manager.js"></script>
+<script type="application/x-javascript" src="engine/drawing/webgl_drawer.js"></script>
+<script type="application/x-javascript" src="engine/drawing/webgl_dynamic.js"></script>
+<script type="application/x-javascript" src="engine/drawing/webgl_filter.js"></script>
+<script type="application/x-javascript" src="engine/drawing/webgl_text.js"></script>
+
+<script type="application/x-javascript" src="engine/lighting/light.js"></script>
+<script type="application/x-javascript" src="engine/lighting/visibility_context.js"></script>
+
+
+<script type="application/x-javascript" src="content/characters/walk_demo.js"></script>
+<script type="application/x-javascript" src="content/characters/warrior/warrior.js"></script>
+<script type="application/x-javascript" src="content/maps/demo/demo.js"></script>
+
+<script type="application/x-javascript" src="content/content.js"></script>
+
+<script type="application/x-javascript" src="engine/client.js"></script>
+
+</head>
+<body>
+    <canvas id="screen" style="position:absolute;left:0px;top:0px;" width=1000 height=1000></canvas>
+
+    <div id="info-overlay">
+    </div>
+
+    <div id="console-container">
+        <div id="console-output">
+        </div>
+        <input id="console-input"/>
+    </div>
+
+</body>
+</html>

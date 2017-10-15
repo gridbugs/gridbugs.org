@@ -1,0 +1,123 @@
+<html>
+<head>
+
+    <link rel="stylesheet" type="text/css" href="../../../stylesheets/canvas.css">
+    
+    <script type="application/x-javascript" src="../../../engine/lib/jquery.min.js"></script>
+    <script type="application/x-javascript" src="../../../engine/lib/gl-matrix-min.js"></script>
+    
+    <script type="application/x-javascript" src="../../../engine/util/language.js"></script>
+    <script type="application/x-javascript" src="../../../engine/util/util.js"></script>
+    <script type="application/x-javascript" src="../../../engine/util/array.js"></script>
+    <script type="application/x-javascript" src="../../../engine/util/async.js"></script>
+    <script type="application/x-javascript" src="../../../engine/util/heap.js"></script>
+
+    <script type="application/x-javascript" src="../../../engine/math/math.js"></script>
+    <script type="application/x-javascript" src="../../../engine/math/algebra.js"></script>
+
+    <script type="application/x-javascript" src="../../../engine/loaders/file_path.js"></script>
+    <script type="application/x-javascript" src="../../../engine/loaders/file_loader.js"></script>
+    <script type="application/x-javascript" src="../../../engine/loaders/image_loader.js"></script>
+    <script type="application/x-javascript" src="../../../engine/loaders/content_loader.js"></script>
+
+    <script type="application/x-javascript" src="../../../engine/drawing/transform.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/drawer.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/canvas_drawer.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/webgl_manager.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/webgl_drawer.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/webgl_dynamic.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/webgl_filter.js"></script>
+    <script type="application/x-javascript" src="../../../engine/drawing/webgl_text.js"></script>
+
+    <script type="application/x-javascript" src="../../../engine/control/input.js"></script>
+
+</head>
+<body>
+<script>
+$(function() {
+
+    var canvas = document.getElementById('screen');
+    canvas.width = $(window).width();
+    canvas.height = $(window).height();
+    
+
+    Input.set_canvas_offset(0, 0);
+    Input.init();
+
+    var drawer = new WebGLDrawer(canvas);
+    
+    drawer.update_resolution();
+    
+    new AsyncGroup(
+        new FileLoader('testv.glsl', 'testf.glsl'),
+        new ImageLoader('irregular_pavement.png', 'irregular_pavement_bumpmap.png', 'irregular_pavement_lightmap.png', 'irregular_pavement_shinemap.png')
+    ).run(function(shaders, images) {
+        
+        drawer.standard_shaders(shaders[0], shaders[1]);
+        drawer.init_uniforms();
+
+        var a = drawer.rect([0, 0], [canvas.width, canvas.height], [0,1,0,1]);
+
+        drawer.sync_buffers();
+        
+        var tile_tex = drawer.glm.texture(images[0]);
+        var bump_map_tex = drawer.glm.texture(images[1]);
+        var light_map_tex = drawer.glm.texture(images[2]);
+        var shine_map_tex = drawer.glm.texture(images[3]);
+
+
+        var u_texture = drawer.shader_program.uniform1i('u_texture');
+        var u_bump_map = drawer.shader_program.uniform1i('u_bump_map');
+        var u_light_map = drawer.shader_program.uniform1i('u_light_map');
+        var u_shine_map = drawer.shader_program.uniform1i('u_shine_map');
+
+        var u_map_size = drawer.shader_program.uniform2fv('u_map_size');
+
+        tile_tex.bind(0);
+        u_texture.set(0);
+        
+        bump_map_tex.bind(1);
+        u_bump_map.set(1);
+
+        light_map_tex.bind(2);
+        u_light_map.set(2);
+
+        shine_map_tex.bind(3);
+        u_shine_map.set(3);
+        
+
+        
+        u_map_size.set([128, 128]);
+        drawer.use_texture(128, 128);
+        
+        WebGLDrawer.Rect.prototype.draw_tiles = function() {
+            var drawer = this.before_draw();
+
+
+            this.slice.draw_triangles();
+
+            this.after_draw();
+        }
+
+        var u_mouse = drawer.shader_program.uniform2fv('u_mouse');
+
+        var offset = 0;
+        function t() {
+            
+            var mouse = Input.get_mouse_pos();
+            u_mouse.set([mouse[0], canvas.height-mouse[1]]);
+
+            a.draw_tiles();
+            offset += 0.05;
+            requestAnimationFrame(t);
+        }
+
+        t();
+
+    }.arr_args());
+ 
+})
+</script>
+<canvas id="screen">
+</canvas>
+</html>

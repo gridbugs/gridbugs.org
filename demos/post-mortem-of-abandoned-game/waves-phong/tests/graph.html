@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<link rel="stylesheet" type="text/css" href="/stylesheets/console.css">
+<link rel="stylesheet" type="text/css" href="/stylesheets/canvas.css">
+
+<script type="application/x-javascript" src="/artwork/generators/utils/random.js"></script>
+
+<script type="application/x-javascript" src="/engine/lib/jquery.min.js"></script>
+<script type="application/x-javascript" src="/engine/lib/tinycolor.js"></script>
+<script type="application/x-javascript" src="/engine/lib/stats.min.js"></script>
+<script type="application/x-javascript" src="/engine/lib/gl-matrix-min.js"></script>
+
+<script type="application/x-javascript" src="/engine/util/language.js"></script>
+<script type="application/x-javascript" src="/engine/util/util.js"></script>
+<script type="application/x-javascript" src="/engine/util/array.js"></script>
+<script type="application/x-javascript" src="/engine/util/async.js"></script>
+<script type="application/x-javascript" src="/engine/util/heap.js"></script>
+
+<script type="application/x-javascript" src="/engine/math/math.js"></script>
+<script type="application/x-javascript" src="/engine/math/algebra.js"></script>
+
+<script type="application/x-javascript" src="/engine/world/map.js"></script>
+<script type="application/x-javascript" src="/engine/world/detector_segment.js"></script>
+<script type="application/x-javascript" src="/engine/world/region.js"></script>
+<script type="application/x-javascript" src="/engine/world/vertex.js"></script>
+<script type="application/x-javascript" src="/engine/world/level.js"></script>
+
+<script type="application/x-javascript" src="/engine/control/collision.js"></script>
+<script type="application/x-javascript" src="/engine/control/input.js"></script>
+<script type="application/x-javascript" src="/engine/control/agent.js"></script>
+
+<script type="application/x-javascript" src="/engine/debug/colour.js"></script>
+<script type="application/x-javascript" src="/engine/debug/graph.js"></script>
+<script type="application/x-javascript" src="/engine/debug/console.js"></script>
+<script type="application/x-javascript" src="/engine/debug/canvas_util.js"></script>
+
+<script type="application/x-javascript" src="/engine/loaders/file_path.js"></script>
+<script type="application/x-javascript" src="/engine/loaders/file_loader.js"></script>
+<script type="application/x-javascript" src="/engine/loaders/image_loader.js"></script>
+<script type="application/x-javascript" src="/engine/loaders/content_loader.js"></script>
+
+<script type="application/x-javascript" src="/engine/animation/time_manager.js"></script>
+<script type="application/x-javascript" src="/engine/animation/scroll.js"></script>
+<script type="application/x-javascript" src="/engine/animation/interpolate.js"></script>
+<script type="application/x-javascript" src="/engine/animation/scene_graph.js"></script>
+<script type="application/x-javascript" src="/engine/animation/body_model.js"></script>
+<script type="application/x-javascript" src="/engine/animation/character.js"></script>
+
+<script type="application/x-javascript" src="/engine/drawing/transform.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/drawer.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/canvas_drawer.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/webgl_manager.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/webgl_drawer.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/webgl_dynamic.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/webgl_filter.js"></script>
+<script type="application/x-javascript" src="/engine/drawing/webgl_text.js"></script>
+
+<script type="application/x-javascript">
+var cu;
+var graph;
+$(function(){
+
+    var canvas = document.getElementById('screen');
+    canvas.width = $(window).width();
+    canvas.height = $(window).height();
+
+    rand_regenerate();
+
+    cu = new CanvasUtil(canvas);
+    graph = new Graph(cu, 20, 100, undefined, undefined, undefined, undefined, 10);
+    graph.plot_1var(
+        function(x){
+            return rand_sine_sum(x, 8)
+        },
+        'blue', 4
+    );
+
+    graph.draw_v_line(0);
+    graph.draw_v_line(Math.PI*2);
+    graph.draw_v_line(Math.PI*4);
+    graph.draw_v_line(Math.PI*6);
+    graph.draw_v_line(Math.PI*8);
+    graph.draw_h_line(0);
+})
+</script>
+
+
+</head>
+<body>
+    <canvas id="screen" style="position:absolute;left:0px;top:0px;" width=1000 height=1000></canvas>
+</body>
+</html>
