@@ -2,14 +2,14 @@
 layout: post
 title: "Roguelike Lighting Demo"
 date: 2016-12-20 09:31:00 +1000
-categories: gamedev roguelikes lighting
+categories: gamedev roguelikes lighting project
 ---
 
 This is a demonstration of some lighting techniques I've been experimenting
 with. It was originally intended to be an entire game, but I've abandoned it to
 work on other projects.
 
- - [Run in browser](https://gridbugs.org/play/roguelike-lighting-demo)
+ - [Run in browser](https://games.gridbugs.org/roguelike-lighting-demo)
    - Use arrow or vi keys to move. Press "f" followed by a direction key to fire a
      burst of plasma.
  - [Source code on github](https://github.com/stevebob/roguelike-lighting-demo)
