@@ -9,6 +9,7 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cd $DIR
+    rvm use ruby-2.4.1
     jekyll build
     s3cmd sync _site/* s3://gridbugs.org
 fi
