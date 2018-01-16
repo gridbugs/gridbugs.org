@@ -8,7 +8,7 @@ categories: gamedev roguelikes lighting project
 In keeping with my habit of making game engines rather than entire games, here's
 a demo that was originally meant to be a game, but I got sidetracked by making
 it pretty and lost momentum. [This has happened
-before.](/gamedev/2015/07/12/post-mortem-of-abandoned-game) It's just another
+before.](/gamedev/2015/07/12/post-mortem-of-abandoned-game.html) It's just another
 step on the path to enlightenment. This post describes some of the new things I
 tried.
 
@@ -43,10 +43,10 @@ needs to be updated is an entry in the index buffer.
 ## Dynamic Lighting
 
 I've experimented with [dynamic lighting in
-roguelikes](/gamedev/roguelikes/lighting/project/2016/12/20/roguelike-lighting-demo) before.
+roguelikes](/gamedev/roguelikes/lighting/project/2016/12/20/roguelike-lighting-demo.html) before.
 What's new here is the lighting is implemented in a shader, and the effect is
 applied to individual pixels rather than cells. I use
-[recursive shadowcast](/gamedev/roguelikes/algorithms/2015/11/16/visible-area-detection-recursive-shadowcast),
+[recursive shadowcast](/gamedev/roguelikes/algorithms/2015/11/16/visible-area-detection-recursive-shadowcast.html),
 to do visible/lit area detection. My recursive shadowcast implementation writes
 its results directly into video memory, so the shaders can use this information
 to know which cells need to be lit in which way.

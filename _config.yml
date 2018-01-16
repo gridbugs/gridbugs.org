@@ -22,6 +22,7 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  stevebob
 itch_username: gridbugs
 twitch_username: gridbugs
+twitter_username: gridbugstv
 
 minima:
   date_format: "%b %-d, %Y"

@@ -3,9 +3,7 @@
   <div class="wrapper">
 
     <div class="footer-col-wrapper">
-      <div class="social-media-container">
-
-          {% include icon-rss.html username="feed.xml" %}
+      <div class="social-media-container social-media-list">
 
           {% if site.github_username %}
             {% include icon-github.html username=site.github_username %}
@@ -13,11 +11,14 @@
 
           {% include icon-twitch.html username=site.twitch_username %}
 
-          {% include icon-email.html username=site.email %}
-
           {% if site.twitter_username %}
             {% include icon-twitter.html username=site.twitter_username %}
           {% endif %}
+
+          {% include icon-rss.html username="feed.xml" %}
+
+          {% include icon-email.html username=site.email %}
+
       </div>
     </div>
 
