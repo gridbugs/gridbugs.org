@@ -21,7 +21,7 @@ following assumptions:
  - on their turn, the player, and each NPC can move 1 or 0 squares in a cardinal direction
  - the map is a 2d grid of squares, each of which is permanently either
    traversable or non-traversable
- - the cost of moving between a pair of adjacent squares is 1 (ie. the grid is
+ - the cost of moving between a pair of adjacent, traversable squares is 1 (ie. the grid is
    uniform)
 
 The approach I describe won't rely too heavily on any of these assumptions.
@@ -37,7 +37,7 @@ non-traversable.
 
 The first approach will be to generate a map which stores, for each cell, the
 distance from that cell to the player. These distances are shown as the numbers
-in the top-left corner of each traversable cell in the diagram below.
+in the top-left corner of each traversable cell in the diagrams below.
 The data structure storing these distances (generally a 2d array of numbers) is
 sometimes called a "Dijkstra Map".
 [Here](http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps)
@@ -46,7 +46,7 @@ is an article elaborating on dijkstra maps.
 ![](/images/pathfinding-on-a-grid/a.png)
 
 A benefit of using a dijkstra map, rather than searching for a path for each NPC,
-is that the dijkstra map only needs to be generated each time the player moves.
+is that the dijkstra map only needs to be recomputed each time the player moves.
 To determine which way an NPC should move, we need only consider the neighbours
 of that NPC's cell in the dijkstra map, choosing the one with the lowest score.
 This scales well as the number of NPCs increases, as there is only a small
@@ -86,103 +86,110 @@ turn, `X` would still move towards the player, creating a gap between `X` and
 ![](/images/pathfinding-on-a-grid/d.png)
 
 To prevent gaps from forming, we need to make sure that
-NPCs move in increasing order of their distance to the player. Since we generate
-a dijkstra map, it's easy to determine how far each NPC is from the player  (that is,
-the closest NPC to the player moves first, then the second closest, and so on).
+NPCs move in increasing order of their distance to the player (that is,
+the closest NPC to the player moves first, then the second closest, and so on). Since we generate
+a dijkstra map, it's easy to determine how far each NPC is from the player.
 Simply sorting NPCs by the value of their cell in the dijkstra map is enough to
 produce a turn order which avoids this problem.
 
-## Getting stuck behind NPCs
+## NPCs getting in each other's way
 
-The next problem occurs when NPCs are very close to the player.
-Consider the diagram below.
-On `X`'s next turn, it will remain next to the player - there's nothing it can
-do to get closer to the player, so no need to move (In a typical roguelike it
-would probably attack the player at this point). But what does `Y` do? None of
-`Y`'s traversable neighbours are lower-valued in the dijkstra map than `Y`'s
-current cell, so it will stay put, despite it being possible to eventually get
-closer to the `@`, by first moving away from it by going north.
+Let's look at some cases where NPCs interfere with the movement of other NPCs.
 
 ![](/images/pathfinding-on-a-grid/e.png)
 
-In cases where no improvements can be made to an NPC's position based on the
-dijkstra map, we must search for the shortest path from the NPC to the player,
-**treating NPCs as non-traversable cells**, and take the first step along this
-path.
+On `X`'s next turn, it will remain next to the player - there's nothing it can
+do to get closer to the player, so there's no need to move. (In a typical roguelike it
+would probably attack the player at this point.) What does `Y` do? None of
+`Y`'s traversable neighbours are lower-valued in the dijkstra map than `Y`'s
+current cell, so it will stay put, despite it being possible to eventually get
+closer to the `@`, by first moving north, into a higher-valued cell.
 
-![](/images/pathfinding-on-a-grid/f.png)
-
-The remainder of the optimal path from `Y` to the player is shown in red. Note
-however, that now that `Y` has "stepped around" `X`'s ok to resume following the
-dijktra map. Thus, pathfinding can be stateless: we don't need to keep track of
-the fact that `Y` has searched for a path. On its next turn it can try moving
-based on the dijkstra map. If this doesn't produce a move, then fall back to
-searching again.
-
-## Briefly taking the long way around
-
-Let's step through what will happen in the following scenario.
-Assume that `X`
-moves first, as both NPCs start the same distance from the player.
+In the next example, assume `X` moves before `Y`:
 
 ![](/images/pathfinding-on-a-grid/g.png)
 
-On `X`'s turn, it moves towards the player, blocking the way for `Y`.
+`X` will move east, occupying `Y`'s west neighbour. On `Y`'s turn, its
+valid moves are to move east, into a higher-valued cell than its present cell,
+or to do nothing. If `Y`'s goal is to get to the player in as few turns as
+possible, its best course of action is to wait where it is for one turn,
+assuming `X` will proceed south and make room for `Y` to continue moving towards
+the player. `Y`'s alternative - moving east, and proceeding down the east edge
+of the map - will take longer.
 
-![](/images/pathfinding-on-a-grid/h.png)
+What if there's a gap in the wall closer to `Y`. Assume `X` moves first again:
 
-The only neighbour of `Y` with a lower value than its current cell is currently
-blocked by `X`, so it falls back to searching, it's still possible to get to the
-player, so `Y` takes the first step on that long journey.
+![](/images/pathfinding-on-a-grid/n.png)
 
-![](/images/pathfinding-on-a-grid/i.png)
+Here, it might make sense for `Y` to move east on its turn rather than waiting a
+turn before moving west. It may look more natural for `Y` to follow a longer
+path, than wait for the shorter one to free up, though the decision 
+seems to depend on how much longer the longer path is.
 
-`X` continues to move towards the player. There's now a traversable cell
-adjacent to `Y` with a lower value than `Y`'s cell, so it moves back to where it
-was.
+Assume it's `Z`'s turn. What should it do?
 
-![](/images/pathfinding-on-a-grid/j.png)
+![](/images/pathfinding-on-a-grid/o.png)
 
-When two NPCs meet at a doorway, the first one to move goes through, and the
-other spends a turn moving towards another entrance to the room (assuming one
-exists), regardless of how far away it is. In this situation, a more sensible
-move for `Y` would have been to wait a turn until `X` had moved out of its way,
-before proceeding right through the doorway.
+Here there's no path to the player, but rather than giving up, `Z` should
+probably still try to get as close to the player as it can.
+It seems like it should move east, south, south, on its next 3 turns,
+assuming nothing else moves.
 
-We've seen one case where searching for a path around NPCs is required to
-prevent unusual behaviour, and now another case where searching causes unusual
-behaviour. So when should an NPC search, and when should it wait?
+After making the first move it finds itself here:
 
-It's not immediately obvious. What should `Y` do here?
+![](/images/pathfinding-on-a-grid/p.png)
 
-![](/images/pathfinding-on-a-grid/k.png)
+Looking at its immediate neighbours, it seems like `Z` could now go either
+south, or west - the neighbours in both directions are the same distance from
+the player. It is of
+course preferable for `Z` to move south.
 
-`Y` is 2 cells away from `@`, but 28 cells away without moving through `X`.
+This last case is important, as it shows that
+the presence of multiple NPCs means that it's never
+sufficient for an NPC to act purely on its neighbouring cells in the game grid
+and dijkstra map.
 
-What about here?
+A solution which addresses all these cases, is for each NPC, on is turn, to
+examine all the cells reachable within a certain number of turns (3 turns will
+suffice for all the examples here), and take the first step along the shortest
+path to the cell it just examined with the lowest value in the dijkstra map.
+If all the cells examined have a higher value than the NPC's current cell, it
+doesn't move at all.
 
-![](/images/pathfinding-on-a-grid/l.png)
+It's worth noting that this won't necessarily get every NPC as close
+to the player as possible.
 
-`Y` is 12 cells away from `@`.
+Will `Z` go east or west, looking for the best cell up to 3 moves away?
 
-And here?
+![](/images/pathfinding-on-a-grid/r.png)
 
-![](/images/pathfinding-on-a-grid/m.png)
+It could go either way! If it had looked 4 moves away, it would have
+noticed that going west gives the potential to eventually be 1 move from the
+player, while going east, the closest it can get is 2 away. Note however, that in
+this example, `W` will move first (it's closer to the player than `Z`), and `W`
+is close enough to notice that going west is better, so it will go west, getting
+out of `Z`'s way and allowing `Z` to move forward.
 
-6 cells.
-
-At this distance it probably makes sense for `Y` to move along the optimal path
-treating `X` as non-traversable, since there is a reasonable chance that by the
-time `Y` reaches `@`, `X` won't have been killed by the player yet. In the
-previous examples, where `Y` has further to travel, there's an increased chance
-that the fastest way for `Y` to get to `@` is to wait for `@` to kill `X` and
-move through the gap that creates.
-
-In general, it seems like the sensible way to decide whether to wait or follow a
-search path is based on the difference between the length of the search path and
-the distance from the NPC to the player. The specific threshold above which it
-becomes better to wait than follow the path, is up to the individual game.
+To improve an NPC's decision making, you can increase the number of cells it
+examines before moving.
+The specific number depends on the nature of the game and
+the individual NPC. In typical games, where NPCs die and the player moves
+around, sub-optimal-but-still-pretty-good decision-making by NPCs won't have a
+noticeable effect on gameplay.
 
 ## Summary
 
-
+Before any NPCs move, if the player has moved since the dijkstra map was last
+computed, recompute the dijkstra map based on the player's current position.
+Now, produce a list of NPCs sorted by the
+value of their cells in the dijkstra map, in increasing order.
+NPCs will take their turns in this order.
+On each NPC's turn, examine all the cells within a certain number of moves from
+the NPC, without allowing moves through other NPCs.
+Of the cells examined, identify the one whose value in the dijkstra map
+is lowest. If no cell has a lower value than the NPC's current cell,
+the NPC doesn't move that turn. Otherwise, the NPC takes the first
+step along the shortest path between its
+current cell and this cell. This causes NPCs to move towards the player in a
+sensible way, without the influence of other NPCs causing unusual-looking
+behaviour.
