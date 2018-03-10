@@ -9,7 +9,7 @@ Meters Below the Ground is a short tactical dungeon-crawler about escaping from
 an insectoid-infested facility. Complete objectives to unlock more meters for
 your character so you might stand a chance against the alien threat.
 
-It is my entry in the 7 Day Roguelike Game Jam for 2018.
+It is my entry in the 7 Day Roguelike game jam for 2018.
 
 ![screenshot](/images/7drl2018-success/screenshot.png)
 
