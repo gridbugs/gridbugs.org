@@ -19,7 +19,7 @@ Features:
  - 10 different types of meter
  - Alien insect lifecycles
  - 4 different mission types
- - Runs in a browser
+ - Runs in a browser, Windows, Linux an macOS
  - Gorgeously-rendered ascii unicode graphics
  - Unix terminal support (linux and macos-non-app only)
 
