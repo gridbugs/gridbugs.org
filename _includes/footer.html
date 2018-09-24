@@ -9,11 +9,13 @@
             {% include icon-github.html username=site.github_username %}
           {% endif %}
 
+          {% comment %}
           {% include icon-twitch.html username=site.twitch_username %}
 
           {% if site.twitter_username %}
             {% include icon-twitter.html username=site.twitter_username %}
           {% endif %}
+          {% endcomment %}
 
           {% include icon-rss.html username="feed.xml" %}
 

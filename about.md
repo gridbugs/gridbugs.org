@@ -9,8 +9,6 @@ I use this site to share my ideas and projects.
 
 **github:** [github.com/stevebob](https://github.com/stevebob)
 
-**twitch:** [twitch.tv/gridbugs](https://twitch.tv/gridbugs)
-
 **itch.io:** [gridbugs.itch.io](https://gridbugs.itch.io)
 
 **email:** [admin@gridbugs.org](mailto:admin@gridbugs.org)
