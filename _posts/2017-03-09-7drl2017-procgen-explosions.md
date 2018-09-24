@@ -3,6 +3,8 @@ layout: post
 title: "7 Day Roguelike 2017: Procgen and Explosions"
 date: 2017-03-09 03:03:00 +1000
 categories: gamedev roguelikes 7drl
+permalink: 7drl2017-procgen-explosions
+excerpt_separator: <!--more-->
 ---
 
 Today I implemented a procedural generator. Levels are relatively simple,
@@ -14,6 +16,7 @@ each entity starting in a cell for road cells and off-road cells.
 Here's a screenshot from a procedurally generated level.
 
 ![screenshot](/images/7drl2017-procgen-and-explosions/screenshot.png)
+<!--more-->
 
 The other big feature I added today is explosive barrels. Barrels explode when
 shot, or hit by an explosion from another barrel, allowing chain reactions of

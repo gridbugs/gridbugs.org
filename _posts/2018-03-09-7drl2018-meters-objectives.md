@@ -3,6 +3,8 @@ layout: post
 title: "7 Day Roguelike 2018: Meters, Objectives"
 date: 2018-03-09 00:39:00 +1000
 categories: gamedev roguelikes 7drl
+permalink: 7drl2018-meters-objectives
+excerpt_separator: <!--more-->
 ---
 
 Tonight I added new meters and objectives.
@@ -12,6 +14,8 @@ of the level. Doing so alerts all NPCs of the player's presence, so getting to t
 stairs will be challenging.
 
 ![screenshot](/images/7drl2018-meters-objectives/beacon.png)
+
+<!--more-->
 
 Another new objective is killing some "super eggs" before they hatch. The game displays
 a bar for each egg, showing how close it is to hatching. If an egg hatches, you fail

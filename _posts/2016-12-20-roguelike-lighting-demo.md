@@ -3,6 +3,7 @@ layout: post
 title: "Roguelike Lighting Demo"
 date: 2016-12-20 09:31:00 +1000
 categories: gamedev roguelikes lighting project
+excerpt_separator: <!--more-->
 ---
 
 This is a demonstration of some lighting techniques I've been experimenting
@@ -15,6 +16,7 @@ work on other projects.
  - [Source code on github](https://github.com/stevebob/roguelike-lighting-demo)
 
 ![screenshot](/images/roguelike-lighting-demo/screenshot0.png)
+<!--more-->
 
 ## Lighting the edges of cells
 

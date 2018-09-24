@@ -3,6 +3,8 @@ layout: post
 title: "Another Roguelike Lighting Demo"
 date: 2017-12-10 17:37:00 +1000
 categories: gamedev roguelikes lighting project
+permalink: another-roguelike-lighting-demo
+excerpt_separator: <!--more-->
 ---
 
 In keeping with my habit of making game engines rather than entire games, here's
@@ -13,6 +15,7 @@ step on the path to enlightenment. This post describes some of the new things I
 tried.
 
 ![screenshot](/images/another-roguelike-lighting-demo/screenshot.png)
+<!--more-->
 
 ## Download
 Want to try it out for yourself?

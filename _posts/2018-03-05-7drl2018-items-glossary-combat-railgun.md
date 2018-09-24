@@ -3,12 +3,15 @@ layout: post
 title: "7 Day Roguelike 2018: Items, Glossary, Combat, Railgun"
 date: 2018-03-05 23:42:00 +1000
 categories: gamedev roguelikes 7drl
+permalink: 7drl2018-items-glossary-combat-railgun
+excerpt_separator: <!--more-->
 ---
 
 The most exciting changes today are the "Glossary", and a revamped combat 
 system.
 
 ![screenshot](/images/7drl2018-items-glossary-combat-railgun/screenshot.png)
+<!--more-->
 
 I don't want the game to have a message log, and I think adding an "examine" 
 command would break the flow of the game, but I want players to know the 

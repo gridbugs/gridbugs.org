@@ -252,12 +252,21 @@ table {
 }
 
 .pagination {
-  font-size: 24px;
-  text-align: center;
-  .current-page-link {
+  padding: $spacing-unit / 2 0;
+
+  ul > li {
+    display: inline-block;
+    zoom:1;
+    *display:inline;
+  }
+
+  .selected {
     font-weight: bold;
   }
-  .previous-disabled, .next-disabled {
+
+  font-size: 24px;
+  text-align: center;
+  .disabled {
     color: $grey-color;
   }
 }

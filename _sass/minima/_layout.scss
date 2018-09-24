@@ -2,8 +2,7 @@
  * Site header
  */
 .site-header {
-  border-bottom: 1px solid $grey-color-light;
-  min-height: $spacing-unit * 1.865;
+  min-height: $spacing-unit;
 
   // Positioning context for the mobile navigation icon
   position: relative;
@@ -105,8 +104,8 @@
  * Site footer
  */
 .site-footer {
-  background-color: $grey-color-light;
-  padding: $spacing-unit / 2 0;
+  padding: $spacing-unit 0;
+  text-align: center;
 }
 
 .footer-heading {
@@ -175,7 +174,7 @@
  * Page content
  */
 .page-content {
-  padding: $spacing-unit 0;
+  padding: $spacing-unit 0 0 0;
 }
 
 .page-heading {

@@ -3,6 +3,7 @@ layout: post
 title: "Even Separation Algorithm"
 date: 2016-05-04 23:27:00 +1000
 categories: gamedev roguelikes algorithms
+excerpt_separator: <!--more-->
 ---
 
 This post describes an algorithm for evenly spreading out a sequence of items made
@@ -15,6 +16,9 @@ the other direction. The solution generalizes to spreading out any sequence
 made up of two distinct types of item that are repeated a number of times.
 
 ![straight-line-screenshot](/images/even-separation-algorithm/straight-line-screenshot.png)
+
+<!--more-->
+
 <p class="label">
 Straight line from @ to Z, made up of steps to the east and northeast
 </p>

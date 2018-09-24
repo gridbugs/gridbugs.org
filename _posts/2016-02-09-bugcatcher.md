@@ -3,6 +3,7 @@ layout: post
 title: "Bug Catcher"
 date: 2016-02-09 23:49:01 +1000
 categories: gamedev roguelikes project
+excerpt_separator: <!--more-->
 ---
 
 This is my first attempt at writing [one game a month](http://www.onegameamonth.com/). It's a turn-based
@@ -12,3 +13,4 @@ has an ability and combat stats. You can "channel" a bug and gain access to its 
 [Play in browser](https://games.gridbugs.org/bugcatcher)
 
 ![screenshot](/images/bugcatcher/screenshot.png)
+<!--more-->

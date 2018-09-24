@@ -3,6 +3,8 @@ layout: post
 title: "7 Day Roguelike 2018: Character Progression, Melee Combat"
 date: 2018-03-06 23:44:00 +1000
 categories: gamedev roguelikes 7drl
+permalink: 7drl2018-character-progression-melee-combat
+excerpt_separator: <!--more-->
 ---
 
 Today I implemented character progression. Character progression is entirely
@@ -11,6 +13,7 @@ You get to choose 1 of 3 randomly selected meters to add to your character at
 the end of each level, but only if you complete the mission for that level.
 
 ![upgrades](/images/7drl2018-character-progression-melee-combat/upgrades.png)
+<!--more-->
 
 I noticed that it's possible to get stuck in a corner, surrounded by enemies.
 The game prevents you from walking through NPCs, and doesn't progress time when

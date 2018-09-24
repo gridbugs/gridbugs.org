@@ -3,6 +3,8 @@ layout: post
 title: "Meters Below the Ground"
 date: 2018-03-10 11:30:00 +1000
 categories: gamedev roguelikes 7drl project
+permalink: meters-below-the-ground
+excerpt_separator: <!--more-->
 ---
 
 Meters Below the Ground is a short tactical dungeon-crawler about escaping from
@@ -12,6 +14,8 @@ your character so you might stand a chance against the alien threat.
 It is my entry in the 7 Day Roguelike game jam for 2018.
 
 ![screenshot](/images/7drl2018-success/screenshot.png)
+
+<!--more-->
 
 Features:
 

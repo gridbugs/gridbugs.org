@@ -3,6 +3,7 @@ layout: post
 title: "2D Phong Illumination in WebGL"
 date:   2015-07-13 23:49:01 +1000
 categories: gamedev graphics
+permalink: 2d-phong-illumination-in-webgl
 ---
 
 Suppose you're rendering an uneven surface like a cobblestone floor, water or

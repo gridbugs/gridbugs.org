@@ -3,11 +3,14 @@ layout: post
 title: "7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour"
 date: 2018-03-04 22:16:00 +1000
 categories: gamedev roguelikes 7drl
+permalink: procgen-visibility-missions-colour
+excerpt_separator: <!--more-->
 ---
 
 Lots of progress today! It's starting to look like a game.
 
 ![screenshot](/images/7drl2018-procgen-visibility-missions-colour/screenshot.png)
+<!--more-->
 
 The procedural generation is based on Conway's Game of Life. I wrote [a 
 post](/gamedev/roguelikes/2015/09/26/cellular-automata-cave-generation.html) 

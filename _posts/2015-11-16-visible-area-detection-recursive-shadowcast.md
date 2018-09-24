@@ -3,6 +3,7 @@ layout: post
 title: "Visible Area Detection with Recursive Shadowcast"
 date: 2015-11-16 12:30:01 +1000
 categories: gamedev roguelikes algorithms
+excerpt_separator: <!--more-->
 ---
 
 Most games employ some form of visible area detection to simulate the fact that
@@ -14,6 +15,7 @@ This makes it suitable for use in roguelikes.
 This post will explain the recursive shadowcast algorithm.
 
 ![](/images/visible-area-detection-recursive-shadowcast/dcss0.png)
+<!--more-->
 
 <p class="label">Screenshot from Dungeon Crawl Stone Soup demonstrating its
 visible area detection</p>

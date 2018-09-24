@@ -3,6 +3,7 @@ layout: post
 title: "7 Day Roguelike 2016: Procedural Generation"
 date: 2016-03-08 3:04:00 +1000
 categories: gamedev roguelikes 7drl
+excerpt_separator: <!--more-->
 ---
 
 This is my second attempt at a procedurally generated space ship. The first
@@ -13,6 +14,7 @@ a preexisting hull proved messy and prone to difficult edge cases.
 
 Here's what it looked like at the point where I gave up:
 ![](/images/7drl2016-procedural-generation/old.png)
+<!--more-->
 
 This shows my attempt at adding hallways on the inside of the ship. I was going
 to use some sort of binary partitioning scheme to split the space either side of

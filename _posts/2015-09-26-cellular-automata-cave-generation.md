@@ -3,6 +3,7 @@ layout: post
 title: "Cellular Automata Cave Generation"
 date: 2015-09-26 12:30:01 +1000
 categories: gamedev roguelikes
+excerpt_separator: <!--more-->
 ---
 
 A cellular automata is a collection of cells whose states change over time
@@ -11,6 +12,7 @@ They can be used to produce natural-looking patterns, such as the cave
 in the picture below.
 
 ![Caverns](/images/cellular-automata-cave-generation/caverns.png)
+<!--more-->
 
 Perhaps the most well-known instance of a cellular automata is [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life),
 shown below (click to start). Each cell is considered to be either alive or dead.

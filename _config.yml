@@ -27,8 +27,25 @@ twitter_username: gridbugstv
 minima:
   date_format: "%Y-%m-%d"
 
-paginate: 8
-paginate_path: "/:num/"
+header_pages:
+  - about.md
+  - projects.md
+  - tags.md
+
+pagination:
+  enabled: true
+  per_page: 4
+  offset: 0
+  permalink: '/page/:num/'
+  title: ':title - page :num of :max'
+  limit: 0
+  sort_field: 'date'
+  sort_reverse: true
+  trail:
+    before: 3
+    after: 3
+
+permalink: pretty
 
 # Build settings
 markdown: kramdown
