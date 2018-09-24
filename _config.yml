@@ -49,3 +49,4 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - CNAME
+  - TODO.md
