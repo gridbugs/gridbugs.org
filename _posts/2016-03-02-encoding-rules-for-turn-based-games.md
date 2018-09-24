@@ -2,6 +2,7 @@
 layout: post
 title: "Encoding Rules for Turn-Based Games"
 date: 2016-03-02 23:20:01 +1000
+permalink: encoding-rules-for-turn-based-games
 categories: gamedev roguelikes
 ---
 

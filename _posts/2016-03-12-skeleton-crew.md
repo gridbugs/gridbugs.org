@@ -2,6 +2,7 @@
 layout: post
 title: "Skeleton Crew"
 date: 2016-03-12 00:19:00 +1000
+permalink: skeleton-crew
 categories: gamedev roguelikes project 7drl
 ---
 

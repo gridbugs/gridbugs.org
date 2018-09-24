@@ -2,6 +2,7 @@
 layout: post
 title: "7 Day Roguelike 2016: Procedural Generation"
 date: 2016-03-08 3:04:00 +1000
+permalink: 7drl2016-procedural-generation
 categories: gamedev roguelikes 7drl
 excerpt_separator: <!--more-->
 ---

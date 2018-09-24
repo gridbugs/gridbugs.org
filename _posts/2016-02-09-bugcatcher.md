@@ -2,6 +2,7 @@
 layout: post
 title: "Bug Catcher"
 date: 2016-02-09 23:49:01 +1000
+permalink: bugcatcher
 categories: gamedev roguelikes project
 excerpt_separator: <!--more-->
 ---

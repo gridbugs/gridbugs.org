@@ -2,6 +2,7 @@
 layout: post
 title: "Visible Area Detection with Recursive Shadowcast"
 date: 2015-11-16 12:30:01 +1000
+permalink: visible-area-detection-recursive-shadowcast
 categories: gamedev roguelikes algorithms
 excerpt_separator: <!--more-->
 ---
