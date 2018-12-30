@@ -2,7 +2,7 @@
 layout: post
 title: "Even Separation Algorithm"
 date: 2016-05-04 23:27:00 +1000
-permalink: even-separation-algorithm
+permalink: /even-separation-algorithm/
 categories: gamedev roguelikes algorithms
 excerpt_separator: <!--more-->
 ---

@@ -2,7 +2,7 @@
 layout: post
 title: "Roguelike Lighting Demo"
 date: 2016-12-20 09:31:00 +1000
-permalink: roguelike-lighting-demo
+permalink: /roguelike-lighting-demo/
 categories: gamedev roguelikes lighting project
 excerpt_separator: <!--more-->
 ---

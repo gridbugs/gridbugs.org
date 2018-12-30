@@ -3,7 +3,7 @@ layout: post
 title: "7 Day Roguelike 2018: Meters, Objectives"
 date: 2018-03-09 00:39:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2018-meters-objectives
+permalink: /7drl2018-meters-objectives/
 excerpt_separator: <!--more-->
 ---
 

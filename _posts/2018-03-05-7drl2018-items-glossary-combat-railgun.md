@@ -3,7 +3,7 @@ layout: post
 title: "7 Day Roguelike 2018: Items, Glossary, Combat, Railgun"
 date: 2018-03-05 23:42:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2018-items-glossary-combat-railgun
+permalink: /7drl2018-items-glossary-combat-railgun/
 excerpt_separator: <!--more-->
 ---
 

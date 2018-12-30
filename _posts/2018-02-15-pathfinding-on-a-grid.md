@@ -2,7 +2,7 @@
 layout: post
 title: "Pathfinding on a Grid"
 date: 2018-02-15 21:43:00 +1000
-permalink: pathfinding-on-a-grid
+permalink: /pathfinding-on-a-grid/
 categories: gamedev roguelikes algorithms
 ---
 

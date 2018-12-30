@@ -3,7 +3,7 @@ layout: post
 title: "7 Day Roguelike 2018: Character Progression, Melee Combat"
 date: 2018-03-06 23:44:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2018-character-progression-melee-combat
+permalink: /7drl2018-character-progression-melee-combat/
 excerpt_separator: <!--more-->
 ---
 

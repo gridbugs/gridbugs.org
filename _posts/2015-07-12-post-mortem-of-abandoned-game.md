@@ -2,7 +2,7 @@
 layout: post
 title: "Post Mortem of an Abandoned Game"
 date: 2015-07-12 22:46:01 +1000
-permalink: post-mortem-of-abandoned-game
+permalink: /post-mortem-of-abandoned-game/
 categories: gamedev
 ---
 

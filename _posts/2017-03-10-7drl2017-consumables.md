@@ -3,7 +3,7 @@ layout: post
 title: "7 Day Roguelike 2017: Consumables"
 date: 2017-03-10 03:33:00 +1000
 categories: gamedev roguelikes 7drl
-permalink: 7drl2017-consumables
+permalink: /7drl2017-consumables/
 ---
 
 I added many features today, most notably consumable items that can be used

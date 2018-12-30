@@ -3,7 +3,7 @@ layout: post
 title: "Meters Below the Ground"
 date: 2018-03-10 11:30:00 +1000
 categories: gamedev roguelikes 7drl project
-permalink: meters-below-the-ground
+permalink: /meters-below-the-ground/
 excerpt_separator: <!--more-->
 ---
 
