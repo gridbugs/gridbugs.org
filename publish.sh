@@ -9,6 +9,6 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cd $DIR
-    jekyll build
+    bundle exec jekyll build
     s3cmd sync _site/* s3://gridbugs.org
 fi
