@@ -8,5 +8,5 @@ gem install bundle
 bundle
 
 # run server
-jekyll serve
+bundle exec jekyll serve
 ```

@@ -3,7 +3,7 @@ layout: post
 title: "Cellular Automata Cave Generation"
 date: 2015-09-26 12:30:01 +1000
 permalink: /cellular-automata-cave-generation/
-categories: gamedev roguelikes
+categories: gamedev roguelikes procgen
 excerpt_separator: <!--more-->
 ---
 
