@@ -8,6 +8,7 @@ excerpt_separator: <!--more-->
 ---
 
 ![flower-banner](/images/wave-function-collapse/flower-banner-scaled.png)
+
 Wave Function Collapse is a procedural generation algorithm which produces
 images by arranging a collection of tiles according to rules about which tiles
 may be adjacent to each tile, and relatively how frequently each tile should appear.
