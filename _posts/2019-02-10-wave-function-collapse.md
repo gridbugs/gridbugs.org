@@ -216,7 +216,7 @@ around it and hints about tile frequency. Macroscopic effects, such as "stalks
 may only be terminated by a flower" emerge from a carefully crafted set of
 tiles and rules.
 
-Nothing says that the ground can't appear twice, thought it is very unlikely.
+Nothing says that the ground can't appear twice, though it is very unlikely.
 
 ![double-ground](/images/wave-function-collapse/double-ground.png)
 
