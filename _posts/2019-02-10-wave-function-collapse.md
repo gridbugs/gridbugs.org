@@ -52,4 +52,42 @@ WFC produces as output, an image with the following properties:
 <!-- ublock origin hides elements with id="adjacency"? -->
 <h3 id="adjacency_">Adjacency</h3>
 
-### Using an example output as input
+A pair of `SIZE` x `SIZE`
+squares of pixels are adjacent if the coordinates of their top-left pixels
+differ by 1 in a single dimension, and 0 in the other dimension. That is, one
+square is exactly 1 pixel up, down, left, or right from the other square.
+If `SIZE > 1`, the squares will overlap.
+Below are some examples where `SIZE = 3`.
+
+In the image below, the red and blue squares are adjacent because their positions
+differ by 1 in the x axis, and 0 in the y axis:
+
+![adjacent-example1](/images/wave-function-collapse/adjacent-example1.png)
+
+In the image below, the red and blue squares are adjacent because their positions
+differ by 1 in the y axis, and 0 in the x axis:
+
+![adjacent-example2](/images/wave-function-collapse/adjacent-example2.png)
+
+In the image below, the red and blue squares are **not** adjacent because their positions
+differ by 1 in the y axis, and 1 in the x axis. The positions of adjacent tiles must differ
+in one axis only, and the positions of the squares below are different in both axes.
+
+![not-adjacent-example1](/images/wave-function-collapse/not-adjacent-example1.png)
+
+In the image below, the red and blue squares are **not** adjacent because their positions
+differ by 3 in the x axis. The positions of adjacent tiles must differ
+by exactly 1.
+
+![not-adjacent-example2](/images/wave-function-collapse/not-adjacent-example2.png)
+
+### Compatible Tiles
+
+The definition of adjacency above requires that adjacent patterns overlap
+(unless `SIZE = 1`, which isn't an interesting case, so let's ignore it).
+Since one of the inputs to the algorithm is a collection of **adjacency rules**,
+it's possible to specify that a pair of tiles are adjacent in a direction,
+even if the region of the tiles which will overlap are not the same. Doing so
+will result in unusual output.
+
+## Using an example output as input
