@@ -11,14 +11,54 @@ excerpt_separator: <!--more-->
 
 Wave Function Collapse is a procedural generation algorithm which produces
 images by arranging a collection of tiles according to rules about which tiles
-may be adjacent to each tile, and relatively how frequently each tile should appear.
+may be adjacent to each other tile, and relatively how frequently each tile should appear.
 The algorithm maintains, for each pixel of the output image, a probability
 distribution of the tiles which may be placed there. It repeatedly chooses a
 pixel to "collapse" - choosing a pattern to use for that pixel based on its
 distribution. WFC gets its name from
 [quantum physics](https://en.wikipedia.org/wiki/Wave_function_collapse).
 
+The goal of this post is to build an intuition for how the WFC algorithm works.
+
 <!--more-->
+
+## Mosaic
+
+You're a student in the art of mosaic, and your mysterious master presents you
+with a box full of equally-sized, square tiles, and asks you to place them on a
+wooden rectangular board to create a picture. Upon each tile, are 9 coloured
+cells, arranged into 3 rows and 3 columns.  The top-left corner of each tiles is
+marked with an "X". Most tiles have some duplicates with the same pattern, and
+some tiles have more duplicates than others.  You see that the board is also
+divided into rows and columns, with cells the same size as those on the tiles.
+Your master explains that because you are such an advanced student, for this
+task you must follow some **esoteric and seemingly-arbitrary instructions**:
+
+ 1. You must place tiles such that the cells on the tiles are aligned with the
+    cells on the board.
+ 2. You may place a tile so that it partially overlaps with already-placed
+    tiles, provided that you only cover coloured cells with cells of matching
+    colours (that is, once a board cell contains a colour, it must always
+    contain that colour, even as it covered by other tiles).
+ 3. Your master is watching. Each time you want to place a tile, you must first
+    declare to your master the 3x3-cell area of the board which it will cover.
+    Your master examines this area, and fills a bag with all the tiles that may
+    be placed there, according to rule 2.  (Some tiles may be incompatible with
+    the chosen position, as they have coloured cells which would overlap with
+    different coloured cells of already-placed tiles.) You must then draw a tile
+    from the bag at random, and place it on the board in your chosen position.
+ 4. You must orientate tiles with the "X" in the top-left corner when you place
+    them on the board.
+ 5. After placing a tile, your master obtains an identical tile from somewhere,
+    so that placing a tile doesn't affect the odds of drawing an identical tile
+    from the bag later.
+ 6. If, upon examining your chosen tile position, your master finds that no
+    tiles may be placed, you must start afresh with an empty board.
+ 7. Your task is **not** complete when you have covered the entire board. You
+    are only finished when every cell of the board contains an "X", possibly
+    covered up by another tile.  That is, you have placed the top-left corner of
+    a tile in every cell of the board. The bottom 2 rows and right 2 columns may
+    be left without an "X".
 
 ## Interface
 
@@ -147,78 +187,3 @@ distribution of tiles in the sample image. Recall that the frequency rules are a
 mapping from each tile to a number indicating the relative frequency with which
 that tile should occur in the output. Each tile will map to the number of times
 it occurs in the sample.
-
-### Where is the ground?
-
-![small-flower-banner](/images/wave-function-collapse/small-flower-banner.png)
-
-The sample image contains a strip of ground, but the banner doesn't. What gives?
-
-This question brings up some interesting points about running WFC with a sample
-image as input.
-
-#### Some tiles may never appear
-
-It's entirely
-possible that a tile with a non-zero input frequency in the frequency rules
-won't appear at all in the output.
-Remember that frequency rules are enforced probabilistically, and the adjacency
-rules have a higher priority, so WFC may never get a chance to use a particular
-tile, because the adjacency rules never permit it.
-
-If I run WFC on this sample enough times, eventually I'll get an
-output image with ground in it.
-
-![ground-flower-banner1](/images/wave-function-collapse/ground-flower-banner1.png)
-
-#### The sample image is wrapped
-
-Why is the ground in the sky?
-
-When generating tiles from the sample image, the question arises: What should
-we do with `SIZE` x `SIZE` squares which go off the edge of the image?
-The simplest choice is to wrap around to the other side of the sample.
-
-This means that one of the generated tiles looks like this:
-
-![sky-ground](/images/wave-function-collapse/sky-ground.png)
-
-So the ground can happily be in the sky!
-
-You can avoid behaviour like this by manually configuring the generator in
-between initialising it and running it to make certain choices impossible in
-certain cells.
-
-#### You only get out what you put in
-
-WFC will not invent new tiles for you. I ran WFC additional times in search of
-more ground. In all the outputs with ground, it occupied an image-wide strip.
-
-![ground-flower-banner2](/images/wave-function-collapse/ground-flower-banner2.png)
-
-The ground can be vertical, since I allow rotations and reflections when
-generating the tile set.
-
-The ground in the sample is 2 pixels wide, and my `SIZE = 3`, so every tile
-containing ground also contains some sky. The border between ground and sky
-determines the direction of the ground. There are no tiles in the tile set in
-which the ground changes direction or stops, so once the ground begins, it must
-continue to both edges of the output image.
-
-This is the reason the ground is so uncommon! There must be an empty strip
-across the entire width or height of the image which the ground can fit inside,
-or no ground tiles will be chosen.
-
-#### There are no global constraints
-
-Every decision WFC makes is local - choosing tiles based purely on the tiles
-around it and hints about tile frequency. Macroscopic effects, such as "stalks
-may only be terminated by a flower" emerge from a carefully crafted set of
-tiles and rules.
-
-Nothing says that the ground can't appear twice, though it is very unlikely.
-
-![double-ground](/images/wave-function-collapse/double-ground.png)
-
-# The WFC Algorithm
-
