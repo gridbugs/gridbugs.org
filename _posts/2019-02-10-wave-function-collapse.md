@@ -100,7 +100,7 @@ The overlapping region is highlighted.
 
 ![compatible-example](/images/wave-function-collapse/compatible-example.png)
 
-## Using a sample output image as input
+## Using a sample image as input
 
 If you're goal is to produce a particular aesthetic with this algorithm, or to
 just experiment and search for interesting patterns, chances are that manually
@@ -123,7 +123,7 @@ tend to produce more structured output, but also place more constraints on the
 output which WFC may be unlikely to satisfy. Experiment
 to find one that produces the desired effect.
 
-Each unique `SIZE` x `SIZE` square of pixels in the input image is one of your
+Each unique `SIZE` x `SIZE` square of pixels in the sample image is one of your
 tiles. Depending on your desired results, you might consider two tiles, where
 one is a rotation or reflection of the other, to be the same.
 
@@ -171,11 +171,11 @@ output image with ground in it.
 
 ![ground-flower-banner1](/images/wave-function-collapse/ground-flower-banner1.png)
 
-#### The input image is wrapped
+#### The sample image is wrapped
 
 Why is the ground in the sky?
 
-When generating tiles from the input image, the question arises: What should
+When generating tiles from the sample image, the question arises: What should
 we do with `SIZE` x `SIZE` squares which go off the edge of the image?
 The simplest choice is to wrap around to the other side of the sample.
 
