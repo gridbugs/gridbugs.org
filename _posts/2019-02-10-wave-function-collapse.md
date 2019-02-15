@@ -22,12 +22,26 @@ The goal of this post is to build an intuition for how the WFC algorithm works.
 
 <!--more-->
 
+## Interface
+
+WFC takes as input:
+
+ - a collection of equally-sized, square, unique tiles, each represented as a 2d grid of colours
+ - a mapping from each tile to the relative frequency with which it should appear in the output
+ - the dimensions of the output image
+
+WFC produces as output:
+
+ - an image with the property that every tile-sized square of pixels in the
+   image is one of the input tiles, and each tile appears with roughly the
+   specified relative frequency
+
 ## Mosaic
 
 You're a student in the art of mosaic, and your mysterious master presents you
 with a box full of equally-sized, square tiles, and asks you to place them on a
 wooden rectangular board to create a picture. Upon each tile, are 9 coloured
-cells, arranged into 3 rows and 3 columns.  The top-left corner of each tiles is
+cells, arranged into 3 rows and 3 columns.  The top-left corner of each tile is
 marked with an "X". Most tiles have some duplicates with the same pattern, and
 some tiles have more duplicates than others.  You see that the board is also
 divided into rows and columns, with cells the same size as those on the tiles.
@@ -39,7 +53,7 @@ task you must follow some **esoteric and seemingly-arbitrary instructions**:
  2. You may place a tile so that it partially overlaps with already-placed
     tiles, provided that you only cover coloured cells with cells of matching
     colours (that is, once a board cell contains a colour, it must always
-    contain that colour, even as it covered by other tiles).
+    contain that colour, even as it gets covered by other tiles).
  3. Your master is watching. Each time you want to place a tile, you must first
     declare to your master the 3x3-cell area of the board which it will cover.
     Your master examines this area, and fills a bag with all the tiles that may
@@ -59,8 +73,6 @@ task you must follow some **esoteric and seemingly-arbitrary instructions**:
     covered up by another tile.  That is, you have placed the top-left corner of
     a tile in every cell of the board. The bottom 2 rows and right 2 columns may
     be left without an "X".
-
-## Interface
 
 ### Input
 
