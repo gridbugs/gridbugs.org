@@ -14,13 +14,45 @@ images by arranging a collection of tiles according to rules about which tiles
 may be adjacent to each other tile, and relatively how frequently each tile should appear.
 The algorithm maintains, for each pixel of the output image, a probability
 distribution of the tiles which may be placed there. It repeatedly chooses a
-pixel to "collapse" - choosing a pattern to use for that pixel based on its
+pixel to "collapse" - choosing a tile to use for that pixel based on its
 distribution. WFC gets its name from
 [quantum physics](https://en.wikipedia.org/wiki/Wave_function_collapse).
 
 The goal of this post is to build an intuition for how the WFC algorithm works.
 
 <!--more-->
+
+## Two Layers
+
+I will break WFC into two parts and explain them separately:
+
+### Core
+
+The "core" receives a set of **adjacency rules** of the form "Tile 12 may apear
+in the cell ABOVE a cell containing tile 4.", and a set of **frequency hints**,
+which for each tile, specifies frequently it should appear relative to other
+tiles. Tiles are referred to by integers ranging from 0 to the number of tiles
+minus 1, which I'll refer to as **tile indices**. The algorithm populates a grid
+with **tile indices** in a way which *completely* respects **adjacency rules**,
+and *probabilistically* respects **frequency hints**.
+
+### Image Processor
+
+The "image processor" takes an **image**, and a **tile size**, and generates a
+list of tiles containing every unique **tile size** sized square of pixels from
+the **image**. It then generates **adjacency rules** and **frequency hints**,
+which can be passed to the core, which will produce a grid of **tile indices**.
+The image processor uses this grid to create an output image of matching
+dimensions, where each pixel colour is taken from the top-left corner of the
+tile with the **tile index** at the corresponding grid position.  The choice of
+**adjacency rules** and **frequency hints** will ensure that every **tile size**
+sized square of pixels in the output image occurs in the input **image** with
+roughly the same distribution.
+
+Here's the input image I used to generate the banner
+(image credit to [mxgmn](https://github.com/mxgmn/WaveFunctionCollapse)).
+
+![flowers](/images/wave-function-collapse/flowers.png)
 
 ## Interface
 
