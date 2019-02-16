@@ -22,212 +22,244 @@ The goal of this post is to build an intuition for how the WFC algorithm works.
 
 <!--more-->
 
-## Two Layers
+I will break WFC into two separate algorithms and explain them separately. Each
+is interesting in its own right, and the interface between the layers is simple.
 
-I will break WFC into two parts and explain them separately:
+## Core Interface
 
-### Core
+```rust
+fn wfc_core(
+    adjacency_rules: AdjacencyRules,
+    frequency_rules: FrequencyHints,
+    output_size: (u32, u32),
+) -> Grid2D<TileIndex> { ... }
+```
 
-The "core" receives a set of **adjacency rules** of the form "Tile 12 may apear
-in the cell ABOVE a cell containing tile 4.", and a set of **frequency hints**,
-which for each tile, specifies frequently it should appear relative to other
-tiles. Tiles are referred to by integers ranging from 0 to the number of tiles
-minus 1, which I'll refer to as **tile indices**. The algorithm populates a grid
-with **tile indices** in a way which *completely* respects **adjacency rules**,
-and *probabilistically* respects **frequency hints**.
-
-### Image Processor
-
-The "image processor" takes an **image**, and a **tile size**, and generates a
-list of tiles containing every unique **tile size** sized square of pixels from
-the **image**. It then generates **adjacency rules** and **frequency hints**,
-which can be passed to the core, which will produce a grid of **tile indices**.
-The image processor uses this grid to create an output image of matching
-dimensions, where each pixel colour is taken from the top-left corner of the
-tile with the **tile index** at the corresponding grid position.  The choice of
-**adjacency rules** and **frequency hints** will ensure that every **tile size**
-sized square of pixels in the output image occurs in the input **image** with
-roughly the same distribution.
-
-Here's the input image I used to generate the banner
-(image credit to [mxgmn](https://github.com/mxgmn/WaveFunctionCollapse)).
-
-![flowers](/images/wave-function-collapse/flowers.png)
-
-## Interface
-
-WFC takes as input:
-
- - a collection of equally-sized, square, unique tiles, each represented as a 2d grid of colours
- - a mapping from each tile to the relative frequency with which it should appear in the output
- - the dimensions of the output image
-
-WFC produces as output:
-
- - an image with the property that every tile-sized square of pixels in the
-   image is one of the input tiles, and each tile appears with roughly the
-   specified relative frequency
-
-## Mosaic
-
-You're a student in the art of mosaic, and your mysterious master presents you
-with a box full of equally-sized, square tiles, and asks you to place them on a
-wooden rectangular board to create a picture. Upon each tile, are 9 coloured
-cells, arranged into 3 rows and 3 columns.  The top-left corner of each tile is
-marked with an "X". Most tiles have some duplicates with the same pattern, and
-some tiles have more duplicates than others.  You see that the board is also
-divided into rows and columns, with cells the same size as those on the tiles.
-Your master explains that because you are such an advanced student, for this
-task you must follow some **esoteric and seemingly-arbitrary instructions**:
-
- 1. You must place tiles such that the cells on the tiles are aligned with the
-    cells on the board.
- 2. You may place a tile so that it partially overlaps with already-placed
-    tiles, provided that you only cover coloured cells with cells of matching
-    colours (that is, once a board cell contains a colour, it must always
-    contain that colour, even as it gets covered by other tiles).
- 3. Your master is watching. Each time you want to place a tile, you must first
-    declare to your master the 3x3-cell area of the board which it will cover.
-    Your master examines this area, and fills a bag with all the tiles that may
-    be placed there, according to rule 2.  (Some tiles may be incompatible with
-    the chosen position, as they have coloured cells which would overlap with
-    different coloured cells of already-placed tiles.) You must then draw a tile
-    from the bag at random, and place it on the board in your chosen position.
- 4. You must orientate tiles with the "X" in the top-left corner when you place
-    them on the board.
- 5. After placing a tile, your master obtains an identical tile from somewhere,
-    so that placing a tile doesn't affect the odds of drawing an identical tile
-    from the bag later.
- 6. If, upon examining your chosen tile position, your master finds that no
-    tiles may be placed, you must start afresh with an empty board.
- 7. Your task is **not** complete when you have covered the entire board. You
-    are only finished when every cell of the board contains an "X", possibly
-    covered up by another tile.  That is, you have placed the top-left corner of
-    a tile in every cell of the board. The bottom 2 rows and right 2 columns may
-    be left without an "X".
-
-### Input
-
- - **dimensions**: the width and height of the output image
- - **tiles**: a collection of unique tiles, each represented by a square pattern of pixels. Each tile
-   must be the same size, which I'll refer to later as `SIZE`.
- - **adjacency rules**: a mapping from each tile to a collection of (tile, direction) tuples,
-   representing adjacency rules, where "direction" is one of UP, DOWN, LEFT,
-   RIGHT. If tile `A` maps to `[(B, UP), ...]`, it indicates that tile `B` may
-   appear above tile `A` in the output. Adjacencies must be symmetrical. For
-   example, if `A` maps to `([(B, UP), ....])`, then `B` must map to `[(A, DOWN),...]`,
-   since if `B` may appear *above* `A`, then `A` may also appear *below* `B`.
-   More on adjacency [below](#adjacency_).
- - **freqeuncy rules**: a mapping from each tile to a number representing the relative frequency with
-   which it should appear in the output (e.g. in the output, a tile with frequency 6 will
-   appear (approximately) twice as frequently as a tile with frequency 3)
-
-### Output
-
-WFC produces as output, an image with the following properties:
- - it has the specified **dimensions**
- - each `SIZE` x `SIZE` square of pixels in the image is one of the input **tiles**
- - **adjacency rules** are always respected. That is, for each pair of `SIZE` x `SIZE` pixels `A` and `B` where
-   `A` is adjacent to `B` in direction `DIR`, the adjacency rules contain
-   mappings from `A` to `(B, DIR)`, and from `B` to `(A, OPPOSITE(DIR))`.
- - **frequency rules** are respected probabilistically. Each time a tile is chosen for part of the output, its
-   frequency is used as a weight in a probability distribution made up of all
-   tiles which are legal, according to the **adjacency rules**.
-
-<!-- ublock origin hides elements with id="adjacency"? -->
-<h3 id="adjacency_">Adjacency</h3>
-
-A pair of `SIZE` x `SIZE`
-squares of pixels are adjacent if the coordinates of their top-left pixels
-differ by 1 in a single axis, and 0 in the other axis. That is, one
-square is exactly 1 pixel up, down, left, or right from the other square.
-The squares will overlap unless `SIZE = 1`..
-Below are some examples where `SIZE = 3`.
-
-In the image below, the red and blue squares are adjacent because their positions
-differ by 1 in the x axis, and 0 in the y axis:
-
-![adjacent-example1](/images/wave-function-collapse/adjacent-example1.png)
-
-In the image below, the red and blue squares are adjacent because their positions
-differ by 1 in the y axis, and 0 in the x axis:
-
-![adjacent-example2](/images/wave-function-collapse/adjacent-example2.png)
-
-In the image below, the red and blue squares are **not** adjacent because their positions
-differ by 1 in the y axis, and 1 in the x axis. The positions of adjacent tiles must differ
-in one axis only, and the positions of the squares below are different in both axes.
-
-![not-adjacent-example1](/images/wave-function-collapse/not-adjacent-example1.png)
-
-In the image below, the red and blue squares are **not** adjacent because their positions
-differ by 3 in the x axis. The positions of adjacent tiles must differ
-by exactly 1.
-
-![not-adjacent-example2](/images/wave-function-collapse/not-adjacent-example2.png)
-
-### Compatible Tiles
-
-As per the definition of adjacency above, adjacent tiles in the output image overlap.
-Since tiles in the output image are adjacent only if their adjacency is
-explicitly allowed by the adjacency rules, this implies that if the adjacency
-rules permit a pair of tiles to adjacent in a given direction, the pixels in
-common between the two tiles when they overlap must be the same.
-
-A tile `A` is **compatible** with a tile `B` in a direction `DIR` if you can
-overlay `B` on top of `A` shifted 1 pixel in `DIR`, and for each pixel of `A`,
-the pixel of `B` which overlaps it is the same colour, ignoring pixels with
-no overlapping pixel.
-
-In the diagram below, `A` is compatible with `B` in the `LEFT` direction.
-The overlapping region is highlighted.
-
-![compatible-example](/images/wave-function-collapse/compatible-example.png)
-
-## Using a sample image as input
-
-If you're goal is to produce a particular aesthetic with this algorithm, or to
-just experiment and search for interesting patterns, chances are that manually
-crafting a tile set, adjacency rules, and frequency rules will be too difficult. Instead, you can
-craft an image with the desired aesthetic, and derive from it the inputs to the
-WFC algorithm.
-
-The banner at the top of this page was generated from the following image
-(credit to [mxgmn](https://github.com/mxgmn/WaveFunctionCollapse)).
-
-![flowers](/images/wave-function-collapse/flowers.png)
-
-The process of deriving a tile set, adjacency rules, and frequency rules from an
-image is the following.
-
-### Tile Set
-
-Manually choose a `SIZE`. The example above uses `SIZE = 3`. Larger numbers
-tend to produce more structured output, but also place more constraints on the
-output which WFC may be unlikely to satisfy. Experiment
-to find one that produces the desired effect.
-
-Each unique `SIZE` x `SIZE` square of pixels in the sample image is one of your
-tiles. Depending on your desired results, you might consider two tiles, where
-one is a rotation or reflection of the other, to be the same.
-
-Every 3x3 pixel square in the banner image appears in the above image at least once,
-though it may be rotated or reflected.
+This is the low level part of the algorithm which solves the problem of
+arranging tiles into a grid according to some specified rules. I'll give a
+"black box" description of the core here, and explain how it works internally
+below.
 
 ### Adjacency Rules
 
-These are derived from compatible tiles. Recall that adjacency rules are a set
-of mappings from tiles to (tile, direction) tuples. Each tile will map to all
-the tiles and directions it is compatible with.
+The "core" receives a set of **adjacency rules** describing which tiles map
+appear next to other tiles in each cardinal direction.  Some example rules are "Tile 6
+may appear in the cell ABOVE a cell containing tile 4", and "Tile 7 map appear in
+the cell to the LEFT of a cell containing tile 3.
 
-In other words, if a tile `A` is compatible with another tile `B` in direction
-`DIR`, then the adjacency rules will allow `A` and `B` to be adjacent in
-direction `DIR`.
+### Frequency Hints
 
-### Frequency Rules
+It also receives a set of
+**frequency hints**, which is a mapping from each tile to a number indicating
+how frequently the tile should appear in the output, relative to other tiles.
+If tile 4 maps to 6, and tile 5 maps to 2, then tile 4 should appear 3 times as
+frequently than tile 5.
 
-The goal is for the distribution of tiles in the output to be the same in the
-distribution of tiles in the sample image. Recall that the frequency rules are a
-mapping from each tile to a number indicating the relative frequency with which
-that tile should occur in the output. Each tile will map to the number of times
-it occurs in the sample.
+### Tile Index
+
+The core doesn't actually get to see the tiles
+themselves.  Rather, tiles are referred to by integers ranging from 0 to the
+number of tiles minus 1, which I'll refer to as **tile indices**. The
+**adjacency rules** and **frequency hints** are all specified in terms of
+**tile index**.
+
+### Output
+
+The algorithm
+populates a grid with **tile indices** in a way which *completely* respects
+**adjacency rules**, and *probabilistically* respects **frequency hints**.
+
+## Image Processor
+
+This is the "glue" between the core algorithm, and an input and output image.
+Typically WFC is used to generate output images which are "similar" to input
+images. There's no requirement that the output image be the same dimensions
+as the input image.
+Specifically, similar means that for some **tile size**:
+ - every **tile sized** square of pixel images in the output image appears in the
+   input image
+ - the relative frequencies of **tile sized** squares of pixels in the output
+   image is roughly the same as in the input image
+
+In practical terms, the output image will have the same local features as the
+input image, but the global structure will be different.
+
+Note that there are some alternative applications of WFC besides generating
+similar images, such as arranging hand-crafted tiles with user-specified
+**adjacency rules** and **frequency hints**. These applications would still use
+the same core algorithm, but the **image processor** would be different.
+
+### Pre Processing
+
+```rust
+fn wfc_pre_process_image(
+    input_image: Image,
+    tile_size: u32,     /* often between 2 and 4 inclusive*/
+) -> (AdjacencyRules, FrequencyHints, HashMap<TileIndex, Colour>) { ... }
+```
+
+The goal of this step is generating input for the core algorithm.
+Given an **input image** and **tile size**, all the unique **tile size** sized
+squares of pixels from the **input image** are enumerated. These will be our
+tiles, and each is assigned a **tile index**. Optionally, you may include all
+rotations and reflections of each tile.
+
+Note that this is subtly different from splitting the input image into a grid
+of **tile size** sized squares and discarding duplicates.
+Instead, if **tile size** is 3, we would first consider the 3x3 square starting
+at pixel (0, 0). Then, we would consider the 3x3 square at (0, 1), and so on.
+**Tiles** in the **input image** overlap.
+
+This page's banner was generated using WFC with a **tile size** of 3, and the
+following input image, with all rotations and reflections included.
+
+![flowers](/images/wave-function-collapse/flowers.png)
+
+#### Frequency Hints
+
+The number of occurrences of each tile in the input image is counted, and
+mappings from a tile's index to its count make up the **frequency hints**.
+
+#### Adjacency Rules
+
+The core will produce a grid of **tile indices** where each index corresponds to a single pixel in
+the output image. The colour of each pixel in the output image will be the
+colour of the top-left pixel of the tile indicated by the corresponding **tile
+index** in the grid produced by the core. Keep that in mind: *for every tile
+placed, only a **single pixel** of the tile (its top-left pixel) is
+actually added to the output image.* As the core assigns pixel indices to grid
+cells, we can say that the core assigns
+the top-left corners of tiles to output image pixels.
+
+Remember that the goal of the **image processor** is to produce an output image
+where every **tile sized** square of pixels occurs in the input image.
+In order to meet this goal, we must ensure that whenever the core assigns the
+top-left pixel of a tile to a pixel of the output image, the rest of the pixels
+of the tile end up in the right places as well. This is best explained with an
+example.
+
+![adjacent-example1](/images/wave-function-collapse/adjacent-example1.png)
+
+Consider 3x3 pixel tile surrounded by the red square.
+It occurs in the input image (rotated anticlockwise 90 degrees, below the
+bottom-right flower).
+Let's assume it gets **tile index** 7.
+The core algorithm decided that the grid cell corresponding to the top-left
+pixel in the red square, should contain **tile index** 7.
+Even though **tile index** 7 refers to the whole 3x3 tile (but only the **image
+processor** knows this),
+choosing **tile index** 7 for this cell resulted in only the top-left pixel of
+the output image being populated.
+
+But somehow the rest of the red square ended up looking like the tile with
+**tile index** 7 as well. That's great! Every time a **tile index** is assigned to a cell,
+we want a way to make sure that the entire tile's pixels - not just its top-left
+pixel - end up in the right output pixels, relative to the tile's placement.
+Since each tile placement just contributes the tile's top-left pixel, we need to
+make sure that whenever a tile is placed within **tile size** pixels of an
+already-placed tile's top-left pixel, that the newly placed
+tile's pixels don't conflict with the pixels of the already-placed tile.
+
+A convenient lie to help picture this, is to imagine that whenever
+the core places a tile in a cell, each pixel in the **tile sized** square of pixels whose top-left corner is that cell,
+is coloured to match the corresponding pixel of the tile, but only the top-left cell
+is marked as "populated". Unpopulated (but possibly coloured) cells can have
+tiles placed in them, *as long as all cells in the square filled by the new tile
+are either not yet coloured, or contain the same colour as the corresponding pixel of the
+new tile*.
+
+Let's generate **adjacency rules** to force the core to never place two tiles
+in positions where their overlapping pixels conflict.
+Recall that an **adjacency rule** is of the form: "**Tile index** **A** may appear in the
+cell 1 space in **DIRECTION** from a cell containing **tile index** **B**".
+The rules should only permit **A** to be placed adjacent to **B** in
+**DIRECTION** if doing so would not cause a conflict. All non-conflicting
+adjacencies should be allowed.
+
+```rust
+let mut adjacency_rules = AdjacencyRules::new();
+for a in all_tiles {
+    for b in all_tiles {
+        for direction in [LEFT, RIGHT, UP, DOWN] {
+            if compatible(a, b, direction) {
+                adjacency_rules.allow(a, b, direction);
+            }
+        }
+    }
+}
+```
+
+The `compatible(a: Tile, b: Tile, direction: Direction) -> bool` function returns true if and only if overlapping
+`a` with `b`, if `b` is offset by 1 pixel in `direction`, the overlapping parts
+of the two tiles are identical.
+
+In the example below, `compatible(A, B, RIGHT) == true`.
+
+![compatible-example](/images/wave-function-collapse/compatible-example.png)
+
+In this example tiles are 3x3, but these adjacency rules only ensure that
+adjacent tiles are compatible. It's possible for a pair of tiles which are 2
+pixels apart to overlap. **What prevents them from conflicting?**
+
+Consider this example:
+
+![2-gap-overlap](/images/wave-function-collapse/2-gap-overlap.png)
+
+The **<span style="color=red">red</span>** and **<span style="color=blue">blue</span>**  squares surround tile placements which are 2 pixels apart.
+They aren't adjacent, so the **adjacency rules** don't explicitly forbid the **<span style="color=red">red</span>** 
+tile's pixels and **<span style="color=blue">blue</span>**  tile's pixels from being different in the intersecting
+area.
+
+However, the existence of the **black** square, which is adjacent to both the red
+and blue squares, means that the red and blue tile placements won't conflict.
+
+Because they are adjacent, the **<span style="color:red">red</span>/black**
+intersection and the
+**<span style="color:blue">blue</span>/black** intersection are conflict-free. That is, the colours of pixels in the intersecting
+parts of the tiles are the same in both tiles.
+**<span style="color:red">Red</span>/<span style="color:blue">blue</span>** is contained in both **<span style="color:red">red</span>/black**
+and **<span style="color:blue">blue</span>/black**.
+Since the pixel colours in the **<span style="color:red">red</span>/<span style="color:blue">blue</span>** region of **<span style="color:red">red</span>** are the same as the pixel colours
+in the corresponding region of **black**, and the pixel colours in the **<span style="color:red">red</span>/<span style="color:blue">blue</span>** region of
+**black** are the same as the pixel colours in the corresponding region of
+**<span style="color:blue">blue</span>**,
+the pixel colours in the **<span style="color:red">red</span>/<span style="color:blue">blue</span>** region of **<span style="color:red">red</span>** are the same is the pixel colours of the corresponding region of
+**<span style="color:blue">blue</span>**. That is, **<span style="color:red">red</span>/<span style="color:blue">blue</span>** is conflict free.
+
+#### Tile/Colour Mappings
+
+After preprocessing, the **frequency hints** and **adjacency rules** will be passed to the core algorithm,
+and it will return a grid of **tile indices**. To produce the output image, we will need to know which **tile index**
+refers to which colour. To help with this, the preprocessor outputs a map from **tile index** to the colour
+of the top-left pixel of the corresponding tile.
+
+### Post Processing
+
+```rust
+fn wfc_post_process_image(
+    tile_index_grid: Grid2D<TileIndex>,
+    top_left_pixel_of_each_tile: HashMap<TileIndex, Colour>,
+) -> Image { ... }
+```
+
+The final step is trivial. Take the grid of **tile indices** produced by running the core algorithm on the **adjacency rules** and
+**frequency hints** from the preprocessor, and the top-left pixel colour map, also returned by the preprocessor,
+and create an output image of the same dimensions as the grid.
+For each **tile index** in the grid, set the corresponding pixel colour in the output image to be
+the colour associated with that **tile index** in the top-left pixel colour map.
+
+### Putting it all together
+
+Composing these pieces gives the full WFC algorithm.
+
+```rust
+fn wfc_image(image: Image, tile_size: u32, output_size: (u32, u32)) -> Image {
+    let (adjacency_rules, frequency_hints, top_left_pixel_of_each_tile) =
+        wfc_pre_process_image(image, tile_size);
+    let tile_index_grid = wfc_core(adjacency_rules, frequency_hints, output_size);
+    return wfc_post_process_image(tile_index_grid, top_left_pixel_of_each_tile);
+}
+```
+
+## Core Internals
+
