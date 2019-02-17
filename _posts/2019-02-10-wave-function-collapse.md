@@ -42,7 +42,7 @@ below.
 
 ### Adjacency Rules
 
-The "core" receives a set of **adjacency rules** describing which tiles map
+The "core" receives a set of **adjacency rules** describing which tiles may
 appear next to other tiles in each cardinal direction.  Some example rules are "Tile 6
 may appear in the cell ABOVE a cell containing tile 4", and "Tile 7 map appear in
 the cell to the LEFT of a cell containing tile 3.
@@ -76,12 +76,12 @@ Typically WFC is used to generate output images which are "similar" to input
 images. There's no requirement that the output image be the same dimensions
 as the input image.
 Specifically, similar means that for some **tile size**:
- - every **tile sized** square of pixel images in the output image appears in the
+ - every **tile sized** square of pixels in the output image appears somewhere in the
    input image
  - the relative frequencies of **tile sized** squares of pixels in the output
    image is roughly the same as in the input image
 
-In practical terms, the output image will have the same local features as the
+In other words, the output image will have the same local features as the
 input image, but the global structure will be different.
 
 Note that there are some alternative applications of WFC besides generating
@@ -94,31 +94,126 @@ the same core algorithm, but the **image processor** would be different.
 ```rust
 fn wfc_pre_process_image(
     input_image: Image,
-    tile_size: u32,     /* often between 2 and 4 inclusive*/
+    tile_size: u32,     /* often 2 or 3 */
 ) -> (AdjacencyRules, FrequencyHints, HashMap<TileIndex, Colour>) { ... }
 ```
 
-The goal of this step is generating input for the core algorithm.
-Given an **input image** and **tile size**, all the unique **tile size** sized
-squares of pixels from the **input image** are enumerated. These will be our
-tiles, and each is assigned a **tile index**. Optionally, you may include all
-rotations and reflections of each tile.
+The goal of this step is generating **adjacency rules** and **frequency hints**
+to be passed as input to the core algorithm.
 
-Note that this is subtly different from splitting the input image into a grid
-of **tile size** sized squares and discarding duplicates.
-Instead, if **tile size** is 3, we would first consider the 3x3 square starting
-at pixel (0, 0). Then, we would consider the 3x3 square at (0, 1), and so on.
-**Tiles** in the **input image** overlap.
+First, we need to know what the different tiles are.
+Given an **input image** and **tile size**, enumerate all the **tile size** sized
+squares of pixels from the **input image**, *including* those squares whose
+top-left pixel occurs within **tile size** of the right and bottom edges,
+wrapping around to the other side of the input image in such cases.
 
-This page's banner was generated using WFC with a **tile size** of 3, and the
-following input image, with all rotations and reflections included.
+Consider this 4x4 pixel input image:
 
-![flowers](/images/wave-function-collapse/flowers.png)
+![process-example](/images/wave-function-collapse/process-example.png)
+
+With a **tile size** of 3, the first 3 tiles created by looking at squares of
+pixels with their top-left corners along the top row of pixels:
+
+![sample1](/images/wave-function-collapse/sample1.png)
+![sample2](/images/wave-function-collapse/sample2.png)
+![sample3](/images/wave-function-collapse/sample3.png)
+
+In the 3rd tile, we sampled off the edge of the image. In such cases, wrap
+around to the other side of the image. Effectively pretend that the image
+repeats forever in all directions.
+
+![sample3-infinite](/images/wave-function-collapse/sample3-infinite.png)
+
+Continuing in this fashion, enumerate all the tiles. In this example there are
+16, and all are unique.
+
+![all-tiles](/images/wave-function-collapse/all-tiles.png)
+
+Assign each tile a **tile index**. In the example, we would use numbers from 0
+to 15 as indices. **Frequency hints** and **adjacency rules** will be given in
+terms of **tile indices**.
+
+The next few sections will explain how to construct **frequency hints** and
+**adjacency rules** so the core algorithm generates images which are similar to
+the input.
+
+Here's an image which is similar to the example image, generated using WFC:
+
+![grid-output](/images/wave-function-collapse/grid-output.png)
+
+#### Reflection and Rotation
+
+When generating tiles from an **input image**, you may want to include tiles which
+aren't necessarily present in the **input image**, but are the rotation or
+reflection of tiles from the **input image**.
+
+We need a new example image to demonstrate this, as each rotation and reflection
+of each tile is also in the tile set. Let's use the following **input image**:
+
+![water-example](/images/wave-function-collapse/water-example.png)
+
+With a **tile size** of 3, the top-left tile we extract will be:
+
+![water1](/images/wave-function-collapse/water1.png)
+
+All rotations and reflections of this tile:
+
+![water1](/images/wave-function-collapse/water1.png)
+![water2](/images/wave-function-collapse/water2.png)
+![water3](/images/wave-function-collapse/water3.png)
+![water4](/images/wave-function-collapse/water4.png)
+![water5](/images/wave-function-collapse/water5.png)
+![water6](/images/wave-function-collapse/water6.png)
+![water7](/images/wave-function-collapse/water7.png)
+![water8](/images/wave-function-collapse/water8.png)
+
+Repeat this for all the tiles extracted from the image.
+
+To include these tiles in the output, proceed with the rest of the algorithm as
+normal, with these added to the tile set as fully qualified tiles, with their
+own unique **tile indices**.
+
+A similar image to the input *without* rotations or reflections included:
+
+![water-orig-orientation](/images/wave-function-collapse/water-orig-orientation.png)
+
+Here's an output with all rotations and reflections included:
+
+![water-all-orientations](/images/wave-function-collapse/water-all-orientations.png)
 
 #### Frequency Hints
 
 The number of occurrences of each tile in the input image is counted, and
 mappings from a tile's index to its count make up the **frequency hints**.
+
+Let's modify the first example image:
+
+![tall-grid-input](/images/wave-function-collapse/tall-grid-input.png)
+
+The set of unique 3x3 tiles in this **input image** will be the same as the
+first example, however where in the first example each tile appeared exactly
+once, here some patterns appear several times.
+
+The following tiles appear 5 times in this image:
+
+![tile1](/images/wave-function-collapse/tile1.png)
+![tile2](/images/wave-function-collapse/tile2.png)
+![tile3](/images/wave-function-collapse/tile3.png)
+![tile4](/images/wave-function-collapse/tile4.png)
+
+The remaining tiles still just appear once.
+
+The frequency hint for the above 4 tiles will be 5, and the hint for the other
+tiles will be 1. This means that the above 4 tiles are 5 times as likely to
+appear in a given position as the other tiles.
+
+How do you think this will change the output?
+
+![tall-grid](/images/wave-function-collapse/tall-grid.png)
+
+Increasing the odds of vertical lines appearing means there will likely be more vertical
+lines. This manifests as the grid cells in the image generally being taller than
+they are wide.
 
 #### Adjacency Rules
 
@@ -263,3 +358,58 @@ fn wfc_image(image: Image, tile_size: u32, output_size: (u32, u32)) -> Image {
 
 ## Core Internals
 
+## Outtakes
+
+### Accidental Procgen
+
+While generating images for this post I accidentally ran WFC on this:
+
+![all-tiles](/images/wave-function-collapse/all-tiles.png)
+
+The output motivated me to add this outtakes section:
+
+![outtake1](/images/wave-function-collapse/outtake1.png)
+
+The gaps between the tiles in the input were transparent, and in the output they
+are black, which alerted me to the fact that my WFC implementation currently
+throws away transparency.
+
+### Broken Probability Distribution
+
+I was originally planning to use this image as an example:
+
+![outtake2](/images/wave-function-collapse/outtake2.png)
+
+I expected to see a roughly equal number of upwards sloping tiles and downwards
+sloping tiles (as the input image is wrapped when sampling tiles):
+
+![outtake3](/images/wave-function-collapse/outtake3.png)
+
+But instead, the output was almost entirely made up of upwards sloping tiles:
+
+![outtake4](/images/wave-function-collapse/outtake4.png)
+
+After much debugging, I traced the problem to a bug in my implementation of
+randomly choosing from a probability distribution:
+
+```patch
+commit ede0ea4ed4560bdcf85b4dda989937484bfec21e
+Author: Stephen Sherratt <sfsherratt@gmail.com>
+Date:   Sun Feb 10 21:37:59 2019 +0000
+
+    Fix bug in probability distribution
+
+diff --git a/wfc/src/wfc.rs b/wfc/src/wfc.rs
+index 21ac889..03e6cc7 100644
+--- a/wfc/src/wfc.rs
++++ b/wfc/src/wfc.rs
+@@ -475,7 +475,7 @@ impl WaveCell {
+         for (pattern_id, pattern_stats) in
+             self.weighted_compatible_stats_enumerate(global_stats)
+         {
+-            if remaining > pattern_stats.weight() {
++            if remaining >= pattern_stats.weight() {
+                 remaining -= pattern_stats.weight();
+             } else {
+                 assert!(global_stats.pattern_stats(pattern_id).is_some());
+```
