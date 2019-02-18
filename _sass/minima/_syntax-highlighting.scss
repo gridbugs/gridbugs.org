@@ -1,3 +1,6 @@
+.highlight, code {
+    background-color: #f6f8fa;
+}
 .highlight .err {
     color: #a61717;
     background-color: #e3d2d2;
@@ -33,8 +36,8 @@
 }
 
 .highlight .gd {
-    color: #000000;
-    background-color: #ffdddd;
+    color: #b31d28;
+    background-color: #ffeef0;
 }
 
 .highlight .gd .x {
@@ -51,12 +54,12 @@
 }
 
 .highlight .gh {
-    color: #999999;
+    color: rgb(0, 92, 197);
 }
 
 .highlight .gi {
-    color: #000000;
-    background-color: #ddffdd;
+    color: #22863a;
+    background-color: #f0fff4;
 }
 
 .highlight .gi .x {
