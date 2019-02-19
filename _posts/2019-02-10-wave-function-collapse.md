@@ -281,7 +281,7 @@ make sure that whenever a tile is placed within **tile size** pixels of an
 already-placed tile's top-left pixel, that the newly placed
 tile's pixels don't conflict with the pixels of the already-placed tile.
 
-A convenient lie to help picture this, is to imagine that whenever
+A convenient fiction to help picture this, is to imagine that whenever
 the core places a tile in a cell, each pixel in the **tile sized** square of pixels whose top-left corner is that cell,
 is coloured to match the corresponding pixel of the tile, but only the top-left cell
 is marked as "populated". Unpopulated (but possibly coloured) cells can have
@@ -658,9 +658,9 @@ struct CoreCell {
 
     // new fields:
 
-    sum_of_possible_pattern_weights: usize,
+    sum_of_possible_tile_weights: usize,
 
-    sum_of_possible_pattern_weight_log_weights: f32,
+    sum_of_possible_tile_weight_log_weights: f32,
     ...
 }
 ```
@@ -674,9 +674,9 @@ impl CoreCell {
 
         let freq = freq_hint.relative_frequency(tile_index);
 
-        self.sum_of_possible_pattern_weights -= freq;
+        self.sum_of_possible_tile_weights -= freq;
 
-        self.sum_of_possible_pattern_weight_log_weights -=
+        self.sum_of_possible_tile_weight_log_weights -=
             (freq as f32) * (freq as f32).log2();
     }
 }
@@ -687,9 +687,9 @@ And now our entropy calculation becomes much simpler:
 ```rust
 impl CoreCell {
     fn entropy(&self) -> f32 {
-        return (self.sum_of_possible_pattern_weights as f32).log2()
+        return (self.sum_of_possible_tile_weights as f32).log2()
             - (self.sum_of_possible_weight_log_weights /
-                self.sum_of_possible_pattern_weights as f32)
+                self.sum_of_possible_tile_weights as f32)
     }
 }
 ```
@@ -713,8 +713,8 @@ caching the noise:
 ```rust
 struct CoreCell {
     possible: Vec<bool>,
-    sum_of_possible_pattern_weights: usize,
-    sum_of_possible_pattern_weight_log_weights: f32,
+    sum_of_possible_tile_weights: usize,
+    sum_of_possible_tile_weight_log_weights: f32,
 
     // new fields:
 
@@ -744,9 +744,122 @@ entropy cell, maintain a
 [heap](https://en.wikipedia.org/wiki/Heap_(data_structure)) of cells, keyed by
 their entropy. Whenever the entropy of a cell changes, push it to the heap.
 To find the minimum entropy cell, pop from the heap until you get a cell which
-hasn't been collapsed yet.
+hasn't been collapsed yet. If a cell's entropy changes multiple times, you'll
+end up inserting it into the heap multiple times too. When popping from the
+heap, you need a way of knowing whether each cell that you pop has been
+collapsed yet so you can skip it.
+
+```rust
+struct CoreCell {
+    possible: Vec<bool>,
+    sum_of_possible_tile_weights: usize,
+    sum_of_possible_tile_weight_log_weights: f32,
+    entropy_noise: f32,
+
+    // new fields:
+
+    // initialise to false, set to true after collapsing
+    is_collapsed: bool,
+    ...
+}
+```
 
 ### Collapse Cell
+
+```rust
+impl CoreState {
+    // collapse the cell at a given coordinate
+    fn collapse_cell_at(&mut self, coord: Coord2D) { ... }
+}
+```
+
+The previous section explained how to choose which cell to collapse next.
+Now we need a way of choosing which tile to lock in. This method will select
+randomly between all possible tiles for the chosen cell, assigning probabilities
+based on `FrequencyHints`.
+
+We'll now choose from a probability distribution, where possible values are the
+tile indices yielded by this iterator, and weights come from
+`FrequencyHints::relative_frequency`.
+
+Say for a given cell, the remaining possible tile indices are 2, 4, 7, and 8,
+and their relative frequencies are indicated by the width of their section of
+the strip below.
+
+![probdist](/images/wave-function-collapse/probdist.png)
+
+We want to choose a random position within this strip, and see which section we
+ended up in. Naturally, we're more likely to end up in one of the wider
+sections.
+
+![probdist-choice](/images/wave-function-collapse/probdist-choice.png)
+
+Here we landed on 7, so we lock in 7 for this cell.
+
+Translating this diagram into code, we'll choose a random number between `0` and
+`cell.sum_of_possible_tile_weights` (which we conveniently introduced in the
+"Caching" section). This is analogous to choosing a random position within the
+strip. To determine the tile index, we'll decrease
+the chosen number by each weight (the width of strips) until doing so would make
+it negative.
+
+```rust
+impl CoreCell {
+
+    // it will be convenient to be able to iterate over all possible tile indices
+    fn possible_tile_iter(&self) -> impl Iterator<Item=TileIndex> { ... }
+
+    fn choose_tile_index(&self, frequency_hints: &FrequencyHints) -> TileIndex {
+        // the random position in the strip
+        let mut remaining =
+            random_int_between(0, self.sum_of_possible_tile_weights);
+
+        for possible_tile_index in self.possible_tile_iter() {
+
+            // the width of the section of strip
+            let weight =
+                frequency_hints.relative_frequency(possible_tile_index);
+
+            if remaining >= weight {
+                remaining -= weight;
+            } else {
+                return possible_tile_index;
+            }
+        }
+
+        // should not end up here
+        unreachable!("sum_of_possible_weights was inconsistent with \
+            possible_tile_iter and FrequencyHints::relative_frequency");
+    }
+}
+```
+
+It's now fairly straightforward to implement `collapse_cell_at`:
+
+```rust
+impl CoreState {
+    // collapse the cell at a given coordinate
+    fn collapse_cell_at(&mut self, coord: Coord2D) {
+        let mut cell = self.grid.get(coord);
+        let tile_index_to_lock_in = cell.choose_tile_index(&self.frequency_hints);
+
+        cell.is_collapsed = true;
+
+        // remove all other possibilities
+        for (tile_index, possible) in cell.possible.iter_mut().enumerate() {
+            if tile_index != tile_index_to_lock_in {
+                *possible = false;
+                // We _could_ call
+                // `cell.remove_tile(tile_index, &self.frequency_hints)` here
+                // instead of explicitly setting `possible` to false, however
+                // there's no need to update the cached sums of weights for this
+                // cell. It's collapsed now, so we no longer care about its
+                // entropy.
+            }
+        }
+    }
+}
+```
 
 ### Propagate
 
@@ -778,7 +891,7 @@ section.
 
 One such port is [fast-wfc](https://github.com/math-fehr/fast-wfc), which I
 found to be particularly helpful as a reference for understanding how the
-algorithm works. Most of my knowledge of the algorithm came from reverse
+algorithm works. Most of my knowledge of WFC came from reverse
 engineering this library.
 
 ## Outtakes
