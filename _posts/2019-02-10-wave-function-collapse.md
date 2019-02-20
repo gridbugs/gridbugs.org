@@ -526,7 +526,8 @@ The remainder of this chapter will flesh out the details of `choose_next_cell`,
 ### Choose Next Cell to Collapse
 
 In the sudoku example, we just chose randomly between the cells with the fewest
-valid choices. The intuition behind this is to lock in one of the cells with the
+valid choices, to reduce the odds of removing all possibilities from a cell.
+The intuition behind this is to lock in one of the cells with the
 least uncertainty. In information theory, this uncertainty is known as
 [entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory)). The goal
 of this step is to choose randomly between the cells whose entropy is lowest.
@@ -581,7 +582,7 @@ Then the entropy of the unknown value is:
 `log(W)  -  (w1 log(w1)  +  w2 log(w2)  +  ...  +  wn log(wn))  /  W`
 
 You can derive this equation from the original entropy equation and log
-identities. It's super fun. Try it!
+identities. It's very satisfying. Try it!
 
 #### Relative Tile Frequencies
 
@@ -762,7 +763,67 @@ struct CoreCell {
     is_collapsed: bool,
     ...
 }
+
+// We will populate the heap with `EntropyCoord`s rather than CoreCell
+// references to keep the borrow checker happy!
+struct EntropyCoord {
+    entropy: f32,
+    coord: Coord2D,
+}
+
+impl Ord for EntropyCoord {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // just compare the entropies
+    }
+}
+
+struct CoreState {
+    grid: Grid2D<CoreCell>,
+    remaining_uncollapsed_cells: usize,
+    adjacency_rules: AdjacencyRules,
+    frequency_hints: FrequencyHints,
+
+    // new fields:
+
+    entropy_heap: BinaryHeap<EntropyCoord>,
+    ...
+}
+
+impl CoreState {
+    fn choose_next_cell(&mut self) -> Coord2D {
+        while let Some(entropy_coord) = self.entropy_heap.pop() {
+            let cell = self.grid.get(entropy_coord.coord);
+            if !cell.is_collapsed {
+                return entropy_coord.coord;
+            }
+        }
+
+        // should not end up here
+        unreachable!("entropy_heap is empty, but there are still \
+            uncollapsed cells");
+    }
+}
 ```
+
+#### Contradictions
+
+I've mentioned a few times now that it's possible to get into a state where a
+cell has no possibilities remaining. I'll call such a state a "contradiction".
+The point of choosing the minimum entropy
+cell to collapse is to try to minimise this risk of contradiction, but it is ever present.
+Certain sets of **adjacency rules** (ie. certain input images) make this risk
+higher.
+
+In practice, when a contradiction is reached, most implementations of WFC (including
+mine) just give up and start again, maintaining a counter of times this has
+happened, and stopping when it gets too high. Alternatives to this might be:
+ - saving checkpoints of the core state at various points throughout
+   generation, and rolling back to a previous checkpoint upon contradiction
+ - making it possible to reverse the collapsing of a cell, making removed
+   possibilities possible again, so the cell with no choices of tile has some
+   choices again
+
+This is an interesting topic, but it's out of scope for this post.
 
 ### Collapse Cell
 
@@ -863,6 +924,440 @@ impl CoreState {
 
 ### Propagate
 
+Propagation enforces the **adjacency rules** by eliminating choices of tiles
+from cells. If we propagate after every cell is collapsed, no matter which cell,
+or possible tiles for the cell, are chosen, the resulting output of the core
+algorithm will respect the **adjacency rules**.
+
+Each time a tile is chosen for a cell, it's likely that there will be fewer
+choices of tile available to the surrounding cells. This is because of the
+output must satisfy the **adjacency rules**. When a choice of tile is locked-in
+for a cell, the **adjacency rules** tell us which tiles may be chosen for the
+cells surrounding the locked-in cell.
+
+#### Looking beyond immediate neighbours
+
+In addition to updating the possibilities of cells adjacent to the collapsed
+cell, we can often remove some tile choices from cells further away. The key
+idea which this will rely on is:
+
+*If it's possible to place a tile in a cell, then in each of that cell's four immediate
+neighbours, it must be possible to place a compatible tile, according to the
+**adjacency rules**.*
+
+This is more applicable to propagation if we consider the contrapositive of this
+statement:
+
+*For a given cell and tile, if in **any** of that cell's immediate neighbours,
+it's not possible to place a compatible tile, then the original tile may not be placed in that cell.*
+
+As an example, let's say the **adjacency rules** are:
+ - 2 may appear to the RIGHT of 1
+ - 2 may appear BELOW 1
+ - 3 may appear to the RIGHT of 1
+ - 3 may appear to the RIGHT of 2
+ - 3 may appear to the RIGHT of 3
+ - 3 may appear BELOW 1
+ - 3 may appear BELOW 2
+ - 4 may appear to the RIGHT of 2
+ - 4 may appear BELOW 1
+
+For completeness, assume that each rule above has a corresponding rule in the
+opposite direction (e.g. the first would be "1 may appear to the LEFT of 2").
+
+Suppose the possibilities of cells are represented by the numbers in
+corresponding cells of
+this table, and we just locked in 1 in the top-left corner.
+
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td style="background-color:#ffcccc"> 1 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+
+Propagating the effects to the immediate neighbours:
+
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td  style="background-color:#ffcccc"> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td  style="background-color:#ffcccc"> 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+
+But we're not done yet. What can we say about the middle cell?
+
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 2, 3, 4 </td><td style="background-color:#ffcccc"> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+
+Can the middle cell contain a 4? It's possible for a 2 to be in the cell to its
+left, but it's **not** possible for a 1 to be in the cell above it, so we can
+remove the 4 from the middle cell.
+
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 2, 3, 4 </td><td style="background-color:#ffcccc"> 1, 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+
+Propagation continues in this fashion until no further possibilities can be
+removed.
+
+#### Tile Enablers
+
+For a given tile/cell combination, we'll say that the possibility of another
+tile in an adjacent cell **enables** the first tile tile to appear in the first
+cell, if the adjacency of these 2 tiles is allowed by the **adjacency rules**.
+We'll say that a potential tile in a cell is **enabled** in a direction, if the
+immediate neighbour cell in that direction permits at least one tile which
+**enables** the first tile. Note that a tile/cell may have multiple enablers in
+a given direction. In the example above, the 3 in the middle cell is enabled in
+the LEFT direction by the potential 2 and the potential 3 in the cell to its
+left.
+
+A tile may **not** be placed in a cell if it has 0 enablers in **any**
+direction. That is, it needs at least 1 enabler in **every** direction to be
+a candidate tile for the cell.
+
+#### Cascading Removal
+
+If removing the possibility of a tile from a cell caused a potential tile in a
+neighbouring cell to lose its last enabler, you must also remove the possibility
+of that second tile from the neighbouring cell. This can cause a cascade in
+which many potential tiles are removed from many cells in a single fell swoop.
+
+To keep track of which tiles must be removed from which cells, whenever a
+potential tile is removed from a cell, we'll update a stack of removal updates.
+
+```rust
+// indicates the potential for tile_index appearing in the cell at coord
+// has been removed
+struct RemovalUpdate {
+    tile_index: TileIndex,
+    coord: Coord2D,
+}
+
+struct CoreState {
+    grid: Grid2D<CoreCell>,
+    remaining_uncollapsed_cells: usize,
+    adjacency_rules: AdjacencyRules,
+    frequency_hints: FrequencyHints,
+    entropy_heap: BinaryHeap<EntropyCoord>,
+
+    // new fields:
+
+    tile_removals: VecDeque<RemovalUpdate>,
+    ...
+}
+```
+
+The general strategy for propagation will be popping removal commands from
+the stack, and checking if the potential tile was removed was
+the final enabler for a potential tile in a neighbouring cell.
+If it was, then remove that potential tile, and add a `RemovalUpdate` about the
+newly-removed tile to the stack.
+When the stack is empty, propagation is complete, and its
+time to collapse the next cell.
+
+After collapsing a cell, the stack of `RemovalUpdate`s will be populated with
+updates about the removal of all but the locked-in tile. We can update the
+`collapse_cell_at` function with this in mind (see below the `// NEW CODE`
+comment).
+
+```rust
+impl CoreState {
+    // collapse the cell at a given coordinate
+    fn collapse_cell_at(&mut self, coord: Coord2D) {
+        let mut cell = self.grid.get(coord);
+        let tile_index_to_lock_in = cell.choose_tile_index(&self.frequency_hints);
+
+        cell.is_collapsed = true;
+
+        // remove all other possibilities
+        for (tile_index, possible) in cell.possible.iter_mut().enumerate() {
+            if tile_index != tile_index_to_lock_in {
+                *possible = false;
+                // We _could_ call
+                // `cell.remove_tile(tile_index, &self.frequency_hints)` here
+                // instead of explicitly setting `possible` to false, however
+                // there's no need to update the cached sums of weights for this
+                // cell. It's collapsed now, so we no longer care about its
+                // entropy.
+
+                // NEW CODE
+                self.tile_removals.push(RemovalUpdate {
+                    tile_index,
+                    coord,
+                });
+            }
+        }
+    }
+}
+```
+
+#### Counting Enablers
+
+Now we need a way of telling whether a removed potential tile was the final
+enabler for any potential tiles in neighbouring cells.
+For this, purpose we'll maintain
+a count of enablers for each cell, for each potential tile, for each
+direction.
+
+```rust
+// define directions as integers
+type Direction = usize;
+
+const UP:    Direction = 0;
+const DOWN:  Direction = 1;
+const LEFT:  Direction = 2;
+const RIGHT: Direction = 3;
+
+const NUM_DIRECTIONS: usize = 4;
+const ALL_DIRECTIONS: [Direction; NUM_DIRECTIONS] = [UP, DOWN, LEFT, RIGHT];
+
+struct TileEnablerCount {
+    // `by_direction[d]` will be the count of enablers in direction `d`
+    by_direction: [usize; 4],
+}
+
+struct CoreCell {
+    possible: Vec<bool>,
+    sum_of_possible_tile_weights: usize,
+    sum_of_possible_tile_weight_log_weights: f32,
+    entropy_noise: f32,
+    is_collapsed: bool,
+
+    // new fields:
+
+    // `tile_enabler_counts[tile_index]` will be the counts for the
+    // corresponding tile
+    tile_enabler_counts: Vec<TileEnablerCount>,
+    ...
+}
+```
+
+For a given `cell`, for a tile with index `A`, in direction `D`,
+`cell.tile_enabler_counts[A].by_direction[D]` is the number of different tile
+indices permitted in the immediate neighbour of `cell` in direction `D`, which
+according to the **adjacency rules**, are permitted to appear adjacent to tile
+`A` in direction `D`.
+
+How should the counts be initialised?
+
+First, observe each cell will start with an identical vector of
+`TileEnablerCount`. As potential tiles are removed, the counts will change, but
+they all start out the same. It will suffice to compute a single
+`Vec<TileEnablerCount>` and copy it for each cell.
+
+As for the counts for each tile/direction combination, it should come as no
+surprise that we compute them from the adjacency rules:
+```rust
+fn initial_tile_enabler_counts(num_tiles: usize,
+    adjacency_rules: &AdjacencyRules,
+) -> Vec<TileEnablerCount>
+{
+    let mut ret = Vec::new():
+
+    for tile_a in 0..num_tiles {
+
+        let mut counts = TileEnablerCount {
+            by_direction: [0, 0, 0, 0],
+        };
+
+        for &direction in ALL_DIRECTIONS.iter() {
+
+            // iterate over all the tiles which may appear in the cell one space
+            // in `direction` from a cell containing `tile_a`
+            for tile_b in adjacency_rules.compatible_tiles(tile_a, direction) {
+                counts.by_direction[direction] += 1;
+            }
+            ret.push(counts);
+        }
+        return ret;
+    }
+}
+
+```
+
+Use this function to initialise the `tile_enabler_counts` field of each
+`CoreCell` in the `grid`.
+
+#### Propagation Algorithm
+
+For each potential tile that was removed from a cell, propagation will visit
+each neighbour of that cell, and update their enabler counts. This relies on the
+fact that for a given tile permitted in a cell, all compatible potential tiles
+in a neighbouring cell will be contributing to the first tile's enabler count in
+the appropriate direction. Removing potential compatible tiles therefore reduces
+the enabler count.
+
+```rust
+impl CoreState {
+    // remove possibilities based on collapsed cell
+    fn propagate(&mut self) {
+        while let Some(removal_update) = self.tile_removals.pop() {
+            // at some point in the recent past, removal_update.tile_index was
+            // removed as a candidate for the tile in the cell at
+            // removal_update.coord
+
+            for &direction in ALL_DIRECTIONS.iter() {
+                // propagate the effect to the neighbour in each direction
+                let neighbour_coord = removal_update.coord.neighbour(direction);
+                let neighbour_cell = self.grid.get_mut(neighbour_coord);
+
+                // iterate over all the tiles which may appear in the cell one
+                // space in `direction` from a cell containing
+                // `removal_update.tile_index`
+                for compatible_tile in self.adjacency_rules.compatible_tiles(
+                    removal_update.tile_index,
+                    direction,
+                ) {
+
+                    // relative to `neighbour_cell`, the cell at
+                    // `removal_update.coord` is in the opposite direction to
+                    // `direction`
+                    let opposite_direction = opposite(direction);
+
+                    // look up the count of enablers for this tile
+                    let enabler_counts = &mut neighbour_cell
+                        .tile_enabler_counts[compatible_tile];
+
+                    // check if we're about to decrement this to 0
+                    if enabler_counts.by_direction[direction] == 1 {
+
+                        // if there is a zero count in another direction,
+                        // the potential tile has already been removed,
+                        // and we want to avoid removing it again
+                        if !enabler_counts.contains_any_zero_count() {
+                            // remove the possibility
+                            neighbour_cell.remove_tile(
+                                compatible_tile,
+                                &self.frequency_hints,
+                            );
+                            // check for contradiction
+                            if neighbour_cell.has_no_possible_tiles() {
+                                // CONTRADICTION!!!
+                            }
+                            // this probably changed the cell's entropy
+                            self.entropy_heap.push(EntropyCoord {
+                                entropy: neighbour_cell.entropy(),
+                                coord: neighbour_coord,
+                            });
+                            // add the update to the stack
+                            self.tile_removals.push(RemovalUpdate {
+                                tile_index: compatible_tile,
+                                coord: neoighbour_coord,
+                            });
+                        }
+                    }
+
+                    enabler_counts.by_direction[direction] -= 1;
+                }
+            }
+        }
+    }
+}
+```
+
+### Putting it all together
+
+In the image processor section, the core exposed this interface:
+
+```rust
+fn wfc_core(
+    adjacency_rules: AdjacencyRules,
+    frequency_rules: FrequencyHints,
+    output_size: (u32, u32),
+) -> Grid2D<TileIndex> { ... }
+```
+
+To satisfy this interface, we'll need to construct a `CoreState`, and invoke the
+`run` method. It then needs to extract a `Grid2D<TileIndex>` from the `grid`
+field of `CoreState`.
+For simplicity, let's assume that contradictions won't happen.
+
+The complete `CoreState` and `CoreCell` types:
+
+```rust
+struct CoreCell {
+    possible: Vec<bool>,
+    sum_of_possible_tile_weights: usize,
+    sum_of_possible_tile_weight_log_weights: f32,
+    entropy_noise: f32,
+    is_collapsed: bool,
+    tile_enabler_counts: Vec<TileEnablerCount>,
+}
+
+struct CoreState {
+    grid: Grid2D<CoreCell>,
+    remaining_uncollapsed_cells: usize,
+    adjacency_rules: AdjacencyRules,
+    frequency_hints: FrequencyHints,
+    entropy_heap: BinaryHeap<EntropyCoord>,
+    tile_removals: Vec<RemovalUpdate>,
+}
+```
+
+Recall that `run` was implemented as:
+
+```rust
+impl CoreState {
+    fn run(&mut self) {
+        while self.remaining_uncollapsed_cells > 0 {
+            let next_coord = self.choose_next_cell();
+            self.collapse_cell_at(next_coord);
+            self.propagate();
+            self.remaining_uncollapsed_cells -= 1;
+        }
+    }
+}
+```
+
+Now let's implement `wfc_core`:
+
+```rust
+fn wfc_core(
+    adjacency_rules: AdjacencyRules,
+    frequency_rules: FrequencyHints,
+    output_size: (u32, u32),
+) -> Grid2D<TileIndex>
+{
+    // the adjacency rules should know how many tiles there are
+    let num_tiles = adjacency_rules.num_tiles();
+
+    let cell_template = CoreCell {
+    };
+
+    // clone cell_template for each cell of the grid
+    let grid = Grid2D::new_repeating(output_size.0, output_size.1, cell_template);
+
+    let mut core_state = CoreState {
+        grid,
+        remaining_uncollapsed_cells: output_size.0 * output_size.1,
+        adjacency_rules,
+        frequency_hints,
+        entropy_heap: BinaryHeap::new(), // starts empty
+        tile_removals: Vec::new(), // starts empty
+    };
+
+    core_state.run();
+
+    let output_grid = Grid2d::new_repeating(output_size.0, output_size.1, -1);
+    for (coord, cell) in core_state.grid.enumerate_cells() {
+        // all cells are collapsed, so this method will return the chosen
+        // tile index for a cell
+        let tile_index = cell.get_only_possible_tile_index();
+        output_grid.set(coord, tile_index);
+    }
+
+    return output_grid;
+}
+```
+
+
+
+
 ## Further Reading
 
 ### My Rust Libraries
@@ -870,7 +1365,7 @@ impl CoreState {
 Shameless plug!
 My rust libraries which implement this algorithm are here: [github.com/stevebob/wfc](https://github.com/stevebob/wfc)
 
-It's split into 2 crates:
+There are 2 crates:
 
  - [wfc](https://crates.io/crates/wfc) is the image processor and core, which
    works with any grid of comparable values
@@ -878,6 +1373,20 @@ It's split into 2 crates:
    specifically for working with image files
 
 It also contains some example applications and interesting input images.
+
+Of note is the `animate` example, which shows the process of generating the
+image, representing uncollapsed pixels with the frequency-hint-weighted average
+of colours of possible pixels:
+
+```bash
+$ cargo run --manifest-path wfc-image/Cargo.toml --example=animate -- \
+    --input wfc-image/examples/cat.png
+```
+
+![cat-animate](/images/wave-function-collapse/cat-animate.gif)
+
+The `simple` example is also quite useful. It just generates images files based
+on a specified image file. I used it for all the examples in this post.
 
 ### WaveFunctionCollaspe Repo
 
