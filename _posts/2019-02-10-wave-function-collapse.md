@@ -1319,14 +1319,34 @@ Now let's implement `wfc_core`:
 ```rust
 fn wfc_core(
     adjacency_rules: AdjacencyRules,
-    frequency_rules: FrequencyHints,
+    frequency_hints: FrequencyHints,
     output_size: (u32, u32),
 ) -> Grid2D<TileIndex>
 {
     // the adjacency rules should know how many tiles there are
     let num_tiles = adjacency_rules.num_tiles();
 
+    // every cell in the grid will be initialised to this
     let cell_template = CoreCell {
+        // a vector of num_tiles bools where all are true
+        possible: (0..num_tiles).map(|_| true).collect(),
+        // add up all the relative frequencies
+        sum_of_possible_tile_weights:
+            (0..num_tiles)
+                .map(|index| frequency_hints.relative_frequency(index))
+                .sum(),
+        // add up all the relative frequencies multiplied by their log2
+        sum_of_possible_tile_weight_log_weights:
+            (0..num_tiles)
+                .map(|index| {
+                    let w = frequency_hints.relative_frequency(index) as f32;
+                    return w * w.log2();
+                })
+                .sum(),
+        // small random number to add to entropy to break ties
+        entropy_noise: random_float_between(0, 0.0000001),
+        // initially every cell is uncollapsed
+        is_collapsed: false,
     };
 
     // clone cell_template for each cell of the grid
@@ -1341,9 +1361,11 @@ fn wfc_core(
         tile_removals: Vec::new(), // starts empty
     };
 
+    // run the core algorithm
     core_state.run();
 
-    let output_grid = Grid2d::new_repeating(output_size.0, output_size.1, -1);
+    // copy the result into the output grid
+    let output_grid = Grid2d::new_repeating(output_size.0, output_size.1, 0);
     for (coord, cell) in core_state.grid.enumerate_cells() {
         // all cells are collapsed, so this method will return the chosen
         // tile index for a cell
