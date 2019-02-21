@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Wave Function Collapse"
-date: 2019-02-10
+title: "Procedural Generation with Wave Function Collapse"
+date: 2019-02-21
 permalink: /wave-function-collapse/ 
 categories: algorithms gamedev procgen
 excerpt_separator: <!--more-->
@@ -18,12 +18,12 @@ pixel to "collapse" - choosing a tile to use for that pixel based on its
 distribution. WFC gets its name from
 [quantum physics](https://en.wikipedia.org/wiki/Wave_function_collapse).
 
-The goal of this post is to build an intuition for how the WFC algorithm works.
+The goal of this post is to build an intuition for how and why the WFC algorithm works.
 
 <!--more-->
 
 I will break WFC into two separate algorithms and explain them separately. Each
-is interesting in its own right, and the interface between the layers is simple.
+is interesting in its own right, and the interface between them simple.
 
 ## Core Interface
 
@@ -35,10 +35,10 @@ fn wfc_core(
 ) -> Grid2D<TileIndex> { ... }
 ```
 
-This is the low level part of the algorithm which solves the problem of
+This is the low-level part of the algorithm which solves the problem of
 arranging tiles into a grid according to some specified rules. I'll give a
 "black box" description of the core here, and explain how it works internally
-below.
+[below](#core-internals).
 
 ### Adjacency Rules
 
@@ -68,6 +68,10 @@ number of tiles minus 1, which I'll refer to as **tile indices**. The
 The algorithm
 populates a grid with **tile indices** in a way which *completely* respects
 **adjacency rules**, and *probabilistically* respects **frequency hints**.
+Every pair of adjacent tiles will be explicitly allowed by the **adjacency rules**,
+and the relative frequencies of tiles in the output will usually be about the same as
+in the **frequency hints**.
+
 
 ## Image Processor
 
@@ -76,13 +80,13 @@ Typically WFC is used to generate output images which are "similar" to input
 images. There's no requirement that the output image be the same dimensions
 as the input image.
 Specifically, similar means that for some **tile size**:
- - every **tile sized** square of pixels in the output image appears somewhere in the
+ - every **tile-sized** square of pixels in the output image appears somewhere in the
    input image
- - the relative frequencies of **tile sized** squares of pixels in the output
+ - the relative frequencies of **tile-sized** squares of pixels in the output
    image is roughly the same as in the input image
 
 In other words, the output image will have the same local features as the
-input image, but the global structure will be different.
+input image, but the global structure may be different.
 
 Note that there are some alternative applications of WFC besides generating
 similar images, such as arranging hand-crafted tiles with user-specified
@@ -98,11 +102,11 @@ fn wfc_pre_process_image(
 ) -> (AdjacencyRules, FrequencyHints, HashMap<TileIndex, Colour>) { ... }
 ```
 
-The goal of this step is generating **adjacency rules** and **frequency hints**
-to be passed as input to the core algorithm.
+The goal of this step is to generate **adjacency rules** and **frequency hints**
+which will be passed as input to the core algorithm.
 
 First, we need to know what the different tiles are.
-Given an **input image** and **tile size**, enumerate all the **tile size** sized
+Given an **input image** and **tile size**, enumerate all the **tile-sized**
 squares of pixels from the **input image**, *including* those squares whose
 top-left pixel occurs within **tile size** of the right and bottom edges,
 wrapping around to the other side of the input image in such cases.
@@ -131,7 +135,7 @@ Continuing in this fashion, enumerate all the tiles. In this example there are
 
 Assign each tile a **tile index**. In the example, we would use numbers from 0
 to 15 as indices. **Frequency hints** and **adjacency rules** will be given in
-terms of **tile indices**.
+terms of **tile indices**, rather than tiles themselves.
 
 The next few sections will explain how to construct **frequency hints** and
 **adjacency rules** so the core algorithm generates images which are similar to
@@ -144,7 +148,7 @@ Here's an image which is similar to the example image, generated using WFC:
 #### Reflection and Rotation
 
 When generating tiles from an **input image**, you may want to include tiles which
-aren't necessarily present in the **input image**, but are the rotation or
+aren't necessarily present in the **input image**, but which are the rotation or
 reflection of tiles from the **input image**.
 
 We need a new example image to demonstrate this, as each rotation and reflection
@@ -191,10 +195,12 @@ Here's a miniature version:
 ![small-flower-banner](/images/wave-function-collapse/small-flower-banner.png)
 
 Notice that the ground is missing? Since the input image is wrapped, there are
-no tiles generated in which the ground ends or changes direction. This means
+no tiles in which the ground ends or changes direction. This means
 that if the ground is present in the output, it must form a solid line from one
 side of the output to the other. This is a fairly restrictive constraint, so in
-*most* output, there is no ground at all.
+*most* output, there is no ground at all. It's possible for the output to deviate from the
+**frequency hints** if the structure of the image means there is no way to place
+a tile without violating the **adjacency rules**.
 
 There *is* a small chance of the output containing ground:
 
@@ -202,10 +208,13 @@ There *is* a small chance of the output containing ground:
 
 It's not on the bottom of the screen, because the input image is wrapped.
 
+![flower-tiled](/images/wave-function-collapse/flower-tiled.png)
+
+Since this was generated with rotations and reflections included, there's
+nothing to stop the ground from being vertical.
+
 ![ground-flower-banner2](/images/wave-function-collapse/ground-flower-banner2.png)
 
-Since this was generating with rotations and reflections included, there's
-nothing to stop the ground from being vertical.
 
 #### Frequency Hints
 
@@ -229,7 +238,7 @@ The following tiles appear 5 times in this image:
 
 The remaining tiles still just appear once.
 
-The frequency hint for the above 4 tiles will be 5, and the hint for the other
+The relative frequency the above 4 tiles will be 5, and the hint for the other
 tiles will be 1. This means that the above 4 tiles are 5 times as likely to
 appear in a given position as the other tiles.
 
@@ -244,16 +253,19 @@ they are wide.
 #### Adjacency Rules
 
 The core will produce a grid of **tile indices** where each index corresponds to a single pixel in
-the output image. The colour of each pixel in the output image will be the
-colour of the top-left pixel of the tile indicated by the corresponding **tile
-index** in the grid produced by the core. Keep that in mind: *for every tile
-placed, only a **single pixel** of the tile (its top-left pixel) is
+the output image.
+For a given **tile index** in a cell of this grid, the output pixel
+corresponding to the cell, will be given the colour of the tile corresponding to
+the **tile index**.
+Only the colour of the top-left pixel of the tile will be used.
+Keep that in mind for this section:
+*for every tile placed, only a **single pixel** of the tile (its top-left pixel) is
 actually added to the output image.* As the core assigns pixel indices to grid
 cells, we can say that the core assigns
 the top-left corners of tiles to output image pixels.
 
 Remember that the goal of the **image processor** is to produce an output image
-where every **tile sized** square of pixels occurs in the input image.
+where every **tile-sized** square of pixels occurs in the input image.
 In order to meet this goal, we must ensure that whenever the core assigns the
 top-left pixel of a tile to a pixel of the output image, the rest of the pixels
 of the tile end up in the right places as well. This is best explained with an
@@ -261,7 +273,7 @@ example. Here's a zoomed-in section of the banner:
 
 ![adjacent-example1](/images/wave-function-collapse/adjacent-example1.png)
 
-Consider 3x3 pixel tile surrounded by the red square.
+Consider the 3x3 pixel square with a red border.
 It occurs in the input image (rotated anticlockwise 90 degrees, below the
 bottom-right flower).
 Let's assume it gets **tile index** 7.
@@ -273,7 +285,7 @@ choosing **tile index** 7 for this cell resulted in only the top-left pixel of
 the output image being populated.
 
 But somehow the rest of the red square ended up looking like the tile with
-**tile index** 7 as well. That's great! Every time a **tile index** is assigned to a cell,
+**tile index** 7 as well. But why? Every time a **tile index** is assigned to a cell,
 we want a way to make sure that the entire tile's pixels - not just its top-left
 pixel - end up in the right output pixels, relative to the tile's placement.
 Since each tile placement just contributes the tile's top-left pixel, we need to
@@ -282,7 +294,7 @@ already-placed tile's top-left pixel, that the newly placed
 tile's pixels don't conflict with the pixels of the already-placed tile.
 
 A convenient fiction to help picture this, is to imagine that whenever
-the core places a tile in a cell, each pixel in the **tile sized** square of pixels whose top-left corner is that cell,
+the core places a tile in a cell, each pixel in the **tile-sized** square of pixels whose top-left corner is that cell,
 is coloured to match the corresponding pixel of the tile, but only the top-left cell
 is marked as "populated". Unpopulated (but possibly coloured) cells can have
 tiles placed in them, *as long as all cells in the square filled by the new tile
@@ -294,7 +306,8 @@ in positions where their overlapping pixels conflict.
 Recall that an **adjacency rule** is of the form: "**Tile index** **A** may appear in the
 cell 1 space in **DIRECTION** from a cell containing **tile index** **B**".
 The rules should only permit **A** to be placed adjacent to **B** in
-**DIRECTION** if doing so would not cause a conflict. All non-conflicting
+**DIRECTION** if doing so would not cause a conflict.
+All non-conflicting
 adjacencies should be allowed.
 
 ```rust
@@ -318,7 +331,7 @@ In the example below, `compatible(A, B, RIGHT) == true`.
 
 ![compatible-example](/images/wave-function-collapse/compatible-example.png)
 
-In this example tiles are 3x3, but these adjacency rules only ensure that
+In this example tiles are 3x3, but these **adjacency rules** only ensure that
 adjacent tiles are compatible. It's possible for a pair of tiles which are 2
 pixels apart to overlap. **What prevents them from conflicting?**
 
@@ -386,7 +399,7 @@ fn wfc_image(image: Image, tile_size: u32, output_size: (u32, u32)) -> Image {
 
 My goal for this section is to impart a deep understanding of how and *why* the core
 algorithm works. This is the guide I wish I had during my implementation of WFC.
-Maybe it can guide you through yours!
+Maybe it can help you through yours!
 
 ### Sudoku
 
@@ -397,7 +410,7 @@ Imagine you're solving a sudoku.
 Your goal is to place a number from 1-9 in each empty cell, such that each
 row, column, and 3x3 square, contains each number from 1-9 exactly once.
 
-Suppose you're not super-confident in you're sudoku-solving abilities, and your
+Suppose you're not super-confident in your sudoku-solving abilities, and your
 pencil comes equipped with an eraser. You could cheat, by writing in each cell
 (in tiny writing) all the possible values for that cell. Once all the cells are
 enumerated in this fashion, hopefully there will be some cells with a single
@@ -416,8 +429,8 @@ Now, imagine you wanted to solve an empty sudoku in the same way as just
 described:
 ![sudoku-empty](/images/wave-function-collapse/sudoku-empty.png)
 
-You're goal is still to end up with the numbers from 1-9 in every row, column,
-and 3x3, but this time you're searching for 1 of a large number of possible
+Your goal is still to end up with the numbers from 1-9 in every row, column,
+and 3x3, but this time you're searching for one of a large number of possible
 solutions. You start by writing in tiny pencil digits, the numbers from 1-9 in
 each cell. Now you have a conundrum! Which cell do you lock in first? What
 number to you write first?
@@ -435,7 +448,7 @@ penciled-in
 number in a cell. That would be bad, as then there would be no way to complete
 the soduku!
 
-Maybe we're ok with screwing up occasionally, as long as there's a reasonable
+Maybe you're ok with screwing up occasionally, as long as there's a reasonable
 chance that you'll end up with a valid solution each time. Then if you get into
 a bad state (ie. a cell with no possibilities), you can just give up and start
 over.
@@ -456,7 +469,7 @@ in:
 4. If during propagation, you removed the final possibility of a cell, give up
    and start again.
 
-The core algorithm looks very similar to this. In place of the rules of sudoku,
+The core WFC algorithm looks very similar to this. In place of the rules of sudoku,
 there are the **adjacency rules**. The **frequency hints** mean that when
 choosing a value to lock in, you no longer make a uniformly random choice, but
 instead choose from a *probability distribution* of the possible **tile indices**,
@@ -482,6 +495,7 @@ type TileIndex = usize;
 struct CoreCell {
     // possible[tile_index] == true means tile_index may be chosen for this cell.
     // Initially, every element of this vector is `true`.
+    // There is one element for each unique tile index.
     possible: Vec<bool>,
     ...
 }
@@ -523,7 +537,7 @@ impl CoreState {
 The remainder of this chapter will flesh out the details of `choose_next_cell`,
 `collapse_cell_at`, and `propagate`.
 
-### Choose Next Cell to Collapse
+### Choosing the Next Cell to Collapse
 
 In the sudoku example, we just chose randomly between the cells with the fewest
 valid choices, to reduce the odds of removing all possibilities from a cell.
@@ -538,13 +552,12 @@ appear in any cell.
 #### Entropy Primer
 
 If you have an unknown value with `n` possibilities: `x1`, `x2`, ..., `xn`,
-and the probability of a given value x is expressed as `P(x)`, then the
+and the probability of a given value x, represented as a number between 0 and 1, is expressed as `P(x)`, then the
 entropy of your unknown value is:
 
-`- P(x1) log(P(x1))  -  P(x2) log(P(x2))  -  ...  -  P(xn) log(P(xn))`
+`- P(x1)*log(P(x1))  -  P(x2)*log(P(x2))  -  ...  -  P(xn)*log(P(xn))`
 
-...where the base of the logarithm is arbitrary. Let's use 2 as our base since
-it's efficient to compute log base 2.
+...where the base of the logarithm is arbitrary. Let's use 2 as our base.
 
 To help build an intuition for this, first note that `P(x)` for all
 possibilities will be between 0 and 1, and the sum:
@@ -579,7 +592,7 @@ Let `W = w1 + w2 + ... + wn` be the sum of all weights.
 
 Then the entropy of the unknown value is:
 
-`log(W)  -  (w1 log(w1)  +  w2 log(w2)  +  ...  +  wn log(wn))  /  W`
+`log(W)  -  (w1*log(w1)  +  w2*log(w2)  +  ...  +  wn*log(wn))  /  W`
 
 You can derive this equation from the original entropy equation and log
 identities. It's very satisfying. Try it!
@@ -587,8 +600,8 @@ identities. It's very satisfying. Try it!
 #### Relative Tile Frequencies
 
 This simplified entropy definition is relevant to choosing the next cell, as
-the frequency hint describes the relative probabilities of a tile appearing in
-any cell.
+the **frequency hint** is effectively a discrete probability distribution of
+possible choices of tile.
 
 Let's declare some methods of `FrequencyHints` and `CoreCell`:
 
@@ -647,8 +660,8 @@ made constant time with caching. Throughout the course of this algorithm,
 possible tiles will be removed from cells. The only time a cell's entropy
 changes is when a possible tile is removed. The caching strategy will be to keep
 a running total of:
- - `w1 log(w1)  +  w2 log(w2)  +  ...  +  wn log(wn)` of the possible tiles
  - `W = w1  +  w2  +  ...  +  wn` of the possible tiles
+ - `w1*log(w1)  +  w2*log(w2)  +  ...  +  wn*log(wn)` of the possible tiles
 
 
 Adding to the definition of `CoreCell`:
@@ -709,7 +722,7 @@ and then choose randomly from it, but this sounds like a lot of work.
 Instead, let's
 just added a small amount of noise to each entropy calculation! We can save
 needing to invoke a random number generator for each entropy calculation by
-caching the noise:
+pre-computing a noise value for each cell.
 
 ```rust
 struct CoreCell {
@@ -807,12 +820,13 @@ impl CoreState {
 
 #### Contradictions
 
-I've mentioned a few times now that it's possible to get into a state where a
+It's possible to get into a state where a
 cell has no possibilities remaining. I'll call such a state a "contradiction".
 The point of choosing the minimum entropy
-cell to collapse is to try to minimise this risk of contradiction, but it is ever present.
-Certain sets of **adjacency rules** (ie. certain input images) make this risk
-higher.
+cell to collapse is to try to minimise this risk of contradiction, but sometimes
+it happens anyway.
+Certain sets of **adjacency rules** (ie. certain **input images**) increase the
+risk of contradictions.
 
 In practice, when a contradiction is reached, most implementations of WFC (including
 mine) just give up and start again, maintaining a counter of times this has
@@ -840,10 +854,10 @@ randomly between all possible tiles for the chosen cell, assigning probabilities
 based on `FrequencyHints`.
 
 We'll now choose from a probability distribution, where possible values are the
-tile indices yielded by this iterator, and weights come from
+**tile indices** yielded by this iterator, and weights come from
 `FrequencyHints::relative_frequency`.
 
-Say for a given cell, the remaining possible tile indices are 2, 4, 7, and 8,
+Say for a given cell, the remaining possible **tile indices** are 2, 4, 7, and 8,
 and their relative frequencies are indicated by the width of their section of
 the strip below.
 
@@ -858,8 +872,8 @@ sections.
 Here we landed on 7, so we lock in 7 for this cell.
 
 Translating this diagram into code, we'll choose a random number between `0` and
-`cell.sum_of_possible_tile_weights` (which we conveniently introduced in the
-"Caching" section). This is analogous to choosing a random position within the
+`cell.sum_of_possible_tile_weights` (introduced in the
+[Caching](#caching) section). This is analogous to choosing a random position within the
 strip. To determine the tile index, we'll decrease
 the chosen number by each weight (the width of strips) until doing so would make
 it negative.
@@ -983,7 +997,7 @@ Propagating the effects to the immediate neighbours:
 <tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
 </table>
 
-But we're not done yet. What can we say about the middle cell?
+But we're not done yet. For example, what can we say about the middle cell?
 
 <table style="width:50%; text-align:center; font-weight:bold;">
 <tr><td> 1 </td><td> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
@@ -1008,17 +1022,19 @@ removed.
 
 For a given tile/cell combination, we'll say that the possibility of another
 tile in an adjacent cell **enables** the first tile tile to appear in the first
-cell, if the adjacency of these 2 tiles is allowed by the **adjacency rules**.
+cell, if the adjacency of these 2 tiles would be allowed by the **adjacency rules**.
 We'll say that a potential tile in a cell is **enabled** in a direction, if the
 immediate neighbour cell in that direction permits at least one tile which
 **enables** the first tile. Note that a tile/cell may have multiple enablers in
-a given direction. In the example above, the 3 in the middle cell is enabled in
+a given direction. In the example above, the potential 3 in the middle cell is enabled in
 the LEFT direction by the potential 2 and the potential 3 in the cell to its
 left.
 
 A tile may **not** be placed in a cell if it has 0 enablers in **any**
 direction. That is, it needs at least 1 enabler in **every** direction to be
 a candidate tile for the cell.
+ The potential 4 in the middle cell was **not** enabled by any potential
+tiles in the cell above it, so the potential 4 was removed.
 
 #### Cascading Removal
 
@@ -1047,7 +1063,7 @@ struct CoreState {
 
     // new fields:
 
-    tile_removals: VecDeque<RemovalUpdate>,
+    tile_removals: Vec<RemovalUpdate>,
     ...
 }
 ```
@@ -1138,8 +1154,8 @@ struct CoreCell {
 ```
 
 For a given `cell`, for a tile with index `A`, in direction `D`,
-`cell.tile_enabler_counts[A].by_direction[D]` is the number of different tile
-indices permitted in the immediate neighbour of `cell` in direction `D`, which
+`cell.tile_enabler_counts[A].by_direction[D]` is the number of different
+**tile indices** permitted in the immediate neighbour of `cell` in direction `D`, which
 according to the **adjacency rules**, are permitted to appear adjacent to tile
 `A` in direction `D`.
 
@@ -1147,13 +1163,13 @@ How should the counts be initialised?
 
 First, observe each cell will start with an identical vector of
 `TileEnablerCount`. As potential tiles are removed, the counts will change, but
-they all start out the same. It will suffice to compute a single
-`Vec<TileEnablerCount>` and copy it for each cell.
+they all start out the same.
 
 As for the counts for each tile/direction combination, it should come as no
-surprise that we compute them from the adjacency rules:
+surprise that we compute them from the **adjacency rules**:
 ```rust
-fn initial_tile_enabler_counts(num_tiles: usize,
+fn initial_tile_enabler_counts(
+    num_tiles: usize,
     adjacency_rules: &AdjacencyRules,
 ) -> Vec<TileEnablerCount>
 {
@@ -1347,6 +1363,8 @@ fn wfc_core(
         entropy_noise: random_float_between(0, 0.0000001),
         // initially every cell is uncollapsed
         is_collapsed: false,
+        tile_enabler_counts:
+            initial_tile_enabler_counts(num_tiles, &adjacency_rules),
     };
 
     // clone cell_template for each cell of the grid
@@ -1377,9 +1395,6 @@ fn wfc_core(
 }
 ```
 
-
-
-
 ## Further Reading
 
 ### My Rust Libraries
@@ -1398,7 +1413,9 @@ It also contains some example applications and interesting input images.
 
 Of note is the `animate` example, which shows the process of generating the
 image, representing uncollapsed pixels with the frequency-hint-weighted average
-of colours of possible pixels:
+of colours of possible pixels. Visualising the possibilities for each cell, and
+the order in which cells are collapsed can help get a better understanding of
+WFC.
 
 ```bash
 $ cargo run --manifest-path wfc-image/Cargo.toml --example=animate -- \
@@ -1423,7 +1440,7 @@ section.
 One such port is [fast-wfc](https://github.com/math-fehr/fast-wfc), which I
 found to be particularly helpful as a reference for understanding how the
 algorithm works. Most of my knowledge of WFC came from reverse
-engineering this library.
+engineering this project.
 
 ## Outtakes
 
@@ -1438,7 +1455,7 @@ The output motivated me to add this outtakes section:
 ![outtake1](/images/wave-function-collapse/outtake1.png)
 
 The gaps between the tiles in the input were transparent, and in the output they
-are black, which alerted me to the fact that my WFC implementation currently
+are black, which alerted me to the fact that the wfc_image crate currently
 throws away transparency.
 
 ### Broken Probability Distribution
