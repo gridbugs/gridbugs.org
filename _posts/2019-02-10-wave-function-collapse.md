@@ -23,7 +23,7 @@ The goal of this post is to build an intuition for how and why the WFC algorithm
 <!--more-->
 
 I will break WFC into two separate algorithms and explain them separately. Each
-is interesting in its own right, and the interface between them simple.
+is interesting in its own right, and the interface between them is simple.
 
 ## Core Interface
 
