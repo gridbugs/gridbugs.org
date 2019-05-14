@@ -30,7 +30,7 @@ This post is not about making an emulator.
 
 It is about the nightmarish, overwhelmingly complex, and at times seemingly hopeless
 task of hunting down the parts of your emulator that don't behave exactly
-as the real hardware would.
+like the real hardware.
 
 <div class="nes-emulator-debugging-screenshot">
 <img src="/images/nes-emulator-debugging/example.png">
@@ -320,3 +320,68 @@ through the right-hand side of a platform too.
 
 Turtles also fall through platforms too early on the right-hand side, and too
 late on the left-hand side.
+
+### Function Analysis
+
+Collision detection is complicated, and after a few days of blindly staring at
+execution traces I elected to take a step back and try to get a better
+understanding of how the game works. To that end I wrote a little library for
+exploring function definitions in NES programs. The NES CPU has an instruction
+named `JSR` (Jump SubRoutine) which pushes current program counter on the
+stack, and moves execution to a specified address. A second instruction, `RTS`
+(Return from SubRoutine) pops an address from the stack and moves execution to
+that address. Respectively, these instructions are used to call and return from
+functions.
+
+To find all the functions in the program, my library scans the ROM for all
+instances of the `JSR` instruction, looking at its argument to find addresses
+where functions begin. To find out where a given function ends, step through the
+function instruction by instruction, stopping when a `RTS` instruction is
+reached. Upon encountering a conditional branch, we need to account for the case
+when the condition is true, and when the condition is false. I use a stack (the
+data structure) to keep track of execution paths yet to be explored.
+Instructions that unconditionally change the program counter are followed,
+with the exception of `JSR` (we're only exploring the current function - not
+the functions it calls) and `RTS` (which indicates we should stop exploring the
+current branch). Keep track of the addresses that have been explored in this
+traversal and stop if an instruction would change the program counter to
+somewhere we've already been.
+This is effectively a depth-first search through the control flow graph.
+
+Here's a trace of a simple function. I've manually annotated the trace with a
+description of each instruction.
+
+```
+0xCDD1  Pha(Implied)        save accumulator onto stack
+0xCDD2  Clc(Implied)        clear the carry flag
+0xCDD3  Lda(ZeroPage) 0x14  load value at address 0x14 into accumulator
+0xCDD5  Adc(ZeroPage) 0x12  add value at address 0x12 to accumulator
+0xCDD7  Sta(ZeroPage) 0x14  store accumulator at address 0x14
+0xCDD9  Lda(ZeroPage) 0x15  load value at address 0x15 into accumulator
+0xCDDB  Adc(ZeroPage) 0x13  add value at address 0x13 to accumulator
+0xCDDD  Sta(ZeroPage) 0x15  store accumulator at address 0x15
+0xCDDF  Pla(Implied)        restore accumulator from stack
+0xCDE0  Rts(Implied)        return
+```
+
+What's this function doing?
+
+It adds the byte at address `0x14` with the byte at address `0x12`, storing the
+result at address `0x14`, then adds the byte at `0x15` with the byte at `0x13`,
+storing the result in `0x15`. Notice the carry flag is cleared once at the
+start, and then not cleared in between the two additions. The `ADC` instruction
+adds the carry flag to its result, and sets the carry flag if the result of the
+addition is greater than 255 (the maximum value that fits in a byte).
+
+This function treats the 2 bytes at `0x14` and `0x15` as a single 2-byte
+integer, and likewise for the 2 bytes at `0x12` and `0x13`. We can interpret
+`0x12` - `0x15` as containing function's arguments. Similarly, we can interpret
+`0x14` - `0x15` as containing the function's return value.
+
+Here's how you might write this function in rust:
+
+```rust
+fn add16(a: u16, b: u16) -> u16 {
+    a + b
+}
+```
