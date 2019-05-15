@@ -12,6 +12,13 @@ excerpt_separator: <!--more-->
     height: 512px;
     image-rendering: crisp-edges;
 }
+
+.nes-tile img {
+    width: 64px;
+    height: 64px;
+    image-rendering: crisp-edges;
+}
+
 .mario-render img {
     width: 328px;
     height: auto;
@@ -70,8 +77,8 @@ I've annotated each instruction with a description of what it does.
 CBDA  Iny(Implied)               increment index register Y
 CBDB  Inx(Implied)               intrement index register X
 CBDC  Cpx(Immediate) 20          compare index register X to 0x20 (32)
-CBDE  Bne(Relative) F6           branch if X != 20 (which is true in this case)
-CBD6  Lda(ZeroPageXIndexed) B0   load accumulator with value from address 0xB0 + X
+CBDE  Bne(Relative) F6           branch if X != 0x20 (true in this case)
+CBD6  Lda(ZeroPageXIndexed) B0   load accumulator from address 0xB0 + X
 reading 0x2C from 0xB8
 CBD8  Sta(IndirectYIndexed) 14   store accumulator in [addess at 0x14] + Y
 writing 0x2C to t1 y position
@@ -374,9 +381,15 @@ adds the carry flag to its result, and sets the carry flag if the result of the
 addition is greater than 255 (the maximum value that fits in a byte).
 
 This function treats the 2 bytes at `0x14` and `0x15` as a single 2-byte
+little-endian
 integer, and likewise for the 2 bytes at `0x12` and `0x13`. We can interpret
 `0x12` - `0x15` as containing function's arguments. Similarly, we can interpret
-`0x14` - `0x15` as containing the function's return value.
+`0x14` - `0x15` as containing the function's return value (after the function
+returns).
+
+The function calling convention Mario Bros. seems to use is to choose a range
+of addresses in the zero page (`0x0000` - `0x00FF`) for each function, and to
+store the function's arguments and return value in this range.
 
 Here's how you might write this function in rust:
 
@@ -385,3 +398,355 @@ fn add16(a: u16, b: u16) -> u16 {
     a + b
 }
 ```
+
+Function analysis didn't directly help find this problem, but it did help
+get a better understanding of what the program was trying to do.
+
+### A Mysterious Function
+
+Much like before, I started by inspecting the memory of the running game to find
+out which address contained Mario's X and Y coordinates between frames. Tracing
+load and store instructions lead me to the following function, which was getting
+passed Mario's X and Y coordinates through zero page addresses `0x00` and
+`0x01`.
+
+```
+;; Load coord_x into accumulator.
+CA9A  Lda(ZeroPage) 00
+
+;; Right-shift the accumulator by 1 bit 3 times, effectively dividing it by 8.
+CA9C  Lsr(Accumulator)
+CA9D  Lsr(Accumulator)
+CA9E  Lsr(Accumulator)
+
+;; Store the accumulator [coord_x / 8] in address 0x12.
+CA9F  Sta(ZeroPage) 12
+
+;; Store the value 0x20 in address 0x13.
+;; The 2 bytes at 0x12-0x13 now represent a 16-bit integer
+;; whose value is [0x2000 + (coord_x / 8)].
+;; This is because 0x20 is the high byte, and [coord_x / 8] is the low byte.
+CAA1  Lda(Immediate) 20
+CAA3  Sta(ZeroPage) 13
+
+;; Store a 0 at address 0x15.
+CAA5  Lda(Immediate) 00
+CAA7  Sta(ZeroPage) 15
+
+;; Load coord_y into accumulator.
+CAA9  Lda(ZeroPage) 01
+
+;; Bitwise AND the accumulator with 0xF8.
+;; 0xF8 in binary is 11111000, so this clears the low 3 bits of coord_y.
+;; This effectively rounds coord_y down to the next lowest multiple of 8.
+CAAB  And(Immediate) F8
+
+;; Left-shift the accumulator, setting the carry flag to the most-significant
+;; bit of the accumulator prior to this instruction executing.
+;; Then left-rotate the value in address 0x15 (explicitly set to 0 above).
+;; Left-rotating is the same as left-shifting, except the least-significant
+;; bit of the result is set to the carry flag's current value, and then the
+;; carry flag is set to the original most-significant bit (ie. it rotates
+;; "through" the carry flag).
+;;
+;; This doubles the value in the accumulator. If twice the value of the
+;; accumulator is too large to fit in the 8-bit accumulator register, the
+;; overflowing bits are stored in address 0x15.
+CAAD  Asl(Accumulator)
+CAAE  Rol(ZeroPage) 15
+
+;; Repeat the above, doubling the accumulator a second time.
+CAB0  Asl(Accumulator)
+CAB1  Rol(ZeroPage) 15
+
+;; Store the accumulator in address 0x14.
+;; At this point, the little-endian 16-bit integer at 0x14-0x15 is
+;; coord_y rounded down to the next multiple of 8, then multiplied
+;; by 4.
+CAB3  Sta(ZeroPage) 14
+
+;; Call the add16 function defined above.
+;; Once this function returns, the sum of the 16-bit integer at 0x12
+;; and the 16-bit integer at 0x14 ends up in 0x14-0x15.
+CAB5  Jsr(Absolute) CDD1
+
+;; Copy the result of add16 into the return value address of this function.
+;; This function will return the 16-bit integer returned by add16
+CAB8  Lda(ZeroPage) 15
+CABA  Sta(ZeroPage) 00
+CABC  Lda(ZeroPage) 14
+CABE  Sta(ZeroPage) 01
+
+;; Return.
+CAC0  Rts(Implied)
+```
+
+Phew!
+
+Just what is going on here?
+
+The first hint is that `coord_x` is divided by 8. 8 happens to be the width and
+height of a
+sprite tile in pixels. Dividing the X pixel coordinate by 8 translates it into
+a tile coordinate. If X is being translated into tile space, it seems sensible
+to also translate the Y coordinate. The `And(Immediate) F8` instruction holds
+the key. This rounds the Y coordinate down to the next multiple of 8, which is
+equivalent to dividing Y by 8, rounding down, and then multiplying the result
+by 8. The result of this operation is then multiplied by 4 (left-shifting twice),
+so the final result for Y is `(coord_y / 8) * 32` (assuming integer division).
+
+The second hint is that the NES video output is 256 pixels wide = 8 pixels per
+tile * 32 tiles. The width of the screen is 32 tiles.
+
+We know enough at this point to translate this into rust:
+
+```rust
+// don't forget about the 0x2000 which is added to X after dividing by 8
+const MYSTERIOUS_OFFSET: u16 = 0x2000;
+
+const TILE_SIZE_PIXELS: u8 = 8;
+const SCREEN_WIDTH_TILES: u16 = 32;
+
+fn mystery(pixel_coord_x: u8, pixel_coord_y: u8) -> u16 {
+    let tile_coord_x = (pixel_coord_x / TILE_SIZE_PIXELS) as u16;
+    let tile_coord_y = (pixel_coord_y / TILE_SIZE_PIXELS) as u16;
+    let index = tile_coord_x + (tile_coord_y * SCREEN_WIDTH_TILES);
+    return index + MYSTERIOUS_OFFSET;
+}
+```
+
+If we treat the 32 x 30 tiles on the screen as a 1D array of tiles ordered
+left-to-right, then top-to-bottom, then this function computes the index of the
+tile containing Mario's coordinate. And then it adds 0x2000. How mysterious.
+
+When this function is called with Mario's coordinates, the result is stored
+in `0x0520`-`0x0521`. Later in the frame, these addresses are read:
+
+```
+CB87  Lda(AbsoluteXIndexed) 0520
+CB8A  Sta(Absolute) 2006
+CB8D  Inx(Implied)
+CB8E  Lda(AbsoluteXIndexed) 0520
+CB91  Sta(Absolute) 2006
+CB94  Lda(Absolute) 2007
+CB97  Lda(Absolute) 2007
+```
+
+This code is run in a loop several times each frame. Those ~`0x2000` addresses
+contain Picture Processing Unit registers. Thus, I suspected that this code is
+somehow related to rendering. Not collision detection. So I moved on to look
+elsewhere.
+
+### Execution Trace Diffing
+
+What is the difference between a frame with a Mario collision, and a frame
+without? To get to the bottom of collision detection, I came up with a simple
+experiment to find out how execution differs between a frame where Mario
+collides with the ceiling, and a frame where he does not.
+
+I recorded a save
+state mid-jump, and instrumented my emulator to load the save and overwrite
+Mario's X position with a specific value which won't result in a collision.
+
+Notice how Mario teleports a few pixels to the left on the second frame.
+
+<div class="nes-emulator-debugging-screenshot">
+<img src="/images/nes-emulator-debugging/short-jump-no-collision.gif">
+</div>
+
+I ran this for a specific number of frames, and recorded an execution trace.
+Then I repeated the experiment with an X offset which would result in a
+collision.
+
+<div class="nes-emulator-debugging-screenshot">
+<img src="/images/nes-emulator-debugging/short-jump-collision.gif">
+</div>
+
+Equipped with a collision trace, and a non-collision trace, I could now compare
+them, looking for cases where a particular branch was taken in one trace but not
+the other.
+
+In addition to the instructions being executed, I also logged several other data
+which I thought would be useful, such as the value read by the `LDA` (load
+accumulator from memory) instruction.
+
+In these diffs, the black lines are in both files, the "**<span style="color:red">-</span>**" (red) lines are only in the
+collision trace, and the "**<span style="color:green">+</span>**" (green) lines are only in the non-collision trace.
+
+As expected, the first few frames where no collision occurs, the only difference
+was the result of the Mario X position being different between traces. The first
+difference in the diff snippet below is clearly an example of this, as the
+different values differ by 1.
+
+```patch
+@@ -40592,12 +40592,12 @@ LDA read value 22
+ CB8A  Sta(Absolute) 2006
+ CB8D  Inx(Implied) 
+ CB8E  Lda(AbsoluteXIndexed) 0520
+-LDA read value B3
++LDA read value B2
+ CB91  Sta(Absolute) 2006
+ CB94  Lda(Absolute) 2007
+ LDA read value 24
+ CB97  Lda(Absolute) 2007
+-LDA read value 93
++LDA read value 24
+ CB9A  Sta(AbsoluteXIndexed) 0520
+ CB9D  Inx(Implied) 
+ CB9E  Dey(Implied) 
+```
+
+The second difference is more interesting. 93 vs 24? Also, look at those
+instruction addresses. We've been here before! This is the code that reads from
+the result of the index-computing function from the previous section.
+
+A bit further down the diff, we see the first instance of a branch instruction
+that is followed in one trace but not the other. The `CAC3 Bcc(Relative) 0E`
+instruction has this honour. This instruction, and the `Cmp` instruction which
+preceeds it, compare the accumulator to the immediate value 0x92, and branch if
+the accumulator is less than 0x92. In the collision case (red), the branch was
+not followed. The preceeding `LDA` indicates that in this case the accumulator
+contained 0x93. In the no-collision case (green) the branch was followed as the
+accumulator contained 0x24.
+
+```patch
+@@ -41963,193 +41963,22 @@ LDA read value 1
+ C97F  And(Immediate) 0F
+ C981  Beq(Relative) 09
+ C983  Lda(ZeroPage) CB
+-LDA read value 93
++LDA read value 24
+ C985  Jsr(Absolute) CAC1
+ CAC1  Cmp(Immediate) 92
+ CAC3  Bcc(Relative) 0E
+-CAC5  Cmp(Immediate) A0
+-CAC7  Bcc(Relative) 07
+-CAD0  Lda(Immediate) 01
+-LDA read value 1
+-CAD2  Rts(Implied) 
++CAD3  Lda(Immediate) 00
++LDA read value 0
++CAD5  Rts(Implied) 
+ C988  Ora(Immediate) 00
+ C98A  Bne(Relative) 04
+```
+
+The values 0x24 and 0x93 have _something_ to do with graphics, as they are read
+in the part of the program that interacts with the Picture Processing Unit
+(remember all the 0x2000 addresses refer to PPU registers), and they probably
+have something to do with collision detection, as the first differing branch
+between the two traces was because of these two values.
+
+Let's hazard a guess that these are indices of background tiles.
+
+Tile number 0x24:
+
+<div class="nes-tile">
+<img src="/images/nes-emulator-debugging/tile-24.png">
+</div>
+
+That is an 8 x 8 square of black pixels, used for the empty space in the
+background.
+
+Can you guess what tile 0x93 is:
+
+<div class="nes-tile">
+<img src="/images/nes-emulator-debugging/tile-93.png">
+</div>
+
+All the other solid tiles have indices greater than 0x92 as well.
+The comparison with 0x92 is this game's way of checking if an area of the screen
+is solid.
+
+Recall that the problem we're trying to solve is that collision detection seems
+to be off some value. Let's assume for a second that this value is 8 pixels, or
+1 tile. An off-by-one error in the function that computes the tile index seems
+like the obvious culprit, but I checked the arguments and return value of this
+function in my trace and it definitely was working as intended.
+
+Let's have another look at the trace from earlier that I dismissed as rendering.
+
+This interacts with 2 PPU registers, mapped to 0x2006 and 0x2007.
+
+0x2006 refers to the "PPU Address" register. Not unlike modern computers, the
+NES had a dedicated memory attached to its graphics hardware. This video memory
+could not be addressed directly by the CPU. If the CPU wishes to read or write
+from video memory, it must write the low byte of the address to 0x2006, and then
+write the high byte of the address to 0x2006.
+
+Once the CPU has written both bytes of the address to 0x2006, it can read or
+write 0x2007, the "PPU Data" register, to access video memory. The PPU keeps
+track of the "current" address being accessed, and increments this address after
+each access. Thus if you wished to write 16 consecutive bytes to video memory,
+you would first write the intended video memory address to 0x2006, and then
+write to 0x2007 16 times.
+
+```
+;; Assume that the X index register is initially 0,
+;; so the first 2 LDAs read from 0x520 and 0x521.
+;; Also assume that 0x0520 contains the low byte of
+;; the tile index computed by the mysterious function,
+;; and 0x0521 contains the high byte.
+
+;; Write the low byte of the mysterious function output
+;; to the PPU Address Register
+CB87  Lda(AbsoluteXIndexed) 0520
+CB8A  Sta(Absolute) 2006
+
+;; Write the high byte of the mysterious function output
+;; to the PPU Address Register
+CB8D  Inx(Implied)
+CB8E  Lda(AbsoluteXIndexed) 0520
+CB91  Sta(Absolute) 2006
+
+;; Load accumulator from PPU Data Register
+CB94  Lda(Absolute) 2007
+
+;; Load accumulator from PPU Data Register again
+CB97  Lda(Absolute) 2007
+```
+
+This code takes the output of the mysterious index + offset function detailed
+above, and reads the byte from video memory at that address. It then discards
+this value, overwriting it with the byte read from the next video memory
+address. This second byte is then compared with 0x92 to check if a collision
+occurred.
+
+This explains what the mysterious offset, 0x2000, is for. In the NES video
+memory layout, 0x2000 is the address of the start of the first "nametable" - an
+array of tile indices that specify the background tiles to render. The
+mysterious function computes an offset within this array, and then adds it to
+the video memory address of the start of the array.
+
+One mystery solved!
+
+The last two lines of the trace above (both `Lda(Absolute) 2007` made me highly
+suspicious. The index computation seemed to be doing something sensible, and
+getting the correct result. The tile index read by the first of these two
+instructions should be the tile used for collision detection decisions. Why
+then, is it being discarded and replaced with the index of the tile one space to
+the right?
+
+&nbsp;
+&nbsp;
+
+_Making an emulator for a 1980s game console is an exercise in reading and comprehension._
+
+&nbsp;
+&nbsp;
+
+An excerpt from the [nesdev wiki](https://wiki.nesdev.com/w/index.php/PPU_registers#PPUDATA)
+that I overlooked when first reading about the PPU:
+
+_When reading while the VRAM address is in the range 0-$3EFF (i.e., before the
+palettes), the read will return the contents of an internal read buffer. This
+internal buffer is updated only when reading PPUDATA, and so is preserved across
+frames. After the CPU reads and gets the contents of the internal buffer, the
+PPU will immediately update the internal buffer with the byte at the current
+VRAM address. **Thus, after setting the VRAM address, one should first read this
+register and discard the result.**_
+
+
+<div class="nes-emulator-debugging-screenshot">
+<img src="/images/nes-emulator-debugging/working.gif">
+</div>
