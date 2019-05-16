@@ -29,7 +29,7 @@ excerpt_separator: <!--more-->
 Making an emulator for a 1980s game console is an exercise in reading and comprehension.
 The work is mostly translating documentation into code.
 It's oddly satisfying, building a model of an ancient machine,
-instruction by instruction, device by device, especially when it can start running real programs.
+instruction by instruction, device by device, especially once it can start running real programs.
 You end up with an appreciation for the capabilities (or lack thereof) of hardware at the time,
 and necessarily end up intimately familiar with the inner workings of a piece of computing history.
 
@@ -45,28 +45,31 @@ like the real hardware.
 
 <!--more-->
 
+## Let's a-go!
+
 I'm making an emulator for the [Nintendo Entertainment System (NES)](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System).
 To test my emulator, I run the game [Mario Bros.](https://en.wikipedia.org/wiki/Mario_Bros.)
-When you start the game, it displays a menu for about 30 seconds, then plays a demo of gameplay.
+When you start the game, it displays a menu for about 20 seconds, then runs a demo of gameplay.
 Once I had the CPU and video output working to the point that _something_ not completely unintelligible was being rendered,
-I ran the game. I wasn't emulating input yet, so I waited for the demo to play.
+I ran the game. I wasn't emulating input yet, so I waited for the demo.
 
 <div class="nes-emulator-debugging-screenshot">
 <img src="/images/nes-emulator-debugging/demo.gif">
 </div>
 
-Hey, it mostly works!
+_Hey, it mostly works!_
 
-There's no gravity, Mario and Luigi look wrong when they face to the right, and platforms get wider
-when you hit them from below. These artifacts are the manifestation of emulator bugs that would take
+There's no gravity, Mario and Luigi look wrong, but only when they face to the right, and platforms get wider
+when you hit the bottom-left corner. These artifacts are the manifestation of emulator bugs that would take
 the better part of a month to find.
 
 ## Debugging Printouts
 
 The core of my debugging strategy is logging each instruction that is executed, and printing extra information
 when something meaningful happens. In the case of the "no gravity" problem, I identified the address that stores
-the vertical position of the first turtle (`0x0368`). The value it holds while the turtle is floating instead of
-falling is `0x2C`. I theorised that at some point, the game is writing `0x2C` to `0x0368` when it should be writing
+the vertical position of the first turtle (`0x0368`) to emerge from the pipe - the first character which gravity
+should affect. The value it holds while the turtle is floating instead of
+falling is `0x2C`. Therefore at some point the game is writing`0x2C` to `0x0368` when it should be writing
 something _else_, so I instrumented the emulator to print a message whenever `0x2C` was read from any address in
 memory, and also when address `0x0368` was written to.
 
@@ -90,7 +93,7 @@ CBD6  Lda(ZeroPageXIndexed) B0
 ```
 
  - Address of instruction: `0xCBD6`
- - Instruction: `Lda`
+ - Instruction: `Lda` (load accumulator from memory)
  - Addressing Mode (ie. how to interpret the instruction argument): `ZeroPageXIndexed`
  - Instruction Argument: `0xB0`
 
@@ -98,17 +101,18 @@ The execution trace above is copying the turtle's Y position from `0x00B8` to `0
 The `Lda` instruction reads a value from memory into a CPU register called the "accumulator".
 The `Sta` instruction stores the accumulator in memory. This is part of a loop that transfers
 data from the "zero page" - the first 256 bytes of memory - into other parts of memory.
-The zero page is fast to access because most instructions have several addressing modes
-specifically for offsetting into the zero page. It seems that Mario Bros. uses the zero page
+Most instructions have  special variant (e.g. `Lda(ZeroPageXIndexed)` which can only access the zero page,
+but take up less memory and execute faster.
+It seems that Mario Bros. uses the zero page
 for function arguments and return values, and other temporary intra-frame storage.
-The 0xB0 address read from above is, at other points in the execution, used to store the
+The `0xB0` address read from above is, at other points in the execution, used to store the
 Y position of other characters. For inter-frame storage of character data, address in
 `0x0300` - `0x0400` seem to be used.
 
 This code is probably transferring the result of some computation into longer-term memory.
-This indicates that the problem happened earlier, while the turtle's Y position was still
-within the zero page. To find details of what is done to the Y position while it's in 0x00B8,
-we could instrument the emulator to print whenever 0x2C is read from this address.
+This indicates that the problem happened earlier in the frame.
+To find details of what is done to the Y position while it's in `0x00B8`,
+we could instrument the emulator to print whenever `0x2C` is read from this new address.
 
 
 ```
@@ -202,7 +206,7 @@ register named `OAM DMA`. Writing to `OAM DMA` causes the PPU to directly read t
 ### Finding the Mario Sprite
 
 By logging writes to `OAM DMA`, I found that the only value Mario Bros. ever
-writes to it is "2". This means that it's storing sprite data in the region of
+writes to it is `2`. This means that it's storing sprite data in the region of
 RAM at `0x0200` - `0x02FF`.
 
 Next we need to find out which part of OAM contains the description of the Mario
@@ -248,9 +252,10 @@ writing 0x68 to 0x0217
 ### A Hunch
 
 These two iterations look slightly different. Notice that in the `0x0213`
-iteration (the first iteration) 8 is subtracted from the accumulator (address
-0xCC2D), and in
-the `0x0217` iteration, this part of the program is skipped. 8 happens to be the
+iteration (the first iteration) 8 is subtracted from the accumulator
+(instruction address
+`0xCC2D`), and in
+the `0x0217` iteration, this subtraction is skipped. 8 happens to be the
 width of a sprite tile in pixels. If this subtraction occurred in the latter
 iteration, it would have written `0x60` instead of `0x68` to OAM, and the left
 half of the sprite would be shifted 8 pixels to the left and no longer overlap
@@ -259,9 +264,15 @@ top-right tile, and the latter one is the top-left tile).
 
 The first point where the two iterations differ is the `Bvs` instruction
 at address `0xCC25`. This instruction branches by a specified offset if the
-"overflow" flag is set. Arithmetic operations set the overflow flag when a
-signed integer overflow occurs. This code suggests that the `Bit` instruction
-also sets this flag under certain conditions. My emulator was setting the
+"overflow" flag is set. This branch is taken in the first iteration (note the
+change in instruction address after `Bvs` executes), and not
+taken in the second iteration.
+
+Arithmetic operations set the overflow flag when a
+signed integer overflow occurs. The fact that this code executes the `Bit`
+instruction, and then branches based on the overflow flag's value, suggests that
+`Bit` sets and clears the overflow flag too.
+My emulator was updating the
 overflow flag when emulating `Bit`, but I double checked the manual at this
 point just to be safe.
 
@@ -271,17 +282,17 @@ accumulator, discarding the result, and setting some status register flags.
 Here's what the MOS6502 Programmer's Manual has to say about the status register
 flags set by `Bit`:
 
-_The bit instruction affects the N flag with N being set to
-the value of bit 7 of the memory being tested, the **V flag with V
-being set equal to bit 6 of the memory being tested** and Z being set
+_The bit instruction affects the N (negative) flag with N being set to
+the value of bit 7 of the memory being tested, the **V (overflow) flag with V
+being set equal to bit 6 of the memory being tested** and Z (zero) being set
 by the result of the AND operation between the accumulator and the
 memory if the result is Zero, Z is reset otherwise. It does not
 affect the accumulator._
 
-The "V" flag refers to the overflow flag. What's unusual about `Bit` is that it
-sets the overflow (V) and negative (N) flags based on the operand, instead of
-the result. Every other instruction that sets status register flags does so
-based on the result of the computation, not one of its arguments.
+`Bit` is unusual because it
+sets the overflow (V) and negative (N) flags based on its argument, instead of
+its result. Every other instruction that updates the overflow and negative flags does so
+based on its result.
 
 In my first pass through the manual I did not pick up on this subtlety!
 
@@ -297,8 +308,12 @@ _Great!_
 
 ## Platforms get wider when you jump into them
 
-Look closely at the previous recording. Luigi jumps and hits the ceiling, and it
+Look closely at the previous recording. Luigi jumps and hits the ceiling, and
+the platform
 seems to grow a little wider as a result. This is not supposed to happen!
+
+To help debug this, I implemented input emulation so I could actually _play_ the
+game and conduct experiments.
 
 Here's a more explicit demonstration of the problem.
 
@@ -314,7 +329,7 @@ standing on that part of the platform. There is an emulator bug with the symptom
 that collision detection with platforms has a lateral offset, which means that
 if you jump just to the left of a platform, the game thinks you hit the platform
 from beneath. Because it thinks you hit a platform from beneath, the game plays
-the platform bulge animation, which leaves a fresh platform where there was none
+the platform bulge animation above the character, which leaves a fresh platform where there was none
 before. This new platform can now be collided with in the same way allowing it
 to grow even further to the left.
 
@@ -334,7 +349,7 @@ Collision detection is complicated, and after a few days of blindly staring at
 execution traces I elected to take a step back and try to get a better
 understanding of how the game works. To that end I wrote a little library for
 exploring function definitions in NES programs. The NES CPU has an instruction
-named `JSR` (Jump SubRoutine) which pushes current program counter on the
+named `JSR` (Jump SubRoutine) which pushes the current program counter on the
 stack, and moves execution to a specified address. A second instruction, `RTS`
 (Return from SubRoutine) pops an address from the stack and moves execution to
 that address. Respectively, these instructions are used to call and return from
@@ -349,26 +364,26 @@ when the condition is true, and when the condition is false. I use a stack (the
 data structure) to keep track of execution paths yet to be explored.
 Instructions that unconditionally change the program counter are followed,
 with the exception of `JSR` (we're only exploring the current function - not
-the functions it calls) and `RTS` (which indicates we should stop exploring the
-current branch). Keep track of the addresses that have been explored in this
+the functions it calls) and `RTS`, which indicates we should stop exploring the
+current branch. Keep track of the addresses that have been explored in this
 traversal and stop if an instruction would change the program counter to
 somewhere we've already been.
-This is effectively a depth-first search through the control flow graph.
+This is effectively a depth-first search through the control flow graph of the
+function.
 
-Here's a trace of a simple function. I've manually annotated the trace with a
-description of each instruction.
+Here's a trace of a simple function.
 
 ```
-0xCDD1  Pha(Implied)        save accumulator onto stack
-0xCDD2  Clc(Implied)        clear the carry flag
-0xCDD3  Lda(ZeroPage) 0x14  load value at address 0x14 into accumulator
-0xCDD5  Adc(ZeroPage) 0x12  add value at address 0x12 to accumulator
-0xCDD7  Sta(ZeroPage) 0x14  store accumulator at address 0x14
-0xCDD9  Lda(ZeroPage) 0x15  load value at address 0x15 into accumulator
-0xCDDB  Adc(ZeroPage) 0x13  add value at address 0x13 to accumulator
-0xCDDD  Sta(ZeroPage) 0x15  store accumulator at address 0x15
-0xCDDF  Pla(Implied)        restore accumulator from stack
-0xCDE0  Rts(Implied)        return
+0xCDD1  Pha(Implied)        ;; save accumulator onto stack
+0xCDD2  Clc(Implied)        ;; clear the carry flag
+0xCDD3  Lda(ZeroPage) 0x14  ;; load value at address 0x14 into accumulator
+0xCDD5  Adc(ZeroPage) 0x12  ;; add value at address 0x12 to accumulator
+0xCDD7  Sta(ZeroPage) 0x14  ;; store accumulator at address 0x14
+0xCDD9  Lda(ZeroPage) 0x15  ;; load value at address 0x15 into accumulator
+0xCDDB  Adc(ZeroPage) 0x13  ;; add value at address 0x13 to accumulator
+0xCDDD  Sta(ZeroPage) 0x15  ;; store accumulator at address 0x15
+0xCDDF  Pla(Implied)        ;; restore accumulator from stack
+0xCDE0  Rts(Implied)        ;; return
 ```
 
 What's this function doing?
@@ -382,14 +397,11 @@ addition is greater than 255 (the maximum value that fits in a byte).
 
 This function treats the 2 bytes at `0x14` and `0x15` as a single 2-byte
 little-endian
-integer, and likewise for the 2 bytes at `0x12` and `0x13`. We can interpret
+integer, and likewise for the 2 bytes at `0x12` and `0x13`. This function adds
+these two 16-bit integers, and returns the result. We can interpret
 `0x12` - `0x15` as containing function's arguments. Similarly, we can interpret
 `0x14` - `0x15` as containing the function's return value (after the function
 returns).
-
-The function calling convention Mario Bros. seems to use is to choose a range
-of addresses in the zero page (`0x0000` - `0x00FF`) for each function, and to
-store the function's arguments and return value in this range.
 
 Here's how you might write this function in rust:
 
@@ -399,7 +411,17 @@ fn add16(a: u16, b: u16) -> u16 {
 }
 ```
 
-Function analysis didn't directly help find this problem, but it did help
+The function calling convention Mario Bros. seems to use is to choose a range
+of addresses in the zero page (`0x0000` - `0x00FF`) for each function, and to
+store the function's arguments and return value in this range. Each function
+seems to use unique addresses for its arguments and return values, which would
+allow functions to call other functions without worrying
+about their own arguments being overwritten by their caller.
+Note that this calling convention does not support recursion (or mutual
+recursion), as the second nested call of a function would overwrite the arguments from
+the first call.
+
+Function analysis didn't directly help solve my problem, but it did help
 get a better understanding of what the program was trying to do.
 
 ### A Mysterious Function
@@ -515,7 +537,8 @@ fn mystery(pixel_coord_x: u8, pixel_coord_y: u8) -> u16 {
 }
 ```
 
-If we treat the 32 x 30 tiles on the screen as a 1D array of tiles ordered
+If we treat the 32x30 (NES video output is 240 pixels high)
+tiles on the screen as a 1D array of tiles ordered
 left-to-right, then top-to-bottom, then this function computes the index of the
 tile containing Mario's coordinate. And then it adds 0x2000. How mysterious.
 
@@ -645,7 +668,7 @@ Tile number 0x24:
 <img src="/images/nes-emulator-debugging/tile-24.png">
 </div>
 
-That is an 8 x 8 square of black pixels, used for the empty space in the
+That is an 8x8 square of black pixels, used for the empty space in the
 background.
 
 Can you guess what tile 0x93 is:
@@ -750,3 +773,4 @@ register and discard the result.**_
 <div class="nes-emulator-debugging-screenshot">
 <img src="/images/nes-emulator-debugging/working.gif">
 </div>
+
