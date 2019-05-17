@@ -31,7 +31,7 @@ The work is mostly translating documentation into code.
 It's oddly satisfying, building a model of an ancient machine,
 instruction by instruction, device by device, especially once it can start running real programs.
 You end up with an appreciation for the capabilities (or lack thereof) of hardware at the time,
-and necessarily end up intimately familiar with the inner workings of a piece of computing history.
+and out of necessity, end up intimately familiar with the inner workings of a piece of computing history.
 
 This post is not about making an emulator.
 
@@ -101,7 +101,7 @@ The execution trace above is copying the turtle's Y position from `0x00B8` to `0
 The `Lda` instruction reads a value from memory into a CPU register called the "accumulator".
 The `Sta` instruction stores the accumulator in memory. This is part of a loop that transfers
 data from the "zero page" - the first 256 bytes of memory - into other parts of memory.
-Most instructions have  special variant (e.g. `Lda(ZeroPageXIndexed)` which can only access the zero page,
+Most instructions have special variants (e.g. `Lda(ZeroPageXIndexed)` which can only access the zero page,
 but take up less memory and execute faster.
 It seems that Mario Bros. uses the zero page
 for function arguments and return values, and other temporary intra-frame storage.
@@ -797,7 +797,7 @@ register and discard the result.**_
 <img src="/images/nes-emulator-debugging/working.gif">
 </div>
 
-Now that I've had my fun, I'm going to submit my emulator to a
+Now that I've had my fun, I'm going to subject my emulator to a
 [suite of test ROMs](https://github.com/christopherpow/nes-test-roms)
 to clean up any not-yet manifested bugs. There's still a lot of work to go
 before my emulator is finished. At the moment there's no sound, many PPU features are
