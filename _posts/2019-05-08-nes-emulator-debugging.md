@@ -212,7 +212,7 @@ RAM at `0x0200` - `0x02FF`.
 Next we need to find out which part of OAM contains the description of the Mario
 tiles. Each sprite tile is described with a 4-byte data structure. The 4th byte
 of this structure contains the X coordinate of the tile. By logging the X
-coordinate of each tile each frame and watching how they change as Mario moves
+coordinate of each tile every frame and watching how they change as Mario moves
 on the screen, I identified the 6 OAM entries corresponding to Mario as those
 occupying `0x0210` - `0x0227` (24 bytes = 6 tiles * 4 bytes per tile)
 prior to uploading.
@@ -220,7 +220,7 @@ prior to uploading.
 I instrumented the emulator to log writes to `0x0213` and `0x0217` which
 should correspond to the X positions of the top 2 tiles of Mario.
 I found a single loop where one iteration wrote to `0x0213`, and another
-iteration write to `0x0217`.
+iteration wrote to `0x0217`.
 
 
 ```
@@ -258,7 +258,7 @@ iteration (the first iteration) 8 is subtracted from the accumulator
 the `0x0217` iteration, this subtraction is skipped. 8 happens to be the
 width of a sprite tile in pixels. If this subtraction occurred in the latter
 iteration, it would have written `0x60` instead of `0x68` to OAM, and the left
-half of the sprite would be shifted 8 pixels to the left and no longer overlap
+half of the sprite would be shifted 8 pixels to the left and would no longer overlap
 with the right half (note that this assumes that the former iteration is the
 top-right tile, and the latter one is the top-left tile).
 
@@ -386,7 +386,7 @@ Here's a trace of a simple function.
 0xCDE0  Rts(Implied)        ;; return
 ```
 
-What's this function doing?
+What is this function doing?
 
 It adds the byte at address `0x14` with the byte at address `0x12`, storing the
 result at address `0x14`, then adds the byte at `0x15` with the byte at `0x13`,
@@ -428,7 +428,7 @@ get a better understanding of what the program was trying to do.
 
 Much like before, I started by inspecting the memory of the running game to find
 out which address contained Mario's X and Y coordinates between frames. Tracing
-load and store instructions involving these addresses lead me to the following function, which was getting
+load and store instructions involving these addresses led me to the following function, which was being
 passed Mario's X and Y coordinates through zero page addresses `0x00` and
 `0x01`.
 
@@ -698,7 +698,7 @@ function in my trace and it definitely was working as intended.
 ### The PPU: More than just rendering!
 
 The diff revealed something interesting going on in the code from earlier which
-I dismissed as relating to rendering.
+I dismissed as related. to rendering.
 Before diving back in, here's all you need to know about the NES Picture
 Processing Unit.
 
@@ -762,8 +762,8 @@ the video memory address of the start of the array.
 One mystery solved!
 
 This also explains how character/level collision detection worked in Mario Bros.
-To test if an area of the screen is solid, read the tile currently rendered
-there out of video memory, and check if it's one of the solid tiles. That's why
+To test if an area of the screen is solid, determine the tile currently rendered
+there by reading from video memory, and check if it's one of the solid tiles. That's why
 rendering the floor bulge animation resulted in a solid floor remaining in the
 game world. If you can see it, you can collide with it.
 
@@ -799,7 +799,7 @@ register and discard the result.**_
 
 Now that I've had my fun, I'm going to subject my emulator to a
 [suite of test ROMs](https://github.com/christopherpow/nes-test-roms)
-to clean up any not-yet manifested bugs. There's still a lot of work to go
+to clean up any not-yet manifested bugs. There's still a lot of work to do
 before my emulator is finished. At the moment there's no sound, many PPU features are
 unimplemented, and only the most basic cartridges are supported.
 
