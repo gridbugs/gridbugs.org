@@ -236,7 +236,7 @@ table {
   text-align: $table-text-align;
   color: lighten($text-color, 18%);
   border-collapse: collapse;
-  border: 1px solid $grey-color-dark;
+  border: 1px solid $grey-color-light;
   th, td {
     padding: ($spacing-unit / 3) ($spacing-unit / 2);
   }
@@ -246,7 +246,7 @@ table {
     border-bottom-color: darken($grey-color-light, 12%);
   }
   td {
-    border: 1px solid $grey-color-dark;
+    border: 1px solid $grey-color-light;
   }
 }
 
