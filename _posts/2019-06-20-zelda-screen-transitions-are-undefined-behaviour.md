@@ -147,6 +147,34 @@ window highlighted.
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo-name-table.gif" style="width:50%;height:50%">
 </div>
 
+## Screen Splitting
+
+Each frame of video produced by the NES is drawn from top to bottom, one row of pixels at a time.
+Within each row, pixels are drawn one at a time, left to right.
+Mid way through drawing a frame, the game can update the PPU registers, which will affect
+the yet-to-be drawn pixels. One common mid-frame change is to update the horizontal scroll position.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-name-table.gif" style="width:50%;height:50%">
+</div>
+
+When scrolling horizontally between rooms, The Legend of Zelda always starts with scroll set
+to (0, 0), and renders the heads up display at the top of the screen.
+After the final row of pixels of the heads up display has been drawn to the screen,
+the horizontal scroll is changed by a value which increases slightly each frame,
+causing the camera to pan smoothly.
+
+The name table view shows how the game is changing from horizontal mirroring to vertical mirroring before
+it starts scrolling, then back to horizontal mirroring once the transition is complete. Also, while the scroll
+is in progress, the top-left (and bottom-left) name table is updated to contain a copy of the room being entered.
+Once the scroll is finished, the game stops splitting the screen, and renders entirely from the top-left name table
+again.
+
+### Measuring Draw Progress
+
+In order to split the screen at the correct position, the game needs a way of finding out how much of the
+current frame has been drawn.
 
 ## Controlling the PPU
 
