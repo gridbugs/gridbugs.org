@@ -40,7 +40,7 @@ Specifically, scrolling part of the background vertically, while another part of
 interacting with the PPU in the expected way.
 
 In contrast, keeping part of the screen stationary and scrolling the rest of the screen *horizontally* is
-completely well-defined, as long as the stationary part is above the scrolling part.
+completely well-defined.
 
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scrolling.gif">
@@ -52,7 +52,7 @@ Graphics on the NES are split into 2 types:
  - sprites, which are tiles that can be placed at arbitrary positions on the screen and independently move around
  - the background, which is a grid of tiles which can be scrolled smoothly as a single image
 
-To highlight the different, here's a scene made up of sprites and background:
+To highlight the difference, here's a scene made up of sprites and background:
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/sprites-and-background.gif">
 </div>
@@ -67,19 +67,16 @@ And here's the scene with only the background visible:
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/only-background.gif">
 </div>
 
-
-This post will only focus on background graphics.
-
 ## Scrolling
 
-The NES Picture Processor supported smoothly (1 pixel at a time) scrolling background graphics.
-To achieve this, video memory contains a grid of tiles 4 times the size of the screen.
+The NES Picture Processor supports scrolling background graphics.
+Video memory contains a grid of tiles 2x2 times the size of the screen.
 The screen displays a screen-sized window into this grid, and the position of the window can
-be precisely controlled. Moving this window 1 pixel each frame produces a smooth scrolling effect.
+be precisely controlled. Gradually moving this window within the grid produces a smooth scrolling effect.
 
 The video output from the NES is 256x240 pixels. The in-memory tile grid represents a 512x480
-pixel area, and is broken up into 4 quadrants called "name tables", each the size of the screen. By configuring the
-Picture Processing Unit (PPU), games can specify the position of the visible screen-sized window
+pixel area, and is broken up into 4 screen-sized quadrants called "name tables". Games can configure the
+Picture Processing Unit (PPU), to specify the position of the visible screen-sized window
 by selecting a pixel coordinate within the in-memory tile grid.
 
 Choosing the coordinate (0, 0) will display the entire top-left name table:
@@ -104,17 +101,16 @@ so there are only 2 name tables worth of memory.
 How does it hold 4 screens worth of tile grid?
 
 Video memory is connected to the PPU in such a way that when the PPU renders a tile from one of the 4
-apparent name tables, one of the 2 real name tables is selected, and read from instead. The effect of
-this is that the 4 apparent name tables are made up of 2 identical pairs of name tables.
+apparent name tables, one of the 2 real name tables is selected, and read from instead. This effectively
+means that the 4 apparent name tables are made up of 2 identical pairs of name tables.
 
 Why not just have 2 name tables then?
 
 Fortunately, the precise mapping between apparent name table and real name table can be configured
 at runtime. If a game wants to scroll horizontally, it will configure graphics hardware such that
-the top-left and top-right name tables are different, so it can scroll between them without any duplication being
-visible. In this configuration, the top-left and bottom-left name tables will refer to the same
-real name table, and likewise the top-right and bottom-right. This configuration is named "Vertical Mirroring",
-as the top 2 name tables match the bottom 2.
+the top-left and top-right name tables are different, so it can scroll between them without any visible duplication.
+In this configuration, the top-left and bottom-left name tables will refer to the same
+real name table, and likewise the top-right and bottom-right. This configuration is named "Vertical Mirroring".
 
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-mirroring.png" style="width:50%">
 
@@ -122,10 +118,12 @@ The other possible configuration is "Horizontal Mirroring", which games use when
 
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-mirroring.png" style="width:50%">
 
+Games usually don't scroll diagonally, as it produces artifacts around the edge of the screen due to name table
+mirroring.
+
 ### Cartridges
 
-The hardware for configuring name table mirroring doesn't actually live inside the NES console at all.
-It lives in the cartridge.
+Each game's cartridge contains hardware which allows name table mirroring to be configured.
 
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/cart.jpg" style="width:50%">
 
@@ -151,8 +149,8 @@ window highlighted.
 
 Each frame of video produced by the NES is drawn from top to bottom, one row of pixels at a time.
 Within each row, pixels are drawn one at a time, left to right.
-Mid way through drawing a frame, the game can update the PPU registers, which will affect
-the yet-to-be drawn pixels. One common mid-frame change is to update the horizontal scroll position.
+Mid way through drawing a frame, the game can reconfigure the PPU, which effects how the yet-to-be
+drawn pixels are displayed. One common mid-frame change is to update the horizontal scroll position.
 
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
@@ -175,12 +173,49 @@ again.
 
 In order to split the screen at the correct position, the game needs a way of finding out how much of the
 current frame has been drawn.
+Pixel rows are rendered at a known rate, so it's possible to tell which row of pixels is currently being
+drawn by counting the number of CPU cycles that have passed since the start of the frame.
 
-## Controlling the PPU
+There is another, more accurate technique, called "Sprite Zero Hit".
+
+The NES can draw 64 sprites at a time. The first sprite in video memory is referred to as "Sprite Zero".
+Each frame, the first time an opaque pixel of sprite zero overlaps with an opaque pixel of the background,
+an event called "Sprite Zero Hit" occurs. This has the effect of setting a bit in one of the memory-mapped
+PPU registers, which can be checked by the CPU.
+
+To use Sprite Zero Hit to split the screen, games place sprite zero at a vertical position near the boundary
+of the split, and during rendering, repeatedly check whether a Sprite Zero Hit has occurred.
+When Sprite Zero Hit occurs, the game changes the horizontal scroll to effect the split.
+
+This shows a horizontal room transition with and without the background.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-sprites.gif" style="width:50%;height:50%">
+</div>
+
+The brown circle
+which appears at the start of the transition, and vanishes at the end, is sprite zero.
+Looking closer at the HUD with and without the background:
+
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/hud.png" style="width:512px;image-rendering:crisp-edges">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/hud-sprites.png" style="width:512px;image-rendering:crisp-edges">
+
+Sprite zero is a discoloured bomb sprite, lined up exactly with the regular bomb sprite in the game's HUD.
+Sprite zero is configured to appear behind the background, but since the black pixels in the HUD are considered
+transparent, the sprite zero bomb would be visible if it wasn't strategically positioned behind the HUD bomb.
+
+Note that the sprite zero hit occurs several pixel rows before the bottom row of the HUD.
+It occurs at the top pixel of the fuse of the bomb, which is 16 pixels from the bottom of the HUD.
+When sprite zero hit happens, the game starts counting CPU cycles, and sets the horizontal scroll
+after a specific number of cycles have passed.
+
+## The PPU Interface
 
 Programs running on the NES interact with graphics hardware via memory-mapped registers.
-These are special memory addresses, which can be read and written like normal memory,
-except instead of storing data, they configure and query properties of the PPU.
+These are special memory addresses which can be read and written like normal memory,
+except instead of loading and storing data, properties of the graphics hardware
+can be configured and queried.
 
 The relevant registers for this story are:
 
