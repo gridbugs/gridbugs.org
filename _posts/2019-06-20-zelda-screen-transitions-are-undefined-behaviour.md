@@ -210,6 +210,24 @@ It occurs at the top pixel of the fuse of the bomb, which is 16 pixels from the 
 When sprite zero hit happens, the game starts counting CPU cycles, and sets the horizontal scroll
 after a specific number of cycles have passed.
 
+It's not clear to me whether screen splitting was the original purpose of sprite zero hit.
+It seems like there should be a simpler way for the hardware to report that it's reached
+a certain part of the screen than requiring the game to draw a sprite. A possibility is
+it was intended to be used for collision detection, but it would only be able to detect
+collisions with a single sprite and the background.
+
+## Anatomy of a Frame
+
+The majority of the time, the NES PPU is drawing pixels to the screen.
+There is a brief period of time in between frames during which no drawing
+is taking place. This is known as the "Vertical Blank" or "Vblank".
+
+![](/images/zelda-screen-transitions-are-undefined-behaviour/frame-anatomy.png)
+
+The precise duration of vblank differs between regional TV standards.
+The NTSC NES sold in North America and the PAL NES sold in Europe have different hardware
+to handle the different requirements for frame timing.
+
 ## The PPU Interface
 
 Programs running on the NES interact with graphics hardware via memory-mapped registers.
@@ -217,9 +235,49 @@ These are special memory addresses which can be read and written like normal mem
 except instead of loading and storing data, properties of the graphics hardware
 can be configured and queried.
 
-The relevant registers for this story are:
+This table describes the relevant registers for this story.
+Each register is 8 bits wide.
+Some registers can only be safely accessed during vblank.
 
 <table>
 <tr><th>Name</th><th>Address</th><th>Description</th></tr>
-<tr><td>foo</td><td>aoeu</td><td>blah</td></tr>
+<tr><td>PPUCTRL</td><td>0x2000</td>
+<td>
+<p>
+When this register is written, each bit of the written value
+specifies some property of how the PPU should behave.
+In particular, the low 2 bits are treated as a number from 0 to 3
+and select one of the 4 name tables which will contain the top-left
+corner of the visible screen-sized window.
+</p><p>
+Writing this register outside vblank can cause graphical anomalies.
+</p>
+</td></tr>
+<tr><td>PPUSTATUS</td><td>0x2002</td>
+<td>
+Contains various status flags, including whether the PPU is currently
+in vblank, and whether sprite zero hit has occurred this frame.
+</td></tr>
+<tr><td>PPUSCROLL</td><td>0x2005</td>
+<td>
+<p>
+Sets the position of the visible screen-sized window within the name table
+selected in PPUCTRL.
+</p><p>
+During vblank, writing to this register alternates between setting
+the X and Y position of the window.
+</p><p>
+Outside of vblank, setting the X position works as expected,
+but the change will only take effect on the following pixel row.
+Setting the Y position outside of vblank has no effect on the position of the visible window.
+This is the reason why it <em>shouldn't</em> be possible to keep part of the screen stationary
+while the rest scrolls vertically.
+</p>
+</td></tr>
+<tr><td>PPUADDR</td><td>0x2006</td>
+<td>
+</td></tr>
+<tr><td>PPUDATA</td><td>0x2007</td>
+<td>
+</td></tr>
 </table>
