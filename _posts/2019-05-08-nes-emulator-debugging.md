@@ -9,7 +9,7 @@ excerpt_separator: <!--more-->
 <style>
 .nes-emulator-debugging-screenshot img {
     width: 512px;
-    height: 512px;
+    height: 480px;
     image-rendering: crisp-edges;
 }
 

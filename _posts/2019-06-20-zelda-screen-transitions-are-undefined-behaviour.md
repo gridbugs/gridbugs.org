@@ -9,8 +9,11 @@ excerpt_separator: <!--more-->
 <style>
 .nes-screenshot img {
     width: 512px;
-    height: 512px;
+    height: 480px;
     image-rendering: crisp-edges;
+}
+.short-table tr {
+    line-height: 0px;
 }
 </style>
 
@@ -234,21 +237,132 @@ which is mapped at address `0x2005`. The first write to `PPUSCROLL` sets the X c
 of the scroll position, and the second write sets the Y component. Writes continue to
 alternate in this fashion.
 
-If the scroll position is set during vblank, it will take effect while drawing the next frame.
-If the scroll position is set while a frame is being drawn, it takes effect when drawing
-reaches the next row of pixels, but only the X component is applied. That is, the Y component
-of scroll positions set mid-frame are ignored during that frame. Thus, if a game wants to
-split the screen, and change the scroll position part of the frame, they may only scroll it
-horizontally.
+This lists all the non-zero writes to `PPUSCROLL` during this (slow motion) 16 frame recording of
+the story screen. The Y component of the scroll position is increment once every 2 frames.
+All `PPUSCROLL` writes occur during vblank in this example, which causes the entire background
+to scroll together.
+
+<div>
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll-name-table.gif" style="width:50%;height:50%">
+</div>
+
+<table class="short-table">
+<tr><th>Frame</th><th>Sub-Frame</th><th>Component</th><th>Value</th></tr>
+<tr><td>0</td><td>VBlank</td><td>Y</td><td>110</td></tr>
+<tr><td>1</td><td>VBlank</td><td>Y</td><td>110</td></tr>
+<tr><td>2</td><td>VBlank</td><td>Y</td><td>111</td></tr>
+<tr><td>3</td><td>VBlank</td><td>Y</td><td>111</td></tr>
+<tr><td>4</td><td>VBlank</td><td>Y</td><td>112</td></tr>
+<tr><td>5</td><td>VBlank</td><td>Y</td><td>112</td></tr>
+<tr><td>6</td><td>VBlank</td><td>Y</td><td>113</td></tr>
+<tr><td>7</td><td>VBlank</td><td>Y</td><td>113</td></tr>
+<tr><td>8</td><td>VBlank</td><td>Y</td><td>114</td></tr>
+<tr><td>9</td><td>VBlank</td><td>Y</td><td>114</td></tr>
+<tr><td>10</td><td>VBlank</td><td>Y</td><td>115</td></tr>
+<tr><td>11</td><td>VBlank</td><td>Y</td><td>115</td></tr>
+<tr><td>12</td><td>VBlank</td><td>Y</td><td>116</td></tr>
+<tr><td>13</td><td>VBlank</td><td>Y</td><td>116</td></tr>
+<tr><td>14</td><td>VBlank</td><td>Y</td><td>117</td></tr>
+<tr><td>15</td><td>VBlank</td><td>Y</td><td>117</td></tr>
+</table>
+
+### Split Screen Scrolling
+
+Writes to `PPUSCROLL` during vblank take effect at the beginning of frame drawn immediately
+after the vblank.
+If the scroll position is changed while a frame is being drawn, it takes effect when drawing
+reaches the next row of pixels.
+
+<div>
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll-name-table.gif" style="width:50%;height:50%">
+</div>
+
+<table class="short-table">
+<tr><th>Frame</th><th>Sub-Frame</th><th>Component</th><th>Value</th></tr>
+<tr><td>0</td><td>Pixel Row 62</td><td>X</td><td>72</td></tr>
+<tr><td>1</td><td>Pixel Row 62</td><td>X</td><td>76</td></tr>
+<tr><td>2</td><td>Pixel Row 62</td><td>X</td><td>80</td></tr>
+<tr><td>3</td><td>Pixel Row 62</td><td>X</td><td>84</td></tr>
+<tr><td>4</td><td>Pixel Row 62</td><td>X</td><td>88</td></tr>
+<tr><td>5</td><td>Pixel Row 62</td><td>X</td><td>92</td></tr>
+<tr><td>6</td><td>Pixel Row 62</td><td>X</td><td>96</td></tr>
+<tr><td>7</td><td>Pixel Row 62</td><td>X</td><td>100</td></tr>
+<tr><td>8</td><td>Pixel Row 62</td><td>X</td><td>104</td></tr>
+<tr><td>9</td><td>Pixel Row 62</td><td>X</td><td>108</td></tr>
+<tr><td>10</td><td>Pixel Row 62</td><td>X</td><td>112</td></tr>
+<tr><td>11</td><td>Pixel Row 62</td><td>X</td><td>116</td></tr>
+<tr><td>12</td><td>Pixel Row 62</td><td>X</td><td>120</td></tr>
+<tr><td>13</td><td>Pixel Row 62</td><td>X</td><td>124</td></tr>
+<tr><td>14</td><td>Pixel Row 62</td><td>X</td><td>128</td></tr>
+<tr><td>15</td><td>Pixel Row 62</td><td>X</td><td>132</td></tr>
+</table>
+
+
+When the scroll position is updated mid-frame, only the X component of the scroll position
+is applied. That is, the Y component
+of scroll positions set mid-frame are ignored. Thus, if a game wants to
+split the screen, and change the scroll position of part of the frame, it may only scroll horizontally.
+
+And yet:
+
+<div>
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll-name-table.gif" style="width:50%;height:50%">
+</div>
+
+Believe it or not, the `PPUSCROLL` register is not changed during this transition.
+
+You may notice a 1 pixel high graphical artefact just below the HUD. This is a bug in my emulator
+caused by not synchronising CPU clock cycles with per-pixel rendering.
 
 ### Interference with Other Registers
+
 A second register, named `PPUADDR`, mapped to `0x2006`, is used to set the current video memory
 address for the purposes of updating video memory. When the game wants to change, for example,
 one of the tiles in a name table, it first writes the video memory address of the tile to `PPUADDR`,
-then writes the new value of the tile to the `PPUDATA` register mapped to `0x2007`. Typically, this
-is only done during vblank.
+then writes the new value of the tile to the `PPUDATA` register mapped to `0x2007`.
 
-Writing to `PPUADDR` will corrupt the current scroll position. Thus it's recommended to set the
-scroll position by writing to `PPUSCROLL` _after_ all the writes to `PPUADDR` during the current vblank are complete.
-There's usually no reason to write to `PPUADDR` mid-frame, and doing so will result in graphical
-artefacts.
+Writing to `PPUADDR` outside of vblank (ie. while the frame is drawing) can cause graphical
+artefacts. This is because the PPU circuitry affected by writing `PPUADDR` is also controlled
+directly by the PPU to retrieve tiles from video memory for the purposes of drawing them. As
+drawing proceeds from the top to the bottom of the screen, and left to right within each
+pixel row, the PPU effectively sets `PPUADDR` to the address of the tile containing the pixel
+currently being drawn. When drawing moves from one tile to another, the `PPUADDR` is changed
+by incrementing its current value.
+
+Thus writing to `PPUADDR` mid-frame can alter the tiles which the PPU would fetch from memory
+for the duration of the current frame.
+
+Let's log writes to `PPUADDR` during the vertical transition. Since the name table is also being
+updated during the transition, logging _all_ writes to `PPUADDR` would be noisy. In the horizontal
+transition, the scroll was set while drawing pixel row 62, so we'll just look at `PPUADDR` writes
+during this row. Also, much like `PPUSCROLL`, `PPUADDR` must be written twice for the write to
+take effect. The first write sets the high byte of the address, and the second write sets the
+low byte. This table just shows the combined 16 bit addresses.
+
+<table class="short-table">
+<tr><th>Frame</th><th>Sub-Frame</th><th>Address</th></tr>
+<tr><td>0</td><td>Pixel Row 62</td><td>0x2280</td></tr>
+<tr><td>1</td><td>Pixel Row 62</td><td>0x2280</td></tr>
+<tr><td>2</td><td>Pixel Row 62</td><td>0x2260</td></tr>
+<tr><td>3</td><td>Pixel Row 62</td><td>0x2260</td></tr>
+<tr><td>4</td><td>Pixel Row 62</td><td>0x2240</td></tr>
+<tr><td>5</td><td>Pixel Row 62</td><td>0x2240</td></tr>
+<tr><td>6</td><td>Pixel Row 62</td><td>0x2220</td></tr>
+<tr><td>7</td><td>Pixel Row 62</td><td>0x2220</td></tr>
+<tr><td>8</td><td>Pixel Row 62</td><td>0x2200</td></tr>
+<tr><td>9</td><td>Pixel Row 62</td><td>0x2200</td></tr>
+<tr><td>10</td><td>Pixel Row 62</td><td>0x21E0</td></tr>
+<tr><td>11</td><td>Pixel Row 62</td><td>0x21E0</td></tr>
+<tr><td>12</td><td>Pixel Row 62</td><td>0x21C0</td></tr>
+<tr><td>13</td><td>Pixel Row 62</td><td>0x21C0</td></tr>
+<tr><td>14</td><td>Pixel Row 62</td><td>0x21A0</td></tr>
+<tr><td>15</td><td>Pixel Row 62</td><td>0x21A0</td></tr>
+</table>
+
+There's a clear pattern. Every 2 frames, the address written on pixel row 62 is decreased
+by 32. But how does this translate into updating the effective scroll position?
+
+### The _Real_ Scroll Register
