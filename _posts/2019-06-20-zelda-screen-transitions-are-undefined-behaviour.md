@@ -190,7 +190,7 @@ When Sprite Zero Hit occurs, the game changes the horizontal scroll to effect th
 This shows a horizontal room transition with and without the background.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-fast.gif" style="width:50%;height:50%;float:left">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-sprites.gif" style="width:50%;height:50%">
 </div>
 
@@ -216,68 +216,39 @@ a certain part of the screen than requiring the game to draw a sprite. A possibi
 it was intended to be used for collision detection, but it would only be able to detect
 collisions with a single sprite and the background.
 
-## Anatomy of a Frame
+## Vertical Blanking
 
 The majority of the time, the NES PPU is drawing pixels to the screen.
-There is a brief period of time in between frames during which no drawing
+There is a brief period of "downtime" in between frames during which no drawing
 is taking place. This is known as the "Vertical Blank" or "Vblank".
-
-![](/images/zelda-screen-transitions-are-undefined-behaviour/frame-anatomy.png)
+Some types of PPU configuration changes can only be made during vblank.
 
 The precise duration of vblank differs between regional TV standards.
 The NTSC NES sold in North America and the PAL NES sold in Europe have different hardware
 to handle the different requirements for frame timing.
 
-## The PPU Interface
+## The Scroll Register
 
-Programs running on the NES interact with graphics hardware via memory-mapped registers.
-These are special memory addresses which can be read and written like normal memory,
-except instead of loading and storing data, properties of the graphics hardware
-can be configured and queried.
+Games change the scroll position by writing to a PPU register named `PPUSCROLL`,
+which is mapped at address `0x2005`. The first write to `PPUSCROLL` sets the X component
+of the scroll position, and the second write sets the Y component. Writes continue to
+alternate in this fashion.
 
-This table describes the relevant registers for this story.
-Each register is 8 bits wide.
-Some registers can only be safely accessed during vblank.
+If the scroll position is set during vblank, it will take effect while drawing the next frame.
+If the scroll position is set while a frame is being drawn, it takes effect when drawing
+reaches the next row of pixels, but only the X component is applied. That is, the Y component
+of scroll positions set mid-frame are ignored during that frame. Thus, if a game wants to
+split the screen, and change the scroll position part of the frame, they may only scroll it
+horizontally.
 
-<table>
-<tr><th>Name</th><th>Address</th><th>Description</th></tr>
-<tr><td>PPUCTRL</td><td>0x2000</td>
-<td>
-<p>
-When this register is written, each bit of the written value
-specifies some property of how the PPU should behave.
-In particular, the low 2 bits are treated as a number from 0 to 3
-and select one of the 4 name tables which will contain the top-left
-corner of the visible screen-sized window.
-</p><p>
-Writing this register outside vblank can cause graphical anomalies.
-</p>
-</td></tr>
-<tr><td>PPUSTATUS</td><td>0x2002</td>
-<td>
-Contains various status flags, including whether the PPU is currently
-in vblank, and whether sprite zero hit has occurred this frame.
-</td></tr>
-<tr><td>PPUSCROLL</td><td>0x2005</td>
-<td>
-<p>
-Sets the position of the visible screen-sized window within the name table
-selected in PPUCTRL.
-</p><p>
-During vblank, writing to this register alternates between setting
-the X and Y position of the window.
-</p><p>
-Outside of vblank, setting the X position works as expected,
-but the change will only take effect on the following pixel row.
-Setting the Y position outside of vblank has no effect on the position of the visible window.
-This is the reason why it <em>shouldn't</em> be possible to keep part of the screen stationary
-while the rest scrolls vertically.
-</p>
-</td></tr>
-<tr><td>PPUADDR</td><td>0x2006</td>
-<td>
-</td></tr>
-<tr><td>PPUDATA</td><td>0x2007</td>
-<td>
-</td></tr>
-</table>
+### Interference with Other Registers
+A second register, named `PPUADDR`, mapped to `0x2006`, is used to set the current video memory
+address for the purposes of updating video memory. When the game wants to change, for example,
+one of the tiles in a name table, it first writes the video memory address of the tile to `PPUADDR`,
+then writes the new value of the tile to the `PPUDATA` register mapped to `0x2007`. Typically, this
+is only done during vblank.
+
+Writing to `PPUADDR` will corrupt the current scroll position. Thus it's recommended to set the
+scroll position by writing to `PPUSCROLL` _after_ all the writes to `PPUADDR` during the current vblank are complete.
+There's usually no reason to write to `PPUADDR` mid-frame, and doing so will result in graphical
+artefacts.
