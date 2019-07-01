@@ -49,6 +49,10 @@ completely well-defined.
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scrolling.gif">
 </div>
 
+Writing to a particular PPU register while a frame is being drawn can result in graphical artefacts.
+The Legend of Zelda intentionally causes such an artefact, giving the impression of vertically
+scrolling part of the background.
+
 ## Types of Graphics
 
 Graphics on the NES are split into 2 types:
@@ -96,7 +100,7 @@ bottom-right name table, and parts of each name table will be visible due to wra
 
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/342,290.png" style="width:50%">
 
-### The Catch
+### Not Enough Memory!
 
 Each name table is 1kb in size, but the NES only dedicates 2kb of its video memory to name tables,
 so there are only 2 name tables worth of memory.
@@ -326,7 +330,7 @@ then writes the new value of the tile to the `PPUDATA` register mapped to `0x200
 
 Writing to `PPUADDR` outside of vblank (ie. while the frame is drawing) can cause graphical
 artefacts. This is because the PPU circuitry affected by writing `PPUADDR` is also controlled
-directly by the PPU to retrieve tiles from video memory for the purposes of drawing them. As
+directly by the PPU as it retrieves tiles from video memory for the purposes of drawing them. As
 drawing proceeds from the top to the bottom of the screen, and left to right within each
 pixel row, the PPU effectively sets `PPUADDR` to the address of the tile containing the pixel
 currently being drawn. When drawing moves from one tile to another, the `PPUADDR` is changed
