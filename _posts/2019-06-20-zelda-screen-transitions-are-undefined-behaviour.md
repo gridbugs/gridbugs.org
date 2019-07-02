@@ -370,3 +370,190 @@ There's a clear pattern. Every 2 frames, the address written on pixel row 62 is 
 by 32. But how does this translate into updating the effective scroll position?
 
 ### The _Real_ Scroll Register
+
+Internal to the PPU, and not mapped into the CPU's memory, is a 15 bit register which
+is used both the current video memory address to access, and background scroll configuration.
+
+When treating this value as an address, bit 14 is ignored, and bits 0-13 are treated as an
+address in video memory.
+
+Treating the register as scroll configuration, different parts of its value have different
+meanings, according to this table.
+
+<style>
+.bg-red {
+    background-color: #F47C7C;
+}
+.bg-yellow {
+    background-color: #F7F48B;
+}
+.bg-green {
+    background-color: #A1DE93;
+}
+.bg-blue {
+    background-color: #70A1D7;
+}
+.black-text-table tr td {
+    color: black;
+}
+</style>
+
+<table class="black-text-table">
+<tr>
+<th>Bit</th>
+<td class="bg-red">14</td>
+<td class="bg-red">13</td>
+<td class="bg-red">12</td>
+<td class="bg-yellow">11</td>
+<td class="bg-yellow">10</td>
+<td class="bg-green">9</td>
+<td class="bg-green">8</td>
+<td class="bg-green">7</td>
+<td class="bg-green">6</td>
+<td class="bg-green">5</td>
+<td class="bg-blue">4</td>
+<td class="bg-blue">3</td>
+<td class="bg-blue">2</td>
+<td class="bg-blue">1</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th>Meaning</th>
+<td colspan="3" class="bg-red" style="text-align:center">Fine Y Scroll</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">Name Table Select</td>
+<td colspan="5" class="bg-green" style="text-align:center">Coarse Y Scroll</td>
+<td colspan="5" class="bg-blue" style="text-align:center">Coarse X Scroll</td>
+</tr>
+</table>
+
+<span class="bg-yellow">**Name Table Select**</span> is as value from 0 to 3, and selects the name table currently being drawn from.
+
+<span class="bg-blue">**Coarse X Scroll**</span> and
+<span class="bg-green">**Coarse Y Scroll**</span> give the coordinate of a tile within
+the selected name table. This is the tile currently being drawn
+
+<span class="bg-red">**Fine Y Scroll**</span> contains a value from 0 to 7, and specifies the current vertical offset of the row of
+pixels within the current tile. Tiles are 8 pixels square.
+
+**Fine X Scroll** is absent from this register. There is a separate register which just contains the
+horizontal offset of the current pixel, but it won't be relevant for explaining how The Legend of Zelda
+performs vertical scrolling.
+
+What happens to this register when the game writes `PPUADDR`? Here are the first 3 writes from the demo above.
+
+<table class="black-text-table">
+<tr>
+<th>Bit</th>
+<td class="bg-red">14</td>
+<td class="bg-red">13</td>
+<td class="bg-red">12</td>
+<td class="bg-yellow">11</td>
+<td class="bg-yellow">10</td>
+<td class="bg-green">9</td>
+<td class="bg-green">8</td>
+<td class="bg-green">7</td>
+<td class="bg-green">6</td>
+<td class="bg-green">5</td>
+<td class="bg-blue">4</td>
+<td class="bg-blue">3</td>
+<td class="bg-blue">2</td>
+<td class="bg-blue">1</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th>Meaning</th>
+<td colspan="3" class="bg-red" style="text-align:center">Fine Y Scroll</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">Name Table Select</td>
+<td colspan="5" class="bg-green" style="text-align:center">Coarse Y Scroll</td>
+<td colspan="5" class="bg-blue" style="text-align:center">Coarse X Scroll</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2280</span> Bits</th>
+<td class="bg-red">0</td>
+<td class="bg-red">1</td>
+<td class="bg-red">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2280</span> Parts</th>
+<td colspan="3" class="bg-red" style="text-align:center">2</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">0</td>
+<td colspan="5" class="bg-green" style="text-align:center">20</td>
+<td colspan="5" class="bg-blue" style="text-align:center">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2260</span> Bits</th>
+<td class="bg-red">0</td>
+<td class="bg-red">1</td>
+<td class="bg-red">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">1</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2260</span> Parts</th>
+<td colspan="3" class="bg-red" style="text-align:center">2</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">0</td>
+<td colspan="5" class="bg-green" style="text-align:center">19</td>
+<td colspan="5" class="bg-blue" style="text-align:center">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2240</span> Bits</th>
+<td class="bg-red">0</td>
+<td class="bg-red">1</td>
+<td class="bg-red">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2240</span> Parts</th>
+<td colspan="3" class="bg-red" style="text-align:center">2</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">0</td>
+<td colspan="5" class="bg-green" style="text-align:center">18</td>
+<td colspan="5" class="bg-blue" style="text-align:center">0</td>
+</tr>
+</table>
+
+Breaking the address writes into their scroll components, it's clear what's going on
+here. Every 2 frames, the
+<span class="bg-green">**Coarse Y Scroll**</span>
+is decremented, effecting a vertical scroll of 1 tile or 8 pixels.
+
+The initial scroll is 0,0 during the vertical transition, and then
+the address is written on pixel row 62.
+This means the first 63 rows of pixels are drawn from the top of the selected
+name table, which contains the HUD background.
+The 64th pixel row and onwards however, are drawn with the vertical scroll
+applied from this address.
+As that vertical scroll is decremented every second frame, this gives
+the impression of vertical scrolling of part of the screen.
