@@ -26,7 +26,7 @@ designers.
 </div>
 
 Not having access to any official documentation for the NES Picture Processing Unit
-(PPU), claiming "undefined behaviour" is somewhat speculative. I've been relying on the
+(PPU - the graphics chip), claiming "undefined behaviour" is somewhat speculative. I've been relying on the
 [NesDev Wiki](https://wiki.nesdev.com/w/index.php/PPU) for a specification of how
 the graphics hardware behaves. The PPU is controlled by writing to a series of memory-mapped
 registers, and using these registers for their (seemingly!) intended purpose,
@@ -40,7 +40,7 @@ the following effect should not be possible:
 
 Specifically, scrolling part of the background vertically, while another part of the background
 (the heads up display in the upper quarter of the screen) remains stationary, can't be done by
-interacting with the PPU in the expected way.
+interacting with the PPU in the "normal" way.
 
 In contrast, keeping part of the screen stationary and scrolling the rest of the screen *horizontally* is
 completely well-defined.
@@ -50,7 +50,7 @@ completely well-defined.
 </div>
 
 Writing to a particular PPU register while a frame is being drawn can result in graphical artefacts.
-The Legend of Zelda intentionally causes such an artefact, giving the impression of vertically
+The Legend of Zelda intentionally causes such an artefact, which manifests as vertically
 scrolling part of the background.
 
 ## Types of Graphics
