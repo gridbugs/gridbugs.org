@@ -246,7 +246,7 @@ the story screen. The Y component of the scroll position is increment once every
 All `PPUSCROLL` writes occur during vblank in this example, which causes the entire background
 to scroll together.
 
-<div>
+<div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll.gif" style="width:50%;height:50%;float:left">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll-name-table.gif" style="width:50%;height:50%">
 </div>
@@ -278,7 +278,7 @@ after the vblank.
 If the scroll position is changed while a frame is being drawn, it takes effect when drawing
 reaches the next row of pixels.
 
-<div>
+<div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll.gif" style="width:50%;height:50%;float:left">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll-name-table.gif" style="width:50%;height:50%">
 </div>
@@ -311,7 +311,7 @@ split the screen, and change the scroll position of part of the frame, it may on
 
 And yet:
 
-<div>
+<div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll.gif" style="width:50%;height:50%;float:left">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll-name-table.gif" style="width:50%;height:50%">
 </div>
@@ -557,3 +557,35 @@ The 64th pixel row and onwards however, are drawn with the vertical scroll
 applied from this address.
 As that vertical scroll is decremented every second frame, this gives
 the impression of vertical scrolling of part of the screen.
+
+## Further Reading
+
+- The [NesDev Wiki](https://wiki.nesdev.com/) is an invaluable resource for learning about NES hardware.
+  Specifically relevant to this post are the pages about [PPU Scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)
+  and [PPU Registers](https://wiki.nesdev.com/w/index.php/PPU_registers).
+- My still very much incomplete NES emulator is [here](https://github.com/stevebob/mos6502). I used it to make
+  all the graphics in this post!
+
+
+## Notes
+
+Before I learnt about the internal PPU register, my emulator would display a wipe
+effect on vertical screen transitions in The Legend of Zelda.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-wipe.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-wipe-name-table.gif" style="width:50%;height:50%">
+</div>
+
+The Link sprite would slide down the screen as intended, but the background would not scroll.
+The wipe is caused by the game gradually updating the name table to contain the new room.
+
+The wipe is still visible in the name table view after I added the internal PPU register to my emulator,
+but it's not visible in the game display because the screen scrolls at the same rate as the new room background
+is populated in video memory.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-scroll.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-scroll-name-table.gif" style="width:50%;height:50%">
+</div>
+
