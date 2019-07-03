@@ -26,7 +26,7 @@ designers.
 </div>
 
 Not having access to any official documentation for the NES Picture Processing Unit
-(PPU), this is somewhat speculative. I've been relying on the
+(PPU), claiming "undefined behaviour" is somewhat speculative. I've been relying on the
 [NesDev Wiki](https://wiki.nesdev.com/w/index.php/PPU) for a specification of how
 the graphics hardware behaves. The PPU is controlled by writing to a series of memory-mapped
 registers, and using these registers for their (seemingly!) intended purpose,
@@ -578,7 +578,7 @@ effect on vertical screen transitions in The Legend of Zelda.
 </div>
 
 The Link sprite would slide down the screen as intended, but the background would not scroll.
-The wipe is caused by the game gradually updating the name table to contain the new room.
+The wipe is caused by the game gradually updating the name table to contain the new room's graphics.
 
 The wipe is still visible in the name table view after I added the internal PPU register to my emulator,
 but it's not visible in the game display because the screen scrolls at the same rate as the new room background
