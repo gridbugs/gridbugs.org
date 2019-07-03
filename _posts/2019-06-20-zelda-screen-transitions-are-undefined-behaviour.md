@@ -285,22 +285,22 @@ reaches the next row of pixels.
 
 <table class="short-table">
 <tr><th>Frame</th><th>Sub-Frame</th><th>Component</th><th>Value</th></tr>
-<tr><td>0</td><td>Pixel Row 62</td><td>X</td><td>72</td></tr>
-<tr><td>1</td><td>Pixel Row 62</td><td>X</td><td>76</td></tr>
-<tr><td>2</td><td>Pixel Row 62</td><td>X</td><td>80</td></tr>
-<tr><td>3</td><td>Pixel Row 62</td><td>X</td><td>84</td></tr>
-<tr><td>4</td><td>Pixel Row 62</td><td>X</td><td>88</td></tr>
-<tr><td>5</td><td>Pixel Row 62</td><td>X</td><td>92</td></tr>
-<tr><td>6</td><td>Pixel Row 62</td><td>X</td><td>96</td></tr>
-<tr><td>7</td><td>Pixel Row 62</td><td>X</td><td>100</td></tr>
-<tr><td>8</td><td>Pixel Row 62</td><td>X</td><td>104</td></tr>
-<tr><td>9</td><td>Pixel Row 62</td><td>X</td><td>108</td></tr>
-<tr><td>10</td><td>Pixel Row 62</td><td>X</td><td>112</td></tr>
-<tr><td>11</td><td>Pixel Row 62</td><td>X</td><td>116</td></tr>
-<tr><td>12</td><td>Pixel Row 62</td><td>X</td><td>120</td></tr>
-<tr><td>13</td><td>Pixel Row 62</td><td>X</td><td>124</td></tr>
-<tr><td>14</td><td>Pixel Row 62</td><td>X</td><td>128</td></tr>
-<tr><td>15</td><td>Pixel Row 62</td><td>X</td><td>132</td></tr>
+<tr><td>0</td><td>Pixel Row 63</td><td>X</td><td>72</td></tr>
+<tr><td>1</td><td>Pixel Row 63</td><td>X</td><td>76</td></tr>
+<tr><td>2</td><td>Pixel Row 63</td><td>X</td><td>80</td></tr>
+<tr><td>3</td><td>Pixel Row 63</td><td>X</td><td>84</td></tr>
+<tr><td>4</td><td>Pixel Row 63</td><td>X</td><td>88</td></tr>
+<tr><td>5</td><td>Pixel Row 63</td><td>X</td><td>92</td></tr>
+<tr><td>6</td><td>Pixel Row 63</td><td>X</td><td>96</td></tr>
+<tr><td>7</td><td>Pixel Row 63</td><td>X</td><td>100</td></tr>
+<tr><td>8</td><td>Pixel Row 63</td><td>X</td><td>104</td></tr>
+<tr><td>9</td><td>Pixel Row 63</td><td>X</td><td>108</td></tr>
+<tr><td>10</td><td>Pixel Row 63</td><td>X</td><td>112</td></tr>
+<tr><td>11</td><td>Pixel Row 63</td><td>X</td><td>116</td></tr>
+<tr><td>12</td><td>Pixel Row 63</td><td>X</td><td>120</td></tr>
+<tr><td>13</td><td>Pixel Row 63</td><td>X</td><td>124</td></tr>
+<tr><td>14</td><td>Pixel Row 63</td><td>X</td><td>128</td></tr>
+<tr><td>15</td><td>Pixel Row 63</td><td>X</td><td>132</td></tr>
 </table>
 
 
@@ -341,32 +341,32 @@ for the duration of the current frame.
 
 Let's log writes to `PPUADDR` during the vertical transition. Since the name table is also being
 updated during the transition, logging _all_ writes to `PPUADDR` would be noisy. In the horizontal
-transition, the scroll was set while drawing pixel row 62, so we'll just look at `PPUADDR` writes
+transition, the scroll was set while drawing pixel row 63, so we'll just look at `PPUADDR` writes
 during this row. Also, much like `PPUSCROLL`, `PPUADDR` must be written twice for the write to
 take effect. The first write sets the high byte of the address, and the second write sets the
 low byte. This table just shows the combined 16 bit addresses.
 
 <table class="short-table">
 <tr><th>Frame</th><th>Sub-Frame</th><th>Address</th></tr>
-<tr><td>0</td><td>Pixel Row 62</td><td>0x2280</td></tr>
-<tr><td>1</td><td>Pixel Row 62</td><td>0x2280</td></tr>
-<tr><td>2</td><td>Pixel Row 62</td><td>0x2260</td></tr>
-<tr><td>3</td><td>Pixel Row 62</td><td>0x2260</td></tr>
-<tr><td>4</td><td>Pixel Row 62</td><td>0x2240</td></tr>
-<tr><td>5</td><td>Pixel Row 62</td><td>0x2240</td></tr>
-<tr><td>6</td><td>Pixel Row 62</td><td>0x2220</td></tr>
-<tr><td>7</td><td>Pixel Row 62</td><td>0x2220</td></tr>
-<tr><td>8</td><td>Pixel Row 62</td><td>0x2200</td></tr>
-<tr><td>9</td><td>Pixel Row 62</td><td>0x2200</td></tr>
-<tr><td>10</td><td>Pixel Row 62</td><td>0x21E0</td></tr>
-<tr><td>11</td><td>Pixel Row 62</td><td>0x21E0</td></tr>
-<tr><td>12</td><td>Pixel Row 62</td><td>0x21C0</td></tr>
-<tr><td>13</td><td>Pixel Row 62</td><td>0x21C0</td></tr>
-<tr><td>14</td><td>Pixel Row 62</td><td>0x21A0</td></tr>
-<tr><td>15</td><td>Pixel Row 62</td><td>0x21A0</td></tr>
+<tr><td>0</td><td>Pixel Row 63</td><td>0x2280</td></tr>
+<tr><td>1</td><td>Pixel Row 63</td><td>0x2280</td></tr>
+<tr><td>2</td><td>Pixel Row 63</td><td>0x2260</td></tr>
+<tr><td>3</td><td>Pixel Row 63</td><td>0x2260</td></tr>
+<tr><td>4</td><td>Pixel Row 63</td><td>0x2240</td></tr>
+<tr><td>5</td><td>Pixel Row 63</td><td>0x2240</td></tr>
+<tr><td>6</td><td>Pixel Row 63</td><td>0x2220</td></tr>
+<tr><td>7</td><td>Pixel Row 63</td><td>0x2220</td></tr>
+<tr><td>8</td><td>Pixel Row 63</td><td>0x2200</td></tr>
+<tr><td>9</td><td>Pixel Row 63</td><td>0x2200</td></tr>
+<tr><td>10</td><td>Pixel Row 63</td><td>0x21E0</td></tr>
+<tr><td>11</td><td>Pixel Row 63</td><td>0x21E0</td></tr>
+<tr><td>12</td><td>Pixel Row 63</td><td>0x21C0</td></tr>
+<tr><td>13</td><td>Pixel Row 63</td><td>0x21C0</td></tr>
+<tr><td>14</td><td>Pixel Row 63</td><td>0x21A0</td></tr>
+<tr><td>15</td><td>Pixel Row 63</td><td>0x21A0</td></tr>
 </table>
 
-There's a clear pattern. Every 2 frames, the address written on pixel row 62 is decreased
+There's a clear pattern. Every 2 frames, the address written on pixel row 63 is decreased
 by 32. But how does this translate into updating the effective scroll position?
 
 ### The _Real_ Scroll Register
@@ -550,13 +550,192 @@ here. Every 2 frames, the
 is decremented, effecting a vertical scroll of 1 tile or 8 pixels.
 
 The initial scroll is 0,0 during the vertical transition, and then
-the address is written on pixel row 62.
+the address is written on pixel row 63.
 This means the first 63 rows of pixels are drawn from the top of the selected
 name table, which contains the HUD background.
 The 64th pixel row and onwards however, are drawn with the vertical scroll
 applied from this address.
 As that vertical scroll is decremented every second frame, this gives
 the impression of vertical scrolling of part of the screen.
+
+### Scroll Down to Scroll Up
+
+The Legend of Zelda can't completely hide this trick from players.
+It produces a visible artefact on vertical screen transitions which you can see if you
+look closely.
+When moving up between rooms, the first frame of the scroll animation scrolls down instead.
+Here's the animation in extreme slow motion.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/brief-scroll-down.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/brief-scroll-down-name-table.gif" style="width:50%;height:50%">
+</div>
+
+The name table view shows what's going on. While to players it may look like the visible area
+is smoothly scrolling up, the scroll transition begins by moving the visible area from the top-left
+name table to the bottom-left name table, which contains a copy of the room background. This is
+necessary, as the HUD at the top of the screen is also part of the name table, so if the visible
+area was to scroll up from its original position, it would scroll past the HUD.
+
+The vertical scrolling is implemented by writing to the `PPUADDR` register mid-frame, and the very
+first value written is `0x2800`. 2 frames later, `0x23A0` is written, and then starts decrementing
+the value by 32 every other frame.
+
+<table class="black-text-table">
+<tr>
+<th>Bit</th>
+<td class="bg-red">14</td>
+<td class="bg-red">13</td>
+<td class="bg-red">12</td>
+<td class="bg-yellow">11</td>
+<td class="bg-yellow">10</td>
+<td class="bg-green">9</td>
+<td class="bg-green">8</td>
+<td class="bg-green">7</td>
+<td class="bg-green">6</td>
+<td class="bg-green">5</td>
+<td class="bg-blue">4</td>
+<td class="bg-blue">3</td>
+<td class="bg-blue">2</td>
+<td class="bg-blue">1</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th>Meaning</th>
+<td colspan="3" class="bg-red" style="text-align:center">Fine Y Scroll</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">Name Table Select</td>
+<td colspan="5" class="bg-green" style="text-align:center">Coarse Y Scroll</td>
+<td colspan="5" class="bg-blue" style="text-align:center">Coarse X Scroll</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2800</span> Bits</th>
+<td class="bg-red">0</td>
+<td class="bg-red">1</td>
+<td class="bg-red">0</td>
+<td class="bg-yellow">1</td>
+<td class="bg-yellow">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-green">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x2800</span> Parts</th>
+<td colspan="3" class="bg-red" style="text-align:center">2</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">2</td>
+<td colspan="5" class="bg-green" style="text-align:center">0</td>
+<td colspan="5" class="bg-blue" style="text-align:center">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x23A0</span> Bits</th>
+<td class="bg-red">0</td>
+<td class="bg-red">1</td>
+<td class="bg-red">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-yellow">0</td>
+<td class="bg-green">1</td>
+<td class="bg-green">1</td>
+<td class="bg-green">1</td>
+<td class="bg-green">0</td>
+<td class="bg-green">1</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+<td class="bg-blue">0</td>
+</tr>
+<tr>
+<th><span style="font-family:monospace">0x23A0</span> Parts</th>
+<td colspan="3" class="bg-red" style="text-align:center">2</td>
+<td colspan="2" class="bg-yellow" style="text-align:center">0</td>
+<td colspan="5" class="bg-green" style="text-align:center">29</td>
+<td colspan="5" class="bg-blue" style="text-align:center">0</td>
+</tr>
+</table>
+
+Writing `0x2800` to `PPUADDR` sets the
+<span class="bg-yellow">**Name Table Select**</span>
+to 2, which will render out of the bottom-left name table.
+Since both scroll values are 0, it will start with the top-left
+tile of this name table. However, the
+<span class="bg-red">**Fine Y Scroll**</span> is 2, so there
+is a 2 pixel vertical offset from the top of the bottom-left
+name table, which is why on the very first frame of the transition,
+you see a 2 pixel high black bar at the bottom of the screen.
+The initial scroll setting for the transition animation is 2 pixels
+below where it would need to be for the transition to be seamless.
+
+2 frames later, `0x23A0` is written to `PPUADDR`. This brings
+us back to the top-left name table, and we're rendering from the 29th
+row of tiles, which is the very bottom row. Still, the
+<span class="bg-red">**Fine Y Scroll**</span> contains a 2.
+
+Why is it necessary to set the
+<span class="bg-red">**Fine Y Scroll**</span> to 2?
+Why couldn't the game just write `0x0800` and `0x03A0`
+and not have to suffer the 2-pixel offset?
+
+The 4 name tables occupy a 4kb region of video memory,
+from `0x2000` to `0x2FFF`.
+Each tile in a name table occupies a single byte of video memory (they're really just indices into another table),
+and the order of tiles and name tables
+in video memory is such that the
+<span class="bg-yellow">**Name Table Select**</span>,
+<span class="bg-green">**Coarse Y Scroll**</span> and
+<span class="bg-blue">**Coarse X Scroll**</span>
+is the offset of a tile within the name table region of memory.
+That is, taking the low 12 bits of the internal PPU register,
+and adding it to `0x2000`, you can find the video memory address
+of a tile. This is no coincidence! This is precisely what allows
+this register to be treated as both an address register, and
+a scroll register.
+
+With one caveat.
+
+When treating it as an address register, bits 12 and 13 are treated
+as part of the address. During rendering, the PPU is constantly updating
+this register with the address of the tile it's currently drawing.
+As tiles located in name tables, and name tables are in the region
+of memory from `0x2000` to `0x2FFF`, the PPU will be setting the register
+to values within this range.
+
+When a game writes to `PPUADDR` mid frame, if it doesn't write the address
+of a tile in a name table, the PPU will attempt to read from *somewhere else*
+in video memory. Whatever bytes it happens to read will be treated as tiles,
+which will likely lead to undesirable outcomes. So every mid-frame write to
+`PPUADDR` must lie between `0x2000` and `0x2FFF`. Taking every number
+in that range, and considering its scroll components, the value of
+<span class="bg-red">**Fine Y Scroll**</span> will always be 2.
+
+This limitation means that you can't change the
+<span class="bg-red">**Fine Y Scroll**</span> mid-frame,
+which means that when using this trick to implement split-screen
+vertical scrolling, you're constrained to scroll 8 pixels at a time.
+The Legend of Zelda scrolls 4 pixels per frame when scrolling
+horizontally, but scrolls 8 pixels every 2 frames when scrolling
+vertically, and this explains why.
+
+What about bit 14? If there was a way to update bit 14 of this register mid-frame
+it should be possible without messing up tile addresses, because bit 14 is ignored
+when treating the register as an address. It's ignored because 14 bits (0 to 13)
+are sufficient to address the 16kb video memory address space.
+Unfortunately, bit 14 doesn't get updated when you write to `PPUADDR`. It's only
+changed when you write to `PPUSCROLL`, but of course the Y component of the scroll
+doesn't get updated mid frame.
+
+The artefact is also visible when scrolling down between rooms, but it occurs
+at the end of the animation instead.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/both-scroll-vertical.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/both-scroll-vertical-name-table.gif" style="width:50%;height:50%">
+</div>
 
 ## Further Reading
 
@@ -578,14 +757,5 @@ effect on vertical screen transitions in The Legend of Zelda.
 </div>
 
 The Link sprite would slide down the screen as intended, but the background would not scroll.
-The wipe is caused by the game gradually updating the name table to contain the new room's graphics.
-
-The wipe is still visible in the name table view after I added the internal PPU register to my emulator,
-but it's not visible in the game display because the screen scrolls at the same rate as the new room background
-is populated in video memory.
-
-<div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-scroll.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-scroll-name-table.gif" style="width:50%;height:50%">
-</div>
-
+The wipe is caused by the game gradually updating the name table to contain the new room's graphics,
+but not scrolling to keep the updates off-screen.
