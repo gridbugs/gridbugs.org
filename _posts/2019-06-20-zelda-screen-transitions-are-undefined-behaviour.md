@@ -17,7 +17,7 @@ excerpt_separator: <!--more-->
 }
 </style>
 
-The vertical-scrolling effect in the original "The Legend of Zelda" relies on
+The vertical scrolling effect in the original "The Legend of Zelda" relies on
 manipulating the NES graphics hardware in a manor likely unintended by its
 designers.
 
@@ -28,8 +28,8 @@ designers.
 Not having access to any official documentation for the NES Picture Processing Unit
 (PPU - the graphics chip), claiming "undefined behaviour" is somewhat speculative. I've been relying on the
 [NesDev Wiki](https://wiki.nesdev.com/w/index.php/PPU) for a specification of how
-the graphics hardware behaves. The PPU is controlled by writing to a series of memory-mapped
-registers, and using these registers for their (seemingly!) intended purpose,
+the graphics hardware behaves. The PPU is controlled by writing to a memory-mapped
+registers, and using these registers for their (seemingly!) intended purposes,
 the following effect should not be possible:
 
 <!--more-->
@@ -38,11 +38,12 @@ the following effect should not be possible:
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/example.gif">
 </div>
 
-Specifically, scrolling part of the background vertically, while another part of the background
-(the heads up display in the upper quarter of the screen) remains stationary, can't be done by
+When scrolling the screen vertically, the entire screen has to scroll together. Partial
+vertical scrolling, where part of the screen remains stationary (the Heads Up Display)
+while another part (the game area) scrolls, can't be done by
 interacting with the PPU in the "normal" way.
 
-In contrast, keeping part of the screen stationary and scrolling the rest of the screen *horizontally* is
+Partial *horizontal* scrolling, on the other hand, is
 completely well-defined.
 
 <div class="nes-screenshot">
@@ -50,12 +51,12 @@ completely well-defined.
 </div>
 
 Writing to a particular PPU register while a frame is being drawn can result in graphical artefacts.
-The Legend of Zelda intentionally causes such an artefact, which manifests as vertically
-scrolling part of the background.
+The Legend of Zelda intentionally causes an artefact which manifests itself as partial vertical scrolling.
+This post gives some background on NES graphics hardware, and explains how the partial vertical scrolling trick works.
 
 ## Types of Graphics
 
-Graphics on the NES are split into 2 types:
+The NES has 2 types of graphics:
  - sprites, which are tiles that can be placed at arbitrary positions on the screen and independently move around
  - the background, which is a grid of tiles which can be scrolled smoothly as a single image
 
@@ -79,12 +80,12 @@ And here's the scene with only the background visible:
 The NES Picture Processor supports scrolling background graphics.
 Video memory contains a grid of tiles 2x2 times the size of the screen.
 The screen displays a screen-sized window into this grid, and the position of the window can
-be precisely controlled. Gradually moving this window within the grid produces a smooth scrolling effect.
+be finely controlled. Gradually moving the visible window within the grid produces a smooth scrolling effect.
 
 The video output from the NES is 256x240 pixels. The in-memory tile grid represents a 512x480
 pixel area, and is broken up into 4 screen-sized quadrants called "name tables". Games can configure the
 Picture Processing Unit (PPU), to specify the position of the visible screen-sized window
-by selecting a pixel coordinate within the in-memory tile grid.
+by selecting a pixel coordinate within the grid of name tables.
 
 Choosing the coordinate (0, 0) will display the entire top-left name table:
 
@@ -103,13 +104,22 @@ bottom-right name table, and parts of each name table will be visible due to wra
 ### Not Enough Memory!
 
 Each name table is 1kb in size, but the NES only dedicates 2kb of its video memory to name tables,
-so there are only 2 name tables worth of memory.
+so only 2 name tables can fit in memory.
 
-How does it hold 4 screens worth of tile grid?
+How can there be 4 name tables?
+
+#### Name Table Mirroring
 
 Video memory is connected to the PPU in such a way that when the PPU renders a tile from one of the 4
 apparent name tables, one of the 2 real name tables is selected, and read from instead. This effectively
 means that the 4 apparent name tables are made up of 2 identical pairs of name tables.
+
+This image shows a snapshot of the contents of all 4 name tables. The top-left and top-right are identical,
+as are the bottom-left and bottom-right.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/name-table-mirroring.png">
+</div>
 
 Why not just have 2 name tables then?
 
@@ -152,12 +162,14 @@ window highlighted.
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo-name-table.gif" style="width:50%;height:50%">
 </div>
 
+Remember, vertical scrolling itself isn't unusual at all - just *split screen* vertical scrolling.
+
 ## Screen Splitting
 
 Each frame of video produced by the NES is drawn from top to bottom, one row of pixels at a time.
 Within each row, pixels are drawn one at a time, left to right.
 Mid way through drawing a frame, the game can reconfigure the PPU, which effects how the yet-to-be
-drawn pixels are displayed. One common mid-frame change is to update the horizontal scroll position.
+drawn pixels will be displayed. One common mid-frame change is to update the horizontal scroll position.
 
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
@@ -217,22 +229,12 @@ It occurs at the top pixel of the fuse of the bomb, which is 16 pixels from the 
 When sprite zero hit happens, the game starts counting CPU cycles, and sets the horizontal scroll
 after a specific number of cycles have passed.
 
-It's not clear to me whether screen splitting was the original purpose of sprite zero hit.
-It seems like there should be a simpler way for the hardware to report that it's reached
-a certain part of the screen than requiring the game to draw a sprite. A possibility is
-it was intended to be used for collision detection, but it would only be able to detect
-collisions with a single sprite and the background.
-
 ## Vertical Blanking
 
 The majority of the time, the NES PPU is drawing pixels to the screen.
 There is a brief period of "downtime" in between frames during which no drawing
-is taking place. This is known as the "Vertical Blank" or "Vblank".
+is taking place. This is known as the "Vertical Blank" or "vblank".
 Some types of PPU configuration changes can only be made during vblank.
-
-The precise duration of vblank differs between regional TV standards.
-The NTSC NES sold in North America and the PAL NES sold in Europe have different hardware
-to handle the different requirements for frame timing.
 
 ## The Scroll Register
 
@@ -275,8 +277,9 @@ to scroll together.
 
 Writes to `PPUSCROLL` during vblank take effect at the beginning of frame drawn immediately
 after the vblank.
-If the scroll position is changed while a frame is being drawn, it takes effect when drawing
-reaches the next row of pixels.
+If the scroll position is changed while a frame is being drawn (ie. outside of vblank), it takes effect when drawing
+reaches the next row of pixels. Partial horizontal scrolling works by writing to `PPUSCROLL`
+while the PPU is drawing the last line of pixels before the scroll should happen.
 
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll.gif" style="width:50%;height:50%;float:left">
@@ -318,18 +321,18 @@ And yet:
 
 Believe it or not, the `PPUSCROLL` register is not changed during this transition.
 
-You may notice a 1 pixel high graphical artefact just below the HUD. This is a bug in my emulator
+You may notice a 1-pixel high graphical artefact just below the HUD. This is a bug in my emulator
 caused by not synchronising CPU clock cycles with per-pixel rendering.
 
 ### Interference with Other Registers
 
 A second register, named `PPUADDR`, mapped to `0x2006`, is used to set the current video memory
-address for the purposes of updating video memory. When the game wants to change, for example,
+address. When the game wants to change, for example,
 one of the tiles in a name table, it first writes the video memory address of the tile to `PPUADDR`,
-then writes the new value of the tile to the `PPUDATA` register mapped to `0x2007`.
+then writes the new value of the tile to `PPUDATA` - a third register mapped to `0x2007`.
 
 Writing to `PPUADDR` outside of vblank (ie. while the frame is drawing) can cause graphical
-artefacts. This is because the PPU circuitry affected by writing `PPUADDR` is also controlled
+artefacts. This is because the PPU circuitry affected by writing `PPUADDR` is also manipulated
 directly by the PPU as it retrieves tiles from video memory for the purposes of drawing them. As
 drawing proceeds from the top to the bottom of the screen, and left to right within each
 pixel row, the PPU effectively sets `PPUADDR` to the address of the tile containing the pixel
@@ -342,9 +345,12 @@ for the duration of the current frame.
 Let's log writes to `PPUADDR` during the vertical transition. Since the name table is also being
 updated during the transition, logging _all_ writes to `PPUADDR` would be noisy. In the horizontal
 transition, the scroll was set while drawing pixel row 63, so we'll just look at `PPUADDR` writes
-during this row. Also, much like `PPUSCROLL`, `PPUADDR` must be written twice for the write to
-take effect. The first write sets the high byte of the address, and the second write sets the
-low byte. This table just shows the combined 16 bit addresses.
+during this row.
+
+<div class="nes-screenshot">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll-name-table.gif" style="width:50%;height:50%">
+</div>
 
 <table class="short-table">
 <tr><th>Frame</th><th>Sub-Frame</th><th>Address</th></tr>
@@ -367,17 +373,17 @@ low byte. This table just shows the combined 16 bit addresses.
 </table>
 
 There's a clear pattern. Every 2 frames, the address written on pixel row 63 is decreased
-by 32. But how does this translate into updating the effective scroll position?
+by 32 (0x20). But how does this translate into updating the effective scroll position?
 
 ### The _Real_ Scroll Register
 
 Internal to the PPU, and not mapped into the CPU's memory, is a 15 bit register which
-is used both the current video memory address to access, and background scroll configuration.
+is used as both the current video memory address to access, and background scroll configuration.
 
 When treating this value as an address, bit 14 is ignored, and bits 0-13 are treated as an
 address in video memory.
 
-Treating the register as scroll configuration, different parts of its value have different
+When treating the register as scroll configuration, different parts of its contents have different
 meanings, according to this table.
 
 <style>
@@ -549,7 +555,7 @@ here. Every 2 frames, the
 <span class="bg-green">**Coarse Y Scroll**</span>
 is decremented, effecting a vertical scroll of 1 tile or 8 pixels.
 
-The initial scroll is 0,0 during the vertical transition, and then
+The initial scroll is 0,0 during each frame of the vertical transition, and then
 the address is written on pixel row 63.
 This means the first 63 rows of pixels are drawn from the top of the selected
 name table, which contains the HUD background.
@@ -665,10 +671,10 @@ to 2, which will render out of the bottom-left name table.
 Since both scroll values are 0, it will start with the top-left
 tile of this name table. However, the
 <span class="bg-red">**Fine Y Scroll**</span> is 2, so there
-is a 2 pixel vertical offset from the top of the bottom-left
+is a 2-pixel vertical offset from the top of the bottom-left
 name table, which is why on the very first frame of the transition,
-you see a 2 pixel high black bar at the bottom of the screen.
-The initial scroll setting for the transition animation is 2 pixels
+you see a 2-pixel high black bar at the bottom of the screen.
+The initial scroll setting for the transition animation is 2-pixels
 below where it would need to be for the transition to be seamless.
 
 2 frames later, `0x23A0` is written to `PPUADDR`. This brings
@@ -681,7 +687,7 @@ Why is it necessary to set the
 Why couldn't the game just write `0x0800` and `0x03A0`
 and not have to suffer the 2-pixel offset?
 
-The 4 name tables occupy a 4kb region of video memory,
+The 4 name tables occupy a 4kb region of the PPU's address space
 from `0x2000` to `0x2FFF`.
 Each tile in a name table occupies a single byte of video memory (they're really just indices into another table),
 and the order of tiles and name tables
@@ -689,7 +695,7 @@ in video memory is such that the
 <span class="bg-yellow">**Name Table Select**</span>,
 <span class="bg-green">**Coarse Y Scroll**</span> and
 <span class="bg-blue">**Coarse X Scroll**</span>
-is the offset of a tile within the name table region of memory.
+comprise the offset of a tile within the name table region of memory.
 That is, taking the low 12 bits of the internal PPU register,
 and adding it to `0x2000`, you can find the video memory address
 of a tile. This is no coincidence! This is precisely what allows
@@ -716,18 +722,11 @@ in that range, and considering its scroll components, the value of
 This limitation means that you can't change the
 <span class="bg-red">**Fine Y Scroll**</span> mid-frame,
 which means that when using this trick to implement split-screen
-vertical scrolling, you're constrained to scroll 8 pixels at a time.
+vertical scrolling, you're constrained to scroll 8 pixels at a time, and always with a 2-pixel vertical offset
+from a tile boundary.
 The Legend of Zelda scrolls 4 pixels per frame when scrolling
 horizontally, but scrolls 8 pixels every 2 frames when scrolling
 vertically, and this explains why.
-
-What about bit 14? If there was a way to update bit 14 of this register mid-frame
-it should be possible without messing up tile addresses, because bit 14 is ignored
-when treating the register as an address. It's ignored because 14 bits (0 to 13)
-are sufficient to address the 16kb video memory address space.
-Unfortunately, bit 14 doesn't get updated when you write to `PPUADDR`. It's only
-changed when you write to `PPUSCROLL`, but of course the Y component of the scroll
-doesn't get updated mid frame.
 
 The artefact is also visible when scrolling down between rooms, but it occurs
 at the end of the animation instead.
@@ -742,8 +741,7 @@ at the end of the animation instead.
 - The [NesDev Wiki](https://wiki.nesdev.com/) is an invaluable resource for learning about NES hardware.
   Specifically relevant to this post are the pages about [PPU Scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)
   and [PPU Registers](https://wiki.nesdev.com/w/index.php/PPU_registers).
-- My still very much incomplete NES emulator is [here](https://github.com/stevebob/mos6502). I used it to make
-  all the graphics in this post!
+- My still very much incomplete NES emulator is [here](https://github.com/stevebob/mos6502).
 
 
 ## Notes
