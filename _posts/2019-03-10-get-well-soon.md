@@ -46,7 +46,7 @@ which greatly improved the quality of the game.
 
 ### Wave Function Collapse
 
-I use ![WFC](/wave-function-collapse) to generate terrain, and then do a pass
+I use [WFC](/wave-function-collapse) to generate terrain, and then do a pass
 over the output to add items and characters. Coaxing WFC to generate
 interesting levels requires carefully restricting it from placing certain tiles
 in certain locations. I spent much of the day before starting the 7drl messing
