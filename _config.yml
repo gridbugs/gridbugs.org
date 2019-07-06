@@ -17,8 +17,6 @@ title: Grid Bugs
 email: admin@gridbugs.org
 description: >
   I write down my thoughts about game design, and share progress on games I'm making.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  stevebob
 itch_username: gridbugs
 twitch_username: gridbugs
@@ -46,6 +44,10 @@ pagination:
     after: 3
 
 permalink: pretty
+
+feed:
+  collections:
+    - posts
 
 # Build settings
 markdown: kramdown
