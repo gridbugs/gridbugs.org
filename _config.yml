@@ -70,3 +70,4 @@ exclude:
   - TODO.md
   - wip_posts/
   - README.md
+  - scripts
