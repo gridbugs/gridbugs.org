@@ -163,8 +163,8 @@ On the right is a recording of the name tables, with horizontal mirroring, and t
 window highlighted.
 
 <div class="nes-screenshot">
-{% image scroll-demo.gif style="width:50%;height:50%;float:left" %}
-{% image scroll-demo-name-table.gif style="width:50%;height:50%" %}
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo.gif" style="width:50%;height:50%;float:left">
+<img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo-name-table.gif" style="width:50%;height:50%">
 </div>
 
 Remember, vertical scrolling itself isn't unusual at all - just *split screen* vertical scrolling.
