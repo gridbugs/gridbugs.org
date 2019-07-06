@@ -11,19 +11,19 @@ before_script:
 test:
   stage: test
   script:
-  - bundle exec jekyll build -d test
+  - bundle exec jekyll build --destination test --config _config.yml,_config_gitlab.yml
   artifacts:
     paths:
     - test
   except:
-  - publish
+  - master
 
 pages:
   stage: deploy
   script:
-  - bundle exec jekyll build -d public
+  - bundle exec jekyll build --destination public --config _config.yml,_config_gitlab.yml
   artifacts:
     paths:
     - public
   only:
-  - publish
+  - master
