@@ -13,7 +13,7 @@ your character so you might stand a chance against the alien threat.
 
 It is my entry in the 7 Day Roguelike game jam for 2018.
 
-![screenshot](/images/7drl2018-success/screenshot.png)
+![screenshot](/images/meters-below-the-ground/screenshot.png)
 
 <!--more-->
 
