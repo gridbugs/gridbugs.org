@@ -22,7 +22,7 @@ manipulating the NES graphics hardware in a manor likely that was unintended by 
 designers.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/title.png">
+{% image title.png %}
 </div>
 
 Since I don't have access
@@ -37,7 +37,7 @@ the following effect should not be possible:
 <!--more-->
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/example.gif">
+{% image example.gif %}
 </div>
 
 When scrolling the screen vertically, the entire screen has to scroll together.
@@ -51,7 +51,7 @@ Partial *horizontal* scrolling, on the other hand, is
 completely well-defined.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scrolling.gif">
+{% image horizontal-scrolling.gif %}
 </div>
 
 Writing to a particular PPU register while a frame is being drawn can result in graphical artefacts.
@@ -66,17 +66,17 @@ The NES has 2 types of graphics:
 
 To highlight the difference, here's a scene made up of sprites and background:
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/sprites-and-background.gif">
+{% image sprites-and-background.gif %}
 </div>
 
 Here's the same scene with only the sprites visible:
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/only-sprites.gif">
+{% image only-sprites.gif %}
 </div>
 
 And here's the scene with only the background visible:
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/only-background.gif">
+{% image only-background.gif %}
 </div>
 
 ## Scrolling
@@ -94,17 +94,17 @@ by selecting a pixel coordinate within the grid of name tables.
 
 Choosing the coordinate (0, 0) will display the entire top-left name table:
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/0,0.png" style="width:50%">
+{% image 0,0.png style="width:50%" %}
 
 Scrolling to (125, 181) shows a bit of each name table:
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/125,181.png" style="width:50%">
+{% image 125,181.png style="width:50%" %}
 
 The visible window wraps around to the far side of the in-memory tile grid.
 Scrolling to (342, 290) will place the top-left corner of the visible screen inside the
 bottom-right name table, and parts of each name table will be visible due to wrapping:
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/342,290.png" style="width:50%">
+{% image 342,290.png style="width:50%" %}
 
 ### Not Enough Memory!
 
@@ -123,7 +123,7 @@ This image shows a snapshot of the contents of all 4 name tables. The top-left a
 as are the bottom-left and bottom-right.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/name-table-mirroring.png">
+{% image name-table-mirroring.png %}
 </div>
 
 Why not just have 2 name tables then?
@@ -134,11 +134,11 @@ the top-left and top-right name tables are different, so it can scroll between t
 In this configuration, the top-left and bottom-left name tables will refer to the same
 real name table, and likewise the top-right and bottom-right. This configuration is named "Vertical Mirroring".
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-mirroring.png" style="width:50%">
+{% image vertical-mirroring.png style="width:50%" %}
 
 The other possible configuration is "Horizontal Mirroring", which games use when they want to scroll vertically.
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-mirroring.png" style="width:50%">
+{% image horizontal-mirroring.png style="width:50%" %}
 
 Games usually don't scroll diagonally, as it produces artifacts around the edge of the screen due to name table
 mirroring.
@@ -147,7 +147,7 @@ mirroring.
 
 Each game's cartridge contains hardware which allows name table mirroring to be configured.
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/cart.jpg" style="width:50%">
+{% image cart.jpg style="width:50%" %}
 
 Some games don't ever need to change mirroring, so their cartridges are hardwired to either horizontal
 or vertical mirroring. Other games need to dynamically switch between the two modes, so their cartridge
@@ -163,8 +163,8 @@ On the right is a recording of the name tables, with horizontal mirroring, and t
 window highlighted.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/scroll-demo-name-table.gif" style="width:50%;height:50%">
+{% image scroll-demo.gif style="width:50%;height:50%;float:left" %}
+{% image scroll-demo-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 Remember, vertical scrolling itself isn't unusual at all - just *split screen* vertical scrolling.
@@ -177,8 +177,8 @@ Mid way through drawing a frame, the game can reconfigure the PPU, which effects
 drawn pixels will be displayed. One common mid-frame change is to update the horizontal scroll position.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-name-table.gif" style="width:50%;height:50%">
+{% image horizontal-scroll-demo.gif style="width:50%;height:50%;float:left" %}
+{% image horizontal-scroll-demo-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 When scrolling horizontally between rooms, The Legend of Zelda always starts with scroll set
@@ -214,16 +214,16 @@ When Sprite Zero Hit occurs, the game changes the horizontal scroll to effect th
 This shows a horizontal room transition with and without the background.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-fast.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/horizontal-scroll-demo-sprites.gif" style="width:50%;height:50%">
+{% image horizontal-scroll-demo-fast.gif style="width:50%;height:50%;float:left" %}
+{% image horizontal-scroll-demo-sprites.gif style="width:50%;height:50%" %}
 </div>
 
 The brown circle
 which appears at the start of the transition, and vanishes at the end, is sprite zero.
 Looking closer at the HUD with and without the background:
 
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/hud.png" style="width:512px;image-rendering:crisp-edges">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/hud-sprites.png" style="width:512px;image-rendering:crisp-edges">
+{% image hud.png style="width:512px;image-rendering:crisp-edges" %}
+{% image hud-sprites.png style="width:512px;image-rendering:crisp-edges" %}
 
 Sprite zero is a discoloured bomb sprite, lined up exactly with the regular bomb sprite in the game's HUD.
 Sprite zero is configured to appear behind the background, but since the black pixels in the HUD are considered
@@ -254,8 +254,8 @@ All `PPUSCROLL` writes occur during vblank in this example, which causes the ent
 to scroll together.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-text-scroll-name-table.gif" style="width:50%;height:50%">
+{% image short-text-scroll.gif style="width:50%;height:50%;float:left" %}
+{% image short-text-scroll-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -287,8 +287,8 @@ reaches the next row of pixels. Partial horizontal scrolling works by writing to
 while the PPU is drawing the last line of pixels before the scroll should happen.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-horizontal-scroll-name-table.gif" style="width:50%;height:50%">
+{% image short-horizontal-scroll.gif style="width:50%;height:50%;float:left" %}
+{% image short-horizontal-scroll-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -320,8 +320,8 @@ split the screen, and change the scroll position of part of the frame, it may on
 And yet:
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll-name-table.gif" style="width:50%;height:50%">
+{% image short-vertical-scroll.gif style="width:50%;height:50%;float:left" %}
+{% image short-vertical-scroll-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 Believe it or not, the `PPUSCROLL` register is not changed during this transition.
@@ -353,8 +353,8 @@ transition, the scroll was set while drawing pixel row 63, so we'll just look at
 during this row.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/short-vertical-scroll-name-table.gif" style="width:50%;height:50%">
+{% image short-vertical-scroll.gif style="width:50%;height:50%;float:left" %}
+{% image short-vertical-scroll-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -578,8 +578,8 @@ When moving up between rooms, the first frame of the scroll animation scrolls do
 Here's the animation in extreme slow motion.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/brief-scroll-down.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/brief-scroll-down-name-table.gif" style="width:50%;height:50%">
+{% image brief-scroll-down.gif style="width:50%;height:50%;float:left" %}
+{% image brief-scroll-down-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 The name table view shows what's going on. While to players it may look like the visible area
@@ -737,8 +737,8 @@ The artefact is also visible when scrolling down between rooms, but it occurs
 at the end of the animation instead.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/both-scroll-vertical.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/both-scroll-vertical-name-table.gif" style="width:50%;height:50%">
+{% image both-scroll-vertical.gif style="width:50%;height:50%;float:left" %}
+{% image both-scroll-vertical-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 ## Further Reading
@@ -755,8 +755,8 @@ Before I learnt about the internal PPU register, my emulator would display a wip
 effect on vertical screen transitions in The Legend of Zelda.
 
 <div class="nes-screenshot">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-wipe.gif" style="width:50%;height:50%;float:left">
-<img src="/images/zelda-screen-transitions-are-undefined-behaviour/vertical-wipe-name-table.gif" style="width:50%;height:50%">
+{% image vertical-wipe.gif style="width:50%;height:50%;float:left" %}
+{% image vertical-wipe-name-table.gif style="width:50%;height:50%" %}
 </div>
 
 The Link sprite would slide down the screen as intended, but the background would not scroll.
