@@ -18,18 +18,20 @@ excerpt_separator: <!--more-->
 </style>
 
 The vertical scrolling effect in the original "The Legend of Zelda" relies on
-manipulating the NES graphics hardware in a manor likely unintended by its
+manipulating the NES graphics hardware in a manor likely that was unintended by its
 designers.
 
 <div class="nes-screenshot">
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/title.png">
 </div>
 
-Not having access to any official documentation for the NES Picture Processing Unit
-(PPU - the graphics chip), claiming "undefined behaviour" is somewhat speculative. I've been relying on the
+Since I don't have access
+to any official documentation for the NES Picture Processing Unit
+(PPU - the graphics chip), my claim of "undefined behaviour" is somewhat speculative.
+I've been relying on the
 [NesDev Wiki](https://wiki.nesdev.com/w/index.php/PPU) for a specification of how
-the graphics hardware behaves. The PPU is controlled by writing to a memory-mapped
-registers, and using these registers for their (seemingly!) intended purposes,
+the graphics hardware behaves. The PPU is controlled by writing to memory-mapped
+registers. Using these registers for their (seemingly!) intended purposes,
 the following effect should not be possible:
 
 <!--more-->
@@ -38,9 +40,11 @@ the following effect should not be possible:
 <img src="/images/zelda-screen-transitions-are-undefined-behaviour/example.gif">
 </div>
 
-When scrolling the screen vertically, the entire screen has to scroll together. Partial
-vertical scrolling, where part of the screen remains stationary (the Heads Up Display)
-while another part (the game area) scrolls, can't be done by
+When scrolling the screen vertically, the entire screen has to scroll together.
+The above video is an example of Partial Vertical Scrolling.
+Part of the screen remains stationary (the Heads Up Display)
+while another part (the game area) scrolls vertically.
+Partial vertical scrolling, can't be done by
 interacting with the PPU in the "normal" way.
 
 Partial *horizontal* scrolling, on the other hand, is
@@ -58,7 +62,7 @@ This post gives some background on NES graphics hardware, and explains how the p
 
 The NES has 2 types of graphics:
  - sprites, which are tiles that can be placed at arbitrary positions on the screen and independently move around
- - the background, which is a grid of tiles which can be scrolled smoothly as a single image
+ - the background, which is a grid of tiles that can be scrolled smoothly as a single image
 
 To highlight the difference, here's a scene made up of sprites and background:
 <div class="nes-screenshot">
@@ -78,7 +82,8 @@ And here's the scene with only the background visible:
 ## Scrolling
 
 The NES Picture Processor supports scrolling background graphics.
-Video memory contains a grid of tiles 2x2 times the size of the screen.
+In video memory, the background graphics are stored as a 2D grid of tiles,
+covering an area twice the width and twice the height of the screen.
 The screen displays a screen-sized window into this grid, and the position of the window can
 be finely controlled. Gradually moving the visible window within the grid produces a smooth scrolling effect.
 
@@ -244,7 +249,7 @@ of the scroll position, and the second write sets the Y component. Writes contin
 alternate in this fashion.
 
 This lists all the non-zero writes to `PPUSCROLL` during this (slow motion) 16 frame recording of
-the story screen. The Y component of the scroll position is increment once every 2 frames.
+the story screen. The Y component of the scroll position is incremented once every 2 frames.
 All `PPUSCROLL` writes occur during vblank in this example, which causes the entire background
 to scroll together.
 
@@ -432,11 +437,11 @@ meanings, according to this table.
 </tr>
 </table>
 
-<span class="bg-yellow">**Name Table Select**</span> is as value from 0 to 3, and selects the name table currently being drawn from.
+<span class="bg-yellow">**Name Table Select**</span> is a value from 0 to 3, and selects the name table currently being drawn from.
 
 <span class="bg-blue">**Coarse X Scroll**</span> and
 <span class="bg-green">**Coarse Y Scroll**</span> give the coordinate of a tile within
-the selected name table. This is the tile currently being drawn
+the selected name table. This is the tile currently being drawn.
 
 <span class="bg-red">**Fine Y Scroll**</span> contains a value from 0 to 7, and specifies the current vertical offset of the row of
 pixels within the current tile. Tiles are 8 pixels square.
