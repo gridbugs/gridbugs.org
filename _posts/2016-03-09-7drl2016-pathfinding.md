@@ -13,8 +13,8 @@ could never observe the world or take actions. Enabling AI is scary because it
 greatly increases the amount of work the computer is doing between human turns.
 The vision system is now running once per NPC turn as well as the player. Then
 there's the additional cost of pathfinding for each NPC. I use Dijkstra maps for
-pathfinding which are [explained in detail on
-roguebasin](http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps).
+pathfinding which are
+[explained in detail on roguebasin](http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps).
 This post is about solving a performance problem introduced by all the extra
 characters.
 
@@ -24,13 +24,15 @@ Benchmarking revealed most of the time between player turns was spent in the
 vision system.
 
 ## Vision System
-The vision system uses the Recursive Shadowcast algorithm which I [wrote about
-earlier](/visible-area-detection-recursive-shadowcast). Detecting visible cells
+The vision system uses the Recursive Shadowcast algorithm which I
+[wrote about earlier](/visible-area-detection-recursive-shadowcast).
+Detecting visible cells
 is relatively fast. The problem was what how this information was being used.
 
 NPC pathfinding and the renderer don't work on the canonical world
-representation. This game uses [an ECS-based engine described in a previous
-post](/encoding-rules-for-turn-based-games), so more concretely, AI and the
+representation. This game uses
+[an ECS-based engine described in a previous post](/encoding-rules-for-turn-based-games),
+so more concretely, AI and the
 renderer don't directly access entities or components. Instead, each character
 maintains a representation of the world based on what they have observed.
 A character's knowledge is represented by "shadow entities", made up of
