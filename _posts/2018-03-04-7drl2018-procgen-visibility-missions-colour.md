@@ -13,7 +13,7 @@ Lots of progress today! It's starting to look like a game.
 <!--more-->
 
 The procedural generation is based on Conway's Game of Life. I wrote 
-[a post](/cellular-automata-cave-generation)
+{% local cellular-automata-cave-generation | a post %}
 about this technique a few years ago. It creates natural-lookin caverns. I then 
 place some rooms randomly, and dig tunnels so all the doors are connected to 
 the main area.
@@ -21,7 +21,7 @@ the main area.
 For visible area detection, I'm using a library:
 [shadowcast](https://crates.io/crates/shadowcast).
 I implemented recursive shadowcast for an
-[old project](/another-roguelike-lighting-demo),
+{% local another-roguelike-lighting-demo | old project %},
 and extracted it into a library for easy inclusion in other projects.
 While adding shadowcast I found a bug in
 [prototty](https://github.com/stevebob/prototty) - my terminal rendering 

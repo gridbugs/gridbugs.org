@@ -125,5 +125,5 @@ all but the largest contiguous groups of dead cells are are resurrected, filling
 <p class="label">Running for 4 steps, then cleaning.</p>
 </div>
 
-<script src="/lib/jquery.js"></script>
-<script src="/js/cellular-automata-cave-generation/index.js"></script>
+<script src="{{ site.baseurl }}/lib/jquery.js"></script>
+<script src="{{ site.baseurl }}/js/cellular-automata-cave-generation/index.js"></script>

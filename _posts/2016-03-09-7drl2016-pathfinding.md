@@ -25,13 +25,13 @@ vision system.
 
 ## Vision System
 The vision system uses the Recursive Shadowcast algorithm which I
-[wrote about earlier](/visible-area-detection-recursive-shadowcast).
+{% local visible-area-detection-recursive-shadowcast | wrote about earlier %}.
 Detecting visible cells
 is relatively fast. The problem was what how this information was being used.
 
 NPC pathfinding and the renderer don't work on the canonical world
 representation. This game uses
-[an ECS-based engine described in a previous post](/encoding-rules-for-turn-based-games),
+{% local encoding-rules-for-turn-based-games | an ECS-based engine described in a previous post %},
 so more concretely, AI and the
 renderer don't directly access entities or components. Instead, each character
 maintains a representation of the world based on what they have observed.
@@ -39,7 +39,7 @@ A character's knowledge is represented by "shadow entities", made up of
 "shadow components". These were designed to be frequently updated by setting
 data in shadow components from "canonical" reference components without allocating
 any new objects. This was a technique I learnt while solving performance problems in a
-[game I wrote earlier](/bugcatcher).
+{% local bugcatcher | game I wrote earlier %}.
 
 At the
 start of a character's turn, the vision system runs and updates that character's
