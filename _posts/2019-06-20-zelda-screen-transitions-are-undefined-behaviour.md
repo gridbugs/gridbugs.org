@@ -5,6 +5,7 @@ date: 2019-06-20 21:30 +1000
 categories: emulation
 permalink: /zelda-screen-transitions-are-undefined-behaviour/
 excerpt_separator: <!--more-->
+og_image: example.gif
 ---
 <style>
 .nes-screenshot img {
