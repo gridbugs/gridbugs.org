@@ -22,7 +22,7 @@ work on other projects.
 ## Lighting the edges of cells
 
 Determining lit areas is the same problem as determining visible areas. I reuse
-my existing vision system [described here](/visible-area-detection-recursive-shadowcast).
+my existing vision system {% local visible-area-detection-recursive-shadowcast | described here %}.
 A slight modification was required to handle the following complication.
 
 In grid based games, when computing visible area, each cell is typically either
