@@ -14,7 +14,7 @@ before.](/gamedev/2015/07/12/post-mortem-of-abandoned-game.html) It's just anoth
 step on the path to enlightenment. This post describes some of the new things I
 tried.
 
-![screenshot](/images/another-roguelike-lighting-demo/screenshot.png)
+{% image screenshot.png %}
 <!--more-->
 
 ## Download
@@ -54,7 +54,7 @@ to do visible/lit area detection. My recursive shadowcast implementation writes
 its results directly into video memory, so the shaders can use this information
 to know which cells need to be lit in which way.
 
-![screenshot](/images/another-roguelike-lighting-demo/screenshot-green.png)
+{% image screenshot-green.png %}
 
 I extended recursive shadowcast to mark the edges and corners of cells as
 visible. This is
@@ -62,7 +62,7 @@ necessary as walls can be lit by different lights from different sides, but it
 only makes sense to show the player the effects of lights illuminating the sides
 they can see. This is demonstrated in the above/below images.
 
-![screenshot](/images/another-roguelike-lighting-demo/screenshot-red.png)
+{% image screenshot-red.png %}
 
 ## Real Time Game Loop
 
@@ -72,7 +72,7 @@ it makes it cumbersome to implement real-time effects like animation. I'm
 experimenting with a polling game loop, which makes it easy to do real time
 animations.
 
-![screenshot](/images/another-roguelike-lighting-demo/gameplay.gif)
+{% image gameplay.gif %}
 
 ## What's Next
 

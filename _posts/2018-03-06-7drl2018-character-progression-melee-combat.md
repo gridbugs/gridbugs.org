@@ -12,7 +12,7 @@ made up of meters, which either give you new abilities, or passive benefits.
 You get to choose 1 of 3 randomly selected meters to add to your character at
 the end of each level, but only if you complete the mission for that level.
 
-![upgrades](/images/7drl2018-character-progression-melee-combat/upgrades.png)
+{% image upgrades.png %}
 <!--more-->
 
 I noticed that it's possible to get stuck in a corner, surrounded by enemies.
@@ -30,7 +30,7 @@ attack in melee.
 Secondly, when you bump into an enemy, you attack all enemies adjacent to the
 player.
 
-![screenshot](/images/7drl2018-character-progression-melee-combat/screenshot.png)
+{% image screenshot.png %}
 
 When you start the game, you always have a health and stamina meter, so it's
 always possible to do melee combat when nothing else is available. You also

@@ -13,7 +13,7 @@ reach the bottom of the dungeon and reclaim what you have lost.
 
 It is my entry in the 7 Day Roguelike game jam for 2019.
 
-![screenshot](/images/get-well-soon/screenshot.png)
+{% image screenshot.png %}
 
 Download links are below.
 The "Linux" and "MacOS (binaries)" packages contain the graphical version of the game,

@@ -16,7 +16,7 @@ work on other projects.
      burst of plasma.
  - [Source code on github](https://github.com/stevebob/roguelike-lighting-demo)
 
-![screenshot](/images/roguelike-lighting-demo/screenshot0.png)
+{% image screenshot0.png %}
 <!--more-->
 
 ## Lighting the edges of cells
@@ -32,7 +32,7 @@ lit area. Consider the case where there is a wall between the player and some
 light source. The wall is lit on the opposite side to the player, but the player
 should see an unlit wall.
 
-![inside](/images/roguelike-lighting-demo/screenshot1.png)
+{% image screenshot1.png %}
 
 <p class="label">View from inside a well-lit room. The yellow "£" is the light
 source.</p>
@@ -45,7 +45,7 @@ brightness based on the visible side with the most light reaching it.
 
 Note that this only applies to opaque cells.
 
-![outside](/images/roguelike-lighting-demo/screenshot2.png)
+{% image screenshot2.png %}
 
 <p class="label">View from outside the same room shown above.</p>
 
@@ -60,7 +60,7 @@ the entity providing the lighthouse's light is in the centre of the
 lighthouse, and there is only one "level". The effect of only certain areas
 being lit by certain lights is achieved by something I call light channels.
 
-![lighthouse-outside](/images/roguelike-lighting-demo/screenshot4.png)
+{% image screenshot4.png %}
 <p class="label">The wall of the lighthouse is not illuminated by the
 lighthouse's light.</p>
 
@@ -70,7 +70,7 @@ channels which it can be illuminated by. A light source illuminates a tile if
 there is at least one channel in common between the light source and the tile.
 In practice this is implemented using bitfields.
 
-![lighthouse-inside](/images/roguelike-lighting-demo/screenshot5.png)
+{% image screenshot5.png %}
 <p class="label">The interior of the lighthouse is illuminated by the player's
 light only.</p>
 

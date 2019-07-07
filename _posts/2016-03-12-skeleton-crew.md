@@ -25,4 +25,4 @@ Download (bundled with node webkit):
 Source code
 - [Source code on github](https://github.com/stevebob/skeleton-crew)
 
-![screenshot](/images/skeleton-crew/screenshot.png)
+{% image screenshot.png %}

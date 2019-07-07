@@ -16,7 +16,7 @@ direction should be spread out as much as possible with respect to the steps in
 the other direction. The solution generalizes to spreading out any sequence
 made up of two distinct types of item that are repeated a number of times.
 
-![straight-line-screenshot](/images/even-separation-algorithm/straight-line-screenshot.png)
+{% image straight-line-screenshot.png %}
 
 <!--more-->
 
@@ -40,7 +40,7 @@ Suppose you take steps in the ordinal direction until you are in line with the
 destination in the cardinal direction, then move in the cardinal direction until
 you reach the destination.
 
-![direction-count](/images/even-separation-algorithm/direction-count.png)
+{% image direction-count.png %}
 <p class="label">
 Splitting the line into its cardinal and ordinal components
 </p>
@@ -53,7 +53,7 @@ row. Thus the sequence of steps becomes groups of one or more ordinal steps,
 separated by individual cardinal steps. Also, we want the groups of ordinal
 steps to all be similar in size.
 
-![naive-straight-line](/images/even-separation-algorithm/naive-straight-line.png)
+{% image naive-straight-line.png %}
 <p class="label">
 First attempt at a straight line
 </p>
@@ -69,7 +69,7 @@ What if we apply the same separation property to this sequence? There are more
 1s than 2s, so no two 1s should be adjacent. Groups of 1s should be separated by
 individual 2s. Thus the sequence becomes: 1 2 1.
 
-![straight-line-screenshot](/images/even-separation-algorithm/straight-line-screenshot.png)
+{% image straight-line-screenshot.png %}
 <p class="label">
 Cardinal and ordinal steps are now as spread out as possible
 </p>

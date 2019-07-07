@@ -13,4 +13,4 @@ I made this game for the 2017 7 Day Roguelike game jam.
  - [Download](https://gridbugs.itch.io/apocalypse-post)
  - [Source](https://github.com/stevebob/apocalypse-post)
 
-![screenshot](/images/apocalypse-post/screenshot.png)
+{% image screenshot.png %}

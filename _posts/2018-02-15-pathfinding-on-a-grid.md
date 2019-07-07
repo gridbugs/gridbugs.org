@@ -44,7 +44,7 @@ sometimes called a "Dijkstra Map".
 [Here](http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps)
 is an article elaborating on dijkstra maps.
 
-![](/images/pathfinding-on-a-grid/a.png)
+{% image a.png %}
 
 A benefit of using a dijkstra map, rather than searching for a path for each NPC,
 is that the dijkstra map only needs to be recomputed each time the player moves.
@@ -53,7 +53,7 @@ of that NPC's cell in the dijkstra map, choosing the one with the lowest score.
 This scales well as the number of NPCs increases, as there is only a small
 amount of work that must be done for each NPC.
 
-![](/images/pathfinding-on-a-grid/b.png)
+{% image b.png %}
 
 The example above shows a single step for `X` and `Y`, where each moved to its
 lowest-valued neighbour.
@@ -64,27 +64,27 @@ Note that `Y` chose arbitrarily between 2 cells equidistant from the player.
 Here's the first problem with the current approach. Consider the following
 arrangement:
 
-![](/images/pathfinding-on-a-grid/c.png)
+{% image c.png %}
 
 When `X` moves:
 
-![](/images/pathfinding-on-a-grid/d.png)
+{% image d.png %}
 
 And then `Y` moves:
 
-![](/images/pathfinding-on-a-grid/e.png)
+{% image e.png %}
 
 Everything seems fine, but what if `Y` had moved first? Since NPCs can't move
 through each other, the best choice for `Y` is to stay where it is, as any
 single legal move would only increase its distance from the player.
 
-![](/images/pathfinding-on-a-grid/c.png)
+{% image c.png %}
 
 On `X`'s
 turn, `X` would still move towards the player, creating a gap between `X` and
 `Y`, which looks unusual:
 
-![](/images/pathfinding-on-a-grid/d.png)
+{% image d.png %}
 
 To prevent gaps from forming, we need to make sure that
 NPCs move in increasing order of their distance to the player (that is,
@@ -97,7 +97,7 @@ produce a turn order which avoids this problem.
 
 Let's look at some cases where NPCs interfere with the movement of other NPCs.
 
-![](/images/pathfinding-on-a-grid/e.png)
+{% image e.png %}
 
 On `X`'s next turn, it will remain next to the player - there's nothing it can
 do to get closer to the player, so there's no need to move. (In a typical roguelike it
@@ -108,7 +108,7 @@ closer to the `@`, by first moving north, into a higher-valued cell.
 
 In the next example, assume `X` moves before `Y`:
 
-![](/images/pathfinding-on-a-grid/g.png)
+{% image g.png %}
 
 `X` will move east, occupying `Y`'s west neighbour. On `Y`'s turn, its
 valid moves are to move east, into a higher-valued cell than its present cell,
@@ -120,7 +120,7 @@ of the map - will take longer.
 
 What if there's a gap in the wall closer to `Y`. Assume `X` moves first again:
 
-![](/images/pathfinding-on-a-grid/n.png)
+{% image n.png %}
 
 Here, it might make sense for `Y` to move east on its turn rather than waiting a
 turn before moving west. It may look more natural for `Y` to follow a longer
@@ -129,7 +129,7 @@ seems to depend on how much longer the longer path is.
 
 Assume it's `Z`'s turn. What should it do?
 
-![](/images/pathfinding-on-a-grid/o.png)
+{% image o.png %}
 
 Here there's no path to the player, but rather than giving up, `Z` should
 probably still try to get as close to the player as it can.
@@ -138,7 +138,7 @@ assuming nothing else moves.
 
 After making the first move it finds itself here:
 
-![](/images/pathfinding-on-a-grid/p.png)
+{% image p.png %}
 
 Looking at its immediate neighbours, it seems like `Z` could now go either
 south, or west - the neighbours in both directions are the same distance from
@@ -162,7 +162,7 @@ to the player as possible.
 
 Will `Z` go east or west, looking for the best cell up to 3 moves away?
 
-![](/images/pathfinding-on-a-grid/r.png)
+{% image r.png %}
 
 It could go either way! If it had looked 4 moves away, it would have
 noticed that going west gives the potential to eventually be 1 move from the

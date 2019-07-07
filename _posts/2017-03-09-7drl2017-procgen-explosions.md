@@ -15,14 +15,14 @@ each entity starting in a cell for road cells and off-road cells.
 
 Here's a screenshot from a procedurally generated level.
 
-![screenshot](/images/7drl2017-procgen-explosions/screenshot.png)
+{% image screenshot.png %}
 <!--more-->
 
 The other big feature I added today is explosive barrels. Barrels explode when
 shot, or hit by an explosion from another barrel, allowing chain reactions of
 barrel explosions.
 
-![explosion](/images/7drl2017-procgen-explosions/explosion.gif)
+{% image explosion.gif %}
 
 Explosive barrels made it possible for characters to die on their turn, by
 accidentally shooting a barrel which explodes and kills them. This is a case

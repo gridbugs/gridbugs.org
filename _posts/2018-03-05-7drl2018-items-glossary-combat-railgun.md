@@ -10,7 +10,7 @@ excerpt_separator: <!--more-->
 The most exciting changes today are the "Glossary", and a revamped combat 
 system.
 
-![screenshot](/images/7drl2018-items-glossary-combat-railgun/screenshot.png)
+{% image screenshot.png %}
 <!--more-->
 
 I don't want the game to have a message log, and I think adding an "examine" 

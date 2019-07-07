@@ -13,5 +13,5 @@ has an ability and combat stats. You can "channel" a bug and gain access to its 
 
 [Play in browser](https://games.gridbugs.org/bugcatcher)
 
-![screenshot](/images/bugcatcher/screenshot.png)
+{% image screenshot.png %}
 <!--more-->

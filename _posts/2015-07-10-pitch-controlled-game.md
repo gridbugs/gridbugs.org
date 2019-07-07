@@ -11,4 +11,4 @@ Collect the coins but avoid the ghosts.
 
 [Play in browser](https://games.gridbugs.org/pitch-controlled-game)
 
-![pitch-controlled-game-screenshot](/images/pitch-controlled-game/screenshot.png)
+{% image screenshot.png %}

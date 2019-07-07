@@ -14,7 +14,7 @@ hull-looking. I would then attempt to fill the hull with rooms. Adding rooms to
 a preexisting hull proved messy and prone to difficult edge cases.
 
 Here's what it looked like at the point where I gave up:
-![](/images/7drl2016-procedural-generation/old.png)
+{% image old.png %}
 <!--more-->
 
 This shows my attempt at adding hallways on the inside of the ship. I was going
@@ -31,7 +31,7 @@ other rooms, and for opportunistically adding doors between pairs of rooms, and
 adjacent rooms and hallways.
 
 Here's an example of the output:
-![](/images/7drl2016-procedural-generation/screenshot.png)
+{% image screenshot.png %}
 
 It's still not completely finished. I still need to add windows around the
 outside of the hull, add items and NPCs, find a starting room for the player to

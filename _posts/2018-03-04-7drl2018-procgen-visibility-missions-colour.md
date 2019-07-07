@@ -9,7 +9,7 @@ excerpt_separator: <!--more-->
 
 Lots of progress today! It's starting to look like a game.
 
-![screenshot](/images/7drl2018-procgen-visibility-missions-colour/screenshot.png)
+{% image screenshot.png %}
 <!--more-->
 
 The procedural generation is based on Conway's Game of Life. I wrote [a 

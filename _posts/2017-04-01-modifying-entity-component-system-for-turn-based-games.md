@@ -837,7 +837,7 @@ below, the bullet
 leaving the van and hitting the barrel, and the subsequent explosions, are all
 part of a single turn.
 
-![explosion](/images/modifying-entity-component-system-for-turn-based-games/explosion.gif)
+{% image explosion.gif %}
 
 This is implemented using rules. Entities can have a **velocity** component, and
 there is a rule that detects when an entity moves because of their velocity, and

@@ -11,7 +11,7 @@ on what I hoped would become a top-down
 side-scrolling action-rpg. I'd just started playing Dark Souls,
 and wanted to emulate its art style and combat, but in 2D.
 
-![screenshot](/images/post-mortem-of-abandoned-game/screenshot.png)
+{% image screenshot.png %}
 
 My aim from the start was to quickly implement features at a basic level, rather than getting bogged down in low-level details.
 I implemented character animation, collision processing

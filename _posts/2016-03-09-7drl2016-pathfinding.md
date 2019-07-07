@@ -93,7 +93,7 @@ I've updated the level generator to include windows and NPCs. It also places the
 player in a sane starting position, and determines a sane goal position (though
 there currently isn't anything there).
 
-![](/images/7drl2016-pathfinding/screenshot.png)
+{% image screenshot.png %}
 
 Still to do is adding items (weapons and healthkits), and stairs. I still
 haven't decided how the game will end, though the current plan is to have some

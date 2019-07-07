@@ -15,7 +15,7 @@ by 2D grids.
 This makes it suitable for use in roguelikes.
 This post will explain the recursive shadowcast algorithm.
 
-![](/images/visible-area-detection-recursive-shadowcast/dcss0.png)
+{% image dcss0.png %}
 <!--more-->
 
 <p class="label">Screenshot from Dungeon Crawl Stone Soup demonstrating its
@@ -28,12 +28,12 @@ detection. Below is an environment that will be used throughout this post. White
 cells are empty and black cells are opaque walls. The scene is viewed from the cell
 containing the red cross.
 
-![](/images/visible-area-detection-recursive-shadowcast/example0.png)
+{% image example0.png %}
 
 The yellow-shaded area in the image below is visible from the centre of the
 observer's cell.
 
-![](/images/visible-area-detection-recursive-shadowcast/example1.png)
+{% image example1.png %}
 
 Note that some cells are partially inside the visible area.
 To simplify explanations, these cells will be considered to be completely
@@ -41,12 +41,12 @@ visible.
 
 The visible floor cells are shown below.
 
-![](/images/visible-area-detection-recursive-shadowcast/example2.png)
+{% image example2.png %}
 
 If at least one edge of a wall cell is visible, it
 is considered visible. Visible wall cells are shown below.
 
-![](/images/visible-area-detection-recursive-shadowcast/example3.png)
+{% image example3.png %}
 
 ## Recursive Shadowcast
 
@@ -64,7 +64,7 @@ Recursive shadowcast considers the space to be made up of 8 octants, centred
 at the observer. Each coloured segment in the image below is a single
 octant. The visible area is computed independently on each octant.
 
-![](/images/visible-area-detection-recursive-shadowcast/example4.png)
+{% image example4.png %}
 
 If a cell lies on the border of 2 octants, it is considered to be in both. This
 implies that some cells are in 2 octants. It would be trivial to keep track of
@@ -74,7 +74,7 @@ while processing two different octants if necessary.
 To clarify the point above, shaded in blue below are all the cells in a single
 octant.
 
-![](/images/visible-area-detection-recursive-shadowcast/example5.png)
+{% image example5.png %}
 
 Note also that the cell containing the observer isn't part of any octant.
 Generally, the cell containing the observer is always visible, regardless of the
@@ -85,7 +85,7 @@ opacity of the cells around them.
 The simplest way to explain this algorithm is to jump right in with an example.
 We'll first consider this octant.
 
-![](/images/visible-area-detection-recursive-shadowcast/example6.png)
+{% image example6.png %}
 
 As we compute the visible area in this octant, we'll be keeping track of a few
 variables:
@@ -109,7 +109,7 @@ its cell. That is, if the eye is in cell at coordinates (2, 3), the actual
 absolute position of the eye would be (2.5, 3.5) (assuming (0, 0) is the
 coordinate of the top-left corner of the grid).
 
-![](/images/visible-area-detection-recursive-shadowcast/example7.png)
+{% image example7.png %}
 
 We'll scan the current depth from west to east. Each cell that is visited is
 considered to be visible. If an opaque cell is
@@ -176,7 +176,7 @@ west to east), which is transparent. Thus we recurse to depth 2, leaving the
 `min_slope` and `max_slope` arguments unchanged as they are passed to the
 recursive call.
 
-![](/images/visible-area-detection-recursive-shadowcast/example8.png)
+{% image example8.png %}
 
 Depth 2 is the same as depth 1 in that none of the cells are visible, so we will
 skip it and move straight on to depth 3, which is much more interesting. Unlike
@@ -206,7 +206,7 @@ opaque cell.
 Unlike the previous depths, case C is not reached, as the last cell visited at
 this depth is not transparent.
 
-![](/images/visible-area-detection-recursive-shadowcast/example9.png)
+{% image example9.png %}
 
 Depth 4 is reached by 2 separate recursive calls. It's important to note here
 that all cells even partially inside the area between a pair of coloured lines
@@ -216,7 +216,7 @@ will hit case A, though note that `next_max_slope` (the dotted line below) will
 be less than (ie. to the left of) `min_slope`. This means no cells could be
 between then. Thus the blue instance stops here.
 
-![](/images/visible-area-detection-recursive-shadowcast/example10.png)
+{% image example10.png %}
 
 The final case to consider in this example is the very last recursion of the
 green instance. Shown below, this case is unique as no cells in the scan
@@ -224,12 +224,12 @@ are transparent. Stepping through the code, we see that each cell is marked as
 visible (as normal), but neither case A, nor C are hit, meaning no recursion is
 made, and execution stops.
 
-![](/images/visible-area-detection-recursive-shadowcast/example11.png)
+{% image example11.png %}
 
 The shaded cells in the image below are all the cells marked as visible in this
 octant using recursive shadowcast.
 
-![](/images/visible-area-detection-recursive-shadowcast/example12.png)
+{% image example12.png %}
 
 ## Generalizing to all Octants
 
@@ -254,7 +254,7 @@ The image below shows the direction to move in the grid as the `depth`
 increases. In the north-most octants we move north, in the east-most we move
 east, and so on.
 
-![](/images/visible-area-detection-recursive-shadowcast/example13.png)
+{% image example13.png %}
 
 <p class="label">Depth Direction</p>
 
@@ -262,7 +262,7 @@ Closely relate to this is the scan direction. It can be derived from the depth
 direction: if you stand facing the depth direction for an octant, the scan
 direction for that octant will be from your left, to your right.
 
-![](/images/visible-area-detection-recursive-shadowcast/example16.png)
+{% image example16.png %}
 
 <p class="label">Scan Direction</p>
 
@@ -271,7 +271,7 @@ Tied into the above two characteristics is the initial values of `min_slope` and
 direction), if you stand facing the depth direction, the octant to your left
 would have slopes ranging from -1 to 0, and the octant to your right from 0 to 1.
 
-![](/images/visible-area-detection-recursive-shadowcast/example15.png)
+{% image example15.png %}
 
 <p class="label">Initial values for <code>min_slope</code> and
 <code>max_slope</code></p>
@@ -285,7 +285,7 @@ based on one of its corners. This is the southwest corner in the example.
 Which corners to choose in this cases is octant-dependent, and is shown in the
 diagram below.
 
-![](/images/visible-area-detection-recursive-shadowcast/example14.png)
+{% image example14.png %}
 
 <p class="label">Cell corners to use for finding slopes</p>
 

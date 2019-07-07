@@ -7,7 +7,7 @@ categories: algorithms gamedev procgen
 excerpt_separator: <!--more-->
 ---
 
-![flower-banner](/images/wave-function-collapse/flower-banner-scaled.png)
+{% image flower-banner-scaled.png %}
 
 Wave Function Collapse is a procedural generation algorithm which produces
 images by arranging a collection of tiles according to rules about which tiles
@@ -113,25 +113,25 @@ wrapping around to the other side of the input image in such cases.
 
 Consider this 4x4 pixel input image:
 
-![process-example](/images/wave-function-collapse/process-example.png)
+{% image process-example.png %}
 
 With a **tile size** of 3, the first 3 tiles created by looking at squares of
 pixels with their top-left corners along the top row of pixels:
 
-![sample1](/images/wave-function-collapse/sample1.png)
-![sample2](/images/wave-function-collapse/sample2.png)
-![sample3](/images/wave-function-collapse/sample3.png)
+{% image sample1.png %}
+{% image sample2.png %}
+{% image sample3.png %}
 
 In the 3rd tile, we sampled off the edge of the image. In such cases, wrap
 around to the other side of the image. Effectively pretend that the image
 repeats forever in all directions.
 
-![sample3-infinite](/images/wave-function-collapse/sample3-infinite.png)
+{% image sample3-infinite.png %}
 
 Continuing in this fashion, enumerate all the tiles. In this example there are
 16, and all are unique.
 
-![all-tiles](/images/wave-function-collapse/all-tiles.png)
+{% image all-tiles.png %}
 
 Assign each tile a **tile index**. In the example, we would use numbers from 0
 to 15 as indices. **Frequency hints** and **adjacency rules** will be given in
@@ -143,7 +143,7 @@ the input.
 
 Here's an image which is similar to the example image, generated using WFC:
 
-![grid-output](/images/wave-function-collapse/grid-output.png)
+{% image grid-output.png %}
 
 #### Reflection and Rotation
 
@@ -154,22 +154,22 @@ reflection of tiles from the **input image**.
 We need a new example image to demonstrate this, as each rotation and reflection
 of each tile is also in the tile set. Let's use the following **input image**:
 
-![water-example](/images/wave-function-collapse/water-example.png)
+{% image water-example.png %}
 
 With a **tile size** of 3, the top-left tile we extract will be:
 
-![water1](/images/wave-function-collapse/water1.png)
+{% image water1.png %}
 
 All rotations and reflections of this tile:
 
-![water1](/images/wave-function-collapse/water1.png)
-![water2](/images/wave-function-collapse/water2.png)
-![water3](/images/wave-function-collapse/water3.png)
-![water4](/images/wave-function-collapse/water4.png)
-![water5](/images/wave-function-collapse/water5.png)
-![water6](/images/wave-function-collapse/water6.png)
-![water7](/images/wave-function-collapse/water7.png)
-![water8](/images/wave-function-collapse/water8.png)
+{% image water1.png %}
+{% image water2.png %}
+{% image water3.png %}
+{% image water4.png %}
+{% image water5.png %}
+{% image water6.png %}
+{% image water7.png %}
+{% image water8.png %}
 
 Repeat this for all the tiles extracted from the image.
 
@@ -179,20 +179,20 @@ own unique **tile indices**.
 
 A similar image to the input *without* rotations or reflections included:
 
-![water-orig-orientation](/images/wave-function-collapse/water-orig-orientation.png)
+{% image water-orig-orientation.png %}
 
 Here's an output with all rotations and reflections included:
 
-![water-all-orientations](/images/wave-function-collapse/water-all-orientations.png)
+{% image water-all-orientations.png %}
 
 The banner at the top of this page was generated from the following image including all
 rotations and reflections:
 
-![flowers](/images/wave-function-collapse/flowers.png)
+{% image flowers.png %}
 
 Here's a miniature version:
 
-![small-flower-banner](/images/wave-function-collapse/small-flower-banner.png)
+{% image small-flower-banner.png %}
 
 Notice that the ground is missing? Since the input image is wrapped, there are
 no tiles in which the ground ends or changes direction. This means
@@ -204,16 +204,16 @@ a tile without violating the **adjacency rules**.
 
 There *is* a small chance of the output containing ground:
 
-![ground-flower-banner1](/images/wave-function-collapse/ground-flower-banner1.png)
+{% image ground-flower-banner1.png %}
 
 It's not on the bottom of the screen, because the input image is wrapped.
 
-![flower-tiled](/images/wave-function-collapse/flower-tiled.png)
+{% image flower-tiled.png %}
 
 Since this was generated with rotations and reflections included, there's
 nothing to stop the ground from being vertical.
 
-![ground-flower-banner2](/images/wave-function-collapse/ground-flower-banner2.png)
+{% image ground-flower-banner2.png %}
 
 
 #### Frequency Hints
@@ -223,7 +223,7 @@ mappings from a tile's index to its count make up the **frequency hints**.
 
 Let's modify the first example image:
 
-![tall-grid-input](/images/wave-function-collapse/tall-grid-input.png)
+{% image tall-grid-input.png %}
 
 The set of unique 3x3 tiles in this **input image** will be the same as the
 first example, however where in the first example each tile appeared exactly
@@ -231,10 +231,10 @@ once, here some patterns appear several times.
 
 The following tiles appear 5 times in this image:
 
-![tile1](/images/wave-function-collapse/tile1.png)
-![tile2](/images/wave-function-collapse/tile2.png)
-![tile3](/images/wave-function-collapse/tile3.png)
-![tile4](/images/wave-function-collapse/tile4.png)
+{% image tile1.png %}
+{% image tile2.png %}
+{% image tile3.png %}
+{% image tile4.png %}
 
 The remaining tiles still just appear once.
 
@@ -244,7 +244,7 @@ appear in a given position as the other tiles.
 
 How do you think this will change the output?
 
-![tall-grid](/images/wave-function-collapse/tall-grid.png)
+{% image tall-grid.png %}
 
 Increasing the odds of vertical lines appearing means there will likely be more vertical
 lines. This manifests as the grid cells in the image generally being taller than
@@ -271,7 +271,7 @@ top-left pixel of a tile to a pixel of the output image, the rest of the pixels
 of the tile end up in the right places as well. This is best explained with an
 example. Here's a zoomed-in section of the banner:
 
-![adjacent-example1](/images/wave-function-collapse/adjacent-example1.png)
+{% image adjacent-example1.png %}
 
 Consider the 3x3 pixel square with a red border.
 It occurs in the input image (rotated anticlockwise 90 degrees, below the
@@ -329,7 +329,7 @@ of the two tiles are identical.
 
 In the example below, `compatible(A, B, RIGHT) == true`.
 
-![compatible-example](/images/wave-function-collapse/compatible-example.png)
+{% image compatible-example.png %}
 
 In this example tiles are 3x3, but these **adjacency rules** only ensure that
 adjacent tiles are compatible. It's possible for a pair of tiles which are 2
@@ -337,7 +337,7 @@ pixels apart to overlap. **What prevents them from conflicting?**
 
 Consider this example:
 
-![2-gap-overlap](/images/wave-function-collapse/2-gap-overlap.png)
+{% image 2-gap-overlap.png %}
 
 The **<span style="color=red">red</span>** and **<span style="color=blue">blue</span>**  squares surround tile placements which are 2 pixels apart.
 They aren't adjacent, so the **adjacency rules** don't explicitly forbid the **<span style="color=red">red</span>** 
@@ -405,7 +405,7 @@ Maybe it can help you through yours!
 
 Imagine you're solving a sudoku.
 
-![sudoku](/images/wave-function-collapse/sudoku.png)
+{% image sudoku.png %}
 
 Your goal is to place a number from 1-9 in each empty cell, such that each
 row, column, and 3x3 square, contains each number from 1-9 exactly once.
@@ -427,7 +427,7 @@ actually work in all cases, so you may occasionally have to employ some actual t
 
 Now, imagine you wanted to solve an empty sudoku in the same way as just
 described:
-![sudoku-empty](/images/wave-function-collapse/sudoku-empty.png)
+{% image sudoku-empty.png %}
 
 Your goal is still to end up with the numbers from 1-9 in every row, column,
 and 3x3, but this time you're searching for one of a large number of possible
@@ -571,7 +571,7 @@ Each term in the entropy equation is negated. This is because `P(x)` is between
 0 and 1, and regardless of the base, the logarithm of values between (exclusive)
 0 and 1 is negative. Here's a graph of log base 2:
 
-![log2](/images/wave-function-collapse/log2.png)
+{% image log2.png %}
 
 Since each term contains `log(P(x))`, which is always negative, we negate each
 term to make the resulting entropy positive, as otherwise it would always be
@@ -861,13 +861,13 @@ Say for a given cell, the remaining possible **tile indices** are 2, 4, 7, and 8
 and their relative frequencies are indicated by the width of their section of
 the strip below.
 
-![probdist](/images/wave-function-collapse/probdist.png)
+{% image probdist.png %}
 
 We want to choose a random position within this strip, and see which section we
 ended up in. Naturally, we're more likely to end up in one of the wider
 sections.
 
-![probdist-choice](/images/wave-function-collapse/probdist-choice.png)
+{% image probdist-choice.png %}
 
 Here we landed on 7, so we lock in 7 for this cell.
 
@@ -1422,7 +1422,7 @@ $ cargo run --manifest-path wfc-image/Cargo.toml --example=animate -- \
     --input wfc-image/examples/cat.png
 ```
 
-![cat-animate](/images/wave-function-collapse/cat-animate.gif)
+{% image cat-animate.gif %}
 
 The `simple` example is also quite useful. It just generates images files based
 on a specified image file. I used it for all the examples in this post.
@@ -1448,11 +1448,11 @@ engineering this project.
 
 While generating images for this post I accidentally ran WFC on this:
 
-![all-tiles](/images/wave-function-collapse/all-tiles.png)
+{% image all-tiles.png %}
 
 The output motivated me to add this outtakes section:
 
-![outtake1](/images/wave-function-collapse/outtake1.png)
+{% image outtake1.png %}
 
 The gaps between the tiles in the input were transparent, and in the output they
 are black, which alerted me to the fact that the wfc_image crate currently
@@ -1462,16 +1462,16 @@ throws away transparency.
 
 I was originally planning to use this image as an example:
 
-![outtake2](/images/wave-function-collapse/outtake2.png)
+{% image outtake2.png %}
 
 I expected to see a roughly equal number of upwards sloping tiles and downwards
 sloping tiles (as the input image is wrapped when sampling tiles):
 
-![outtake3](/images/wave-function-collapse/outtake3.png)
+{% image outtake3.png %}
 
 But instead, the output was almost entirely made up of upwards sloping tiles:
 
-![outtake4](/images/wave-function-collapse/outtake4.png)
+{% image outtake4.png %}
 
 After much debugging, I traced the problem to a bug in my implementation of
 randomly choosing from a probability distribution:
