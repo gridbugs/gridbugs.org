@@ -11,18 +11,21 @@ excerpt_separator: <!--more-->
     width: 512px;
     height: 480px;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 
-.nes-tile img {
+.nes-half img {
     width: 64px;
     height: 64px;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 
 .mario-render img {
     width: 328px;
     height: auto;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 </style>
 

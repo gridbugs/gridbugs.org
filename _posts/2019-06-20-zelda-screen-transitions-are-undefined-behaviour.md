@@ -12,6 +12,7 @@ og_image: example.gif
     width: 512px;
     height: 480px;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 .short-table tr {
     line-height: 0px;
