@@ -62,23 +62,6 @@ figcaption {
 }
 
 
-
-/**
- * Lists
- */
-ul, ol {
-  margin-left: $spacing-unit;
-}
-
-li {
-  > ul,
-  > ol {
-    margin-bottom: 0;
-  }
-}
-
-
-
 /**
  * Headings
  */
@@ -251,42 +234,32 @@ table {
 }
 
 .pagination {
-  padding: $spacing-unit / 2 0;
+  padding: $spacing-unit / 2 0 0 0;
 
-  ul > li {
-    display: inline-block;
-    zoom:1;
-    *display:inline;
+  ul {
+    display: flex;
+    list-style: none;
+    font-size: 18px;
+  }
+
+  .padding-left {
+    padding-left: 10px;
+  }
+
+  .push-right {
+      margin-left: auto;
   }
 
   .selected {
     font-weight: bold;
   }
 
-  font-size: 24px;
-  text-align: center;
   .disabled {
     color: $grey-color;
   }
-}
 
-.post-pagination {
-  margin-top: -10px;
-  margin-bottom: 10px;
-  font-size: 18px;
-  overflow: hidden;
-  .next-container, .previous-container {
-    top: 0px;
-    width: 45%;
-  }
-  .next-container {
-    text-align: left;
-    float: left;
-  }
-  .previous-container {
-    text-align: right;
-    margin-left: auto;
-    margin-right: 0;
+  .page-pagination {
+    max-width: 45%;
   }
 }
 

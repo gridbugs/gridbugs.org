@@ -1,12 +1,10 @@
-<div class="post-pagination">
+<div class="pagination">
+  <ul>
   {% if page.next.url %}
-  <div class="next-container">
-    <span class="next"><a href="{{ page.next.url | prepend:site.baseurl }}">Prev post: {{ page.next.title }}</a></span>
-  </div>
+    <li class="page-pagination"><a href="{{ page.next.url | prepend:site.baseurl }}">Prev post: {{ page.next.title }}</a></li>
   {% endif %}
   {% if page.previous.url %}
-  <div class="previous-container">
-    <span class="previous"><a href="{{ page.previous.url | prepend:site.baseurl }}">Next post: {{ page.previous.title }}</a></span>
-  </div>
+    <li class="page-pagination push-right"> <a href="{{ page.previous.url | prepend:site.baseurl }}">Next post: {{ page.previous.title }}</a></li>
   {% endif %}
+  </ul>
 </div>

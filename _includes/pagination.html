@@ -2,26 +2,17 @@
   <ul>
 {% if paginator.previous_page %}
   <li><a href="{{ site.baseurl }}{{ paginator.first_page_path }}" class="first">first</a></li>
-  <li><a href="{{ site.baseurl }}{{ paginator.previous_page_path }}" class="prev">prev</a></li>
+  <li class="padding-left"><a href="{{ site.baseurl }}{{ paginator.previous_page_path }}" class="prev">prev</a></li>
 {% else %}
   <li><span class="disabled">first</span></li>
-  <li><span class="disabled">prev</span></li>
+  <li class="padding-left"><span class="disabled">prev</span></li>
 {% endif %}
-<li>...</li>
-{% if paginator.page_trail %}
-  {% for trail in paginator.page_trail %}
-    <li {% if page.url == trail.path %}class="selected"{% endif %}>
-      <a href="{{ trail.path | prepend: site.baseurl | replace: 'index.html', '' }}" title="{{trail.title}}">{{ trail.num }}</a>
-    </li>
-  {% endfor %}
-{% endif %}
-<li>...</li>
 {% if paginator.next_page %}
-  <li><a href="{{ site.baseurl }}{{ paginator.next_page_path }}" class="next">next</a></li>
-  <li><a href="{{ site.baseurl }}{{ paginator.last_page_path }}" class="last">last</a></li>
+  <li class="push-right"><a href="{{ site.baseurl }}{{ paginator.next_page_path }}" class="next">next</a></li>
+  <li class="padding-left"><a href="{{ site.baseurl }}{{ paginator.last_page_path }}" class="last">last</a></li>
 {% else %}
-  <li><span class="disabled">next</span></li>
-  <li><span class="disabled">last</span></li>
+  <li class="push-right"><span class="disabled">next</span></li>
+  <li class="padding-left"><span class="disabled">last</span></li>
 {% endif %}
   </ul>
 </div>

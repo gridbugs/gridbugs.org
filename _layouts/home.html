@@ -4,6 +4,8 @@ layout: default
 
 <div class="home">
 
+  {% include pagination.html %}
+
   <ul class="post-list">
     {% for post in paginator.posts %}
       <li>

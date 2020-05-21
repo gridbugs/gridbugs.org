@@ -174,7 +174,11 @@
  * Page content
  */
 .page-content {
-  padding: $spacing-unit 0 0 0;
+  padding: 0 0 0 0;
+}
+
+.post {
+    padding-top: $spacing-unit;
 }
 
 .page-heading {
@@ -206,7 +210,6 @@
 }
 
 .post-link {
-  display: block;
   @include relative-font-size(1.5);
 }
 
@@ -220,13 +223,8 @@
 }
 
 .post-title {
-  @include relative-font-size(2);
-  letter-spacing: -1px;
-  line-height: 1;
-
-  @include media-query($on-laptop) {
-    @include relative-font-size(2);
-  }
+  @include relative-font-size(1.5);
+  margin-bottom: -5px;
 }
 
 .post-content {
