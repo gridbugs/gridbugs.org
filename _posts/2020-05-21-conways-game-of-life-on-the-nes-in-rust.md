@@ -101,8 +101,10 @@ set a sequence of consecutive nametable entries with 1 write per tile, plus 2 wr
 the address of the start of the sequence.
 
 This pair of registers may only be accessed during the vertical blanking interval (VBLANK), which is a period
-of 2273 CPU cycles (~1.27ms) once per frame (the NES runs at 60 FPS). That's not much time, so spending
-a little extra time outside of VBLANK to make things run more smoothly within the interval can be worth it.
+of 2273 CPU cycles (~1.27ms) once per frame (the NES runs at 60 FPS). That's not much time, so
+it can be worth it to
+spend
+a little extra time outside of VBLANK to make things run more smoothly within the interval.
 
 My rendering strategy is to use the time outside of VBLANK to look at the differences between each pair of
 consecutive states, and build a _draw queue_ listing all the parts of the nametable that need to be updated,
