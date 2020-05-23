@@ -5,7 +5,7 @@ date: 2019-06-20 21:30 +1000
 categories: emulation
 permalink: /zelda-screen-transitions-are-undefined-behaviour/
 excerpt_separator: <!--more-->
-og_image: example.gif
+og_image: example.webp
 ---
 <style>
 .nes-screenshot img {
@@ -39,7 +39,7 @@ the following effect should not be possible:
 <!--more-->
 
 <div class="nes-screenshot">
-{% image example.gif %}
+{% image example.webp %}
 </div>
 
 When scrolling the screen vertically, the entire screen has to scroll together.
@@ -53,7 +53,7 @@ Partial *horizontal* scrolling, on the other hand, is
 completely well-defined.
 
 <div class="nes-screenshot">
-{% image horizontal-scrolling.gif %}
+{% image horizontal-scrolling.webp %}
 </div>
 
 Writing to a particular PPU register while a frame is being drawn can result in graphical artefacts.
@@ -68,17 +68,17 @@ The NES has 2 types of graphics:
 
 To highlight the difference, here's a scene made up of sprites and background:
 <div class="nes-screenshot">
-{% image sprites-and-background.gif %}
+{% image sprites-and-background.webp %}
 </div>
 
 Here's the same scene with only the sprites visible:
 <div class="nes-screenshot">
-{% image only-sprites.gif %}
+{% image only-sprites.webp %}
 </div>
 
 And here's the scene with only the background visible:
 <div class="nes-screenshot">
-{% image only-background.gif %}
+{% image only-background.webp %}
 </div>
 
 ## Scrolling
@@ -165,8 +165,8 @@ On the right is a recording of the name tables, with horizontal mirroring, and t
 window highlighted.
 
 <div class="nes-screenshot">
-{% image scroll-demo.gif style="width:50%;height:50%;float:left" %}
-{% image scroll-demo-name-table.gif style="width:50%;height:50%" %}
+{% image scroll-demo.webp style="width:50%;height:50%;float:left" %}
+{% image scroll-demo-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 Remember, vertical scrolling itself isn't unusual at all - just *split screen* vertical scrolling.
@@ -179,8 +179,8 @@ Mid way through drawing a frame, the game can reconfigure the PPU, which effects
 drawn pixels will be displayed. One common mid-frame change is to update the horizontal scroll position.
 
 <div class="nes-screenshot">
-{% image horizontal-scroll-demo.gif style="width:50%;height:50%;float:left" %}
-{% image horizontal-scroll-demo-name-table.gif style="width:50%;height:50%" %}
+{% image horizontal-scroll-demo.webp style="width:50%;height:50%;float:left" %}
+{% image horizontal-scroll-demo-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 When scrolling horizontally between rooms, The Legend of Zelda always starts with scroll set
@@ -216,8 +216,8 @@ When Sprite Zero Hit occurs, the game changes the horizontal scroll to effect th
 This shows a horizontal room transition with and without the background.
 
 <div class="nes-screenshot">
-{% image horizontal-scroll-demo-fast.gif style="width:50%;height:50%;float:left" %}
-{% image horizontal-scroll-demo-sprites.gif style="width:50%;height:50%" %}
+{% image horizontal-scroll-demo-fast.webp style="width:50%;height:50%;float:left" %}
+{% image horizontal-scroll-demo-sprites.webp style="width:50%;height:50%" %}
 </div>
 
 The brown circle
@@ -256,8 +256,8 @@ All `PPUSCROLL` writes occur during vblank in this example, which causes the ent
 to scroll together.
 
 <div class="nes-screenshot">
-{% image short-text-scroll.gif style="width:50%;height:50%;float:left" %}
-{% image short-text-scroll-name-table.gif style="width:50%;height:50%" %}
+{% image short-text-scroll.webp style="width:50%;height:50%;float:left" %}
+{% image short-text-scroll-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -289,8 +289,8 @@ reaches the next row of pixels. Partial horizontal scrolling works by writing to
 while the PPU is drawing the last line of pixels before the scroll should happen.
 
 <div class="nes-screenshot">
-{% image short-horizontal-scroll.gif style="width:50%;height:50%;float:left" %}
-{% image short-horizontal-scroll-name-table.gif style="width:50%;height:50%" %}
+{% image short-horizontal-scroll.webp style="width:50%;height:50%;float:left" %}
+{% image short-horizontal-scroll-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -322,8 +322,8 @@ split the screen, and change the scroll position of part of the frame, it may on
 And yet:
 
 <div class="nes-screenshot">
-{% image short-vertical-scroll.gif style="width:50%;height:50%;float:left" %}
-{% image short-vertical-scroll-name-table.gif style="width:50%;height:50%" %}
+{% image short-vertical-scroll.webp style="width:50%;height:50%;float:left" %}
+{% image short-vertical-scroll-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 Believe it or not, the `PPUSCROLL` register is not changed during this transition.
@@ -355,8 +355,8 @@ transition, the scroll was set while drawing pixel row 63, so we'll just look at
 during this row.
 
 <div class="nes-screenshot">
-{% image short-vertical-scroll.gif style="width:50%;height:50%;float:left" %}
-{% image short-vertical-scroll-name-table.gif style="width:50%;height:50%" %}
+{% image short-vertical-scroll.webp style="width:50%;height:50%;float:left" %}
+{% image short-vertical-scroll-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 <table class="short-table">
@@ -580,8 +580,8 @@ When moving up between rooms, the first frame of the scroll animation scrolls do
 Here's the animation in extreme slow motion.
 
 <div class="nes-screenshot">
-{% image brief-scroll-down.gif style="width:50%;height:50%;float:left" %}
-{% image brief-scroll-down-name-table.gif style="width:50%;height:50%" %}
+{% image brief-scroll-down.webp style="width:50%;height:50%;float:left" %}
+{% image brief-scroll-down-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 The name table view shows what's going on. While to players it may look like the visible area
@@ -739,8 +739,8 @@ The artefact is also visible when scrolling down between rooms, but it occurs
 at the end of the animation instead.
 
 <div class="nes-screenshot">
-{% image both-scroll-vertical.gif style="width:50%;height:50%;float:left" %}
-{% image both-scroll-vertical-name-table.gif style="width:50%;height:50%" %}
+{% image both-scroll-vertical.webp style="width:50%;height:50%;float:left" %}
+{% image both-scroll-vertical-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 ## Further Reading
@@ -757,8 +757,8 @@ Before I learnt about the internal PPU register, my emulator would display a wip
 effect on vertical screen transitions in The Legend of Zelda.
 
 <div class="nes-screenshot">
-{% image vertical-wipe.gif style="width:50%;height:50%;float:left" %}
-{% image vertical-wipe-name-table.gif style="width:50%;height:50%" %}
+{% image vertical-wipe.webp style="width:50%;height:50%;float:left" %}
+{% image vertical-wipe-name-table.webp style="width:50%;height:50%" %}
 </div>
 
 The Link sprite would slide down the screen as intended, but the background would not scroll.
