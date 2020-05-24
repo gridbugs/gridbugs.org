@@ -8,6 +8,18 @@ excerpt_separator: <!--more-->
 ---
 
 <style>
+.pattern-table img {
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    width: 256px;
+    height: 256px;
+}
+.pattern img {
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    width: 16px;
+    height: 16px;
+}
 .nes-screenshot img {
     width: 512px;
     height: 480px;
@@ -130,6 +142,10 @@ generation is 0.
 {% image frame1-byte-outlines-xor.png %}
 </div>
 
+Since the current video memory address is incremented with every video memory write,
+there is no need to explicitly set the video memory address between two consecutive strips of 8 tiles.
+Thus, the draw queue is a sequence of _runs_ of consecutive 8-tile strips.
+
 The draw queue is stored within the first 256 bytes of memory, as there are special instructions
 for accessing this region faster than other regions of memory. It's a sequence of variable-length
 blocks of the form:
@@ -138,6 +154,8 @@ blocks of the form:
  - **Size**: A single positive byte indicating how many bytes of tile data follow
  - **Tile Data**: A sequence of **Size** bytes, where the value of each bit indicates the state of a cell
  in the current Game of Life generation
+
+The draw queue is terminated with a negative screen position.
 
 The first few draw queue entries from the example above:
 ```
@@ -179,8 +197,114 @@ Here's a visualization of the nametable entries that are written on each frame.
 {% image lazy.webp %}
 </div>
 
+### Patterns
 
-## Rust
+The animation above shows the locations in the nametable being written to on each frame.
+Each nametable entry is a single byte, which is treated as an index into the _pattern table_.
+A pattern table is a 4kb region of video memory containing 256 _patterns_.
+A pattern is a 16 byte = 128 bit description of an 8 x 8 = 64 pixel tile, where every pair of bits determines
+the colour of a pixel.
+
+In Game of Life, each cell is either alive or dead, so one approach would be to use 2 patterns.
+Here pattern 0 represents a dead cell, and 1 represent a live cell. The remaining patterns are unused.
+
+<div class="pattern-table">
+{% image naive-patterns.png %}
+</div>
+
+Writing a 0 to a nametable entry would set the corresponding background tile to a dead cell,
+
+<div class="pattern">
+{% image dead.png %}
+</div>
+
+and wrliting a 1 would show a live cell.
+
+<div class="pattern">
+{% image alive.png %}
+</div>
+
+In the draw queue, each 8-tile horizontal strip is represented by a single byte, where each bit
+encodes the state of a cell. To render a byte, iterate over each bit, and send the value of the bit
+to graphics hardware:
+
+```rust
+// Note that this is pseudocode!
+// I don't compile rust to run on the NES.
+// I write assmebly in a rust DSL. See below.
+
+// assume video memory address is already set correctly
+let mut byte_to_render = next_byte_from_draw_queue();
+for i in 0..8 {
+
+    // take the current bit
+    let pattern_index = byte_to_render & 1;
+
+    // assume this increments the current video memory address
+    write_to_video_memory(pattern_index);
+
+    // right shift so the next bit can be tested
+    byte_to_render = byte_to_render >> 1;
+}
+```
+
+This works, but can be improved. The CPU in the NES only has one general purpose register, known as the _accumuluator_.
+When bitwise-AND-ing, the current accumulator value is replaced with the result of the AND. In order to then right shift
+and read the next bit, we'd need to _backup_ the original accumulator value, AND it with 1 to get the current bit, write the result
+to video memory, then _restore_ the original accumulator value from backup before right-shifting. This all has to happen during the
+precious VBLANK interval.
+
+Observe that `pattern_index` is 1 precisely when `byte_to_render` is odd. The pattern table has 256 entries, so every possible
+byte is a valid nametable entry. We could remove the need to read the current bit  from `byte_to_render` if we set up the
+pattern table such that _all_ odd nametable entries corresponded to a live cell, and _all_ even entries correspond to a dead cell.
+
+The pattern table becomes:
+
+<div class="pattern-table">
+{% image patterns.png %}
+</div>
+
+Every even entry is dead, and every odd entry is alive.
+
+The code to render a byte can be simplified:
+
+```rust
+let mut byte_to_render = next_byte_from_draw_queue();
+for i in 0..8 {
+    // assume this increments the current video memory address
+    write_to_video_memory(byte_to_render);
+
+    // right shift so the next bit can be tested
+    byte_to_render = byte_to_render >> 1;
+}
+```
+
+This translates into simple assembly:
+
+```
+INX        ; increment X index register - the pointer into draw queue
+LDA $00,X  ; read next byte from draw queue into accumulator
+
+; unrolled loop
+
+STA $2007  ; store accumulator value at address 0x2007, which writes it to video memory
+LSR        ; right shift the accumulator
+STA $2007  ; writing 0x2007 increments the current video memory address so repeatedly
+LSR        ;   writing 8 times will populate 8 consecutive nametable entries
+STA $2007
+LSR
+STA $2007
+LSR
+STA $2007
+LSR
+STA $2007
+LSR
+STA $2007
+LSR
+STA $2007
+```
+
+## Rust?
 
 About a year ago I made a [NES emulator](https://gitlab.com/stevebob/mos6502) in rust, and wanted to write some small NES programs
 to test it. I made a small rust library [mos6502\_assembler](https://crates.io/crates/mos6502_assembler)
