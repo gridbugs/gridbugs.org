@@ -173,6 +173,8 @@ During VBLANK, as much of the draw queue is processed as there is time for. If t
 interval is approaching and there is unprocessed draw queue entries remaining rendering pauses until the beginning
 of the _next_ VBLANK interval before continuing from where it left off.
 
+Here's a visualization of the nametable entries that are written on each frame.
+
 <div class="nes-screenshot">
 {% image lazy.webp %}
 </div>

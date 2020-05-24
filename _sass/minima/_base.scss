@@ -1,45 +1,4 @@
 /**
- * Reset some basic elements
- */
-body, h1, h2, h3, h4, h5, h6,
-blockquote, pre, hr,
-dl, dd, ol, ul, figure {
-  margin: 0;
-  padding: 0;
-}
-
-
-
-/**
- * Basic styling
- */
-body {
-  font: $base-font-weight #{$base-font-size}/#{$base-line-height} $base-font-family;
-  color: $text-color;
-  background-color: $background-color;
-  -webkit-text-size-adjust: 100%;
-  -webkit-font-feature-settings: "kern" 1;
-     -moz-font-feature-settings: "kern" 1;
-       -o-font-feature-settings: "kern" 1;
-          font-feature-settings: "kern" 1;
-  font-kerning: normal;
-}
-
-
-
-/**
- * Set `margin-bottom` to maintain vertical rhythm
- */
-h1, h2, h3, h4, h5, h6,
-p, blockquote, pre,
-ul, ol, dl, figure,
-%vertical-rhythm {
-  margin-bottom: $spacing-unit / 4;
-}
-
-
-
-/**
  * Images
  */
 img {
@@ -47,8 +6,6 @@ img {
   vertical-align: middle;
   padding: 10px 0px;
 }
-
-
 
 /**
  * Figures
@@ -90,34 +47,7 @@ a {
     color: $text-color;
     text-decoration: underline;
   }
-
-  .social-media-list &:hover {
-    text-decoration: none;
-
-    .username {
-      text-decoration: underline;
-    }
-  }
 }
-
-
-/**
- * Blockquotes
- */
-blockquote {
-  color: $grey-color;
-  border-left: 4px solid $grey-color-light;
-  padding-left: $spacing-unit / 2;
-  @include relative-font-size(1.125);
-  letter-spacing: -1px;
-  font-style: italic;
-
-  > :last-child {
-    margin-bottom: 0;
-  }
-}
-
-
 
 /**
  * Code formatting
@@ -144,8 +74,6 @@ pre {
     padding-left: 0;
   }
 }
-
-
 
 /**
  * Wrapper
@@ -178,38 +106,6 @@ pre {
   clear: both;
 }
 
-
-
-/**
- * Icons
- */
-.icon > svg {
-  display: inline-block;
-  vertical-align: middle;
-  width: $icon-size;
-  height: $icon-size;
-  path {
-    fill: $grey-color;
-  }
-}
-
-.social-media-container {
-    padding-left: 5px;
-}
-
-
-.social-media-list {
-  .icon {
-    padding-right: 5px;
-  }
-
-  li + li {
-    padding-top: 5px;
-  }
-}
-
-
-
 /**
  * Tables
  */
@@ -237,6 +133,8 @@ table {
   padding: $spacing-unit / 2 0 0 0;
 
   ul {
+    margin: 0px;
+    padding: 0px;
     display: flex;
     list-style: none;
     font-size: 18px;
