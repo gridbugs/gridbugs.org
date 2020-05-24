@@ -5,7 +5,7 @@ variables:
   LC_ALL: C.UTF-8
 
 before_script:
-  - gem install bundler:2.0.2 # this must match the "BUNDLED WITH" clause in Gemfile.lock
+  - gem install bundler:2.1.4 # this must match the "BUNDLED WITH" clause in Gemfile.lock
   - bundle install
 
 test:
