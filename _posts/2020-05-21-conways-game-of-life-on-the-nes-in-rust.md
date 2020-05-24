@@ -79,7 +79,7 @@ and user-interface elements:
 
 For Conway's Game of Life, I only render the background, and replace nametable entries to keep the grid of tiles
 up to date with the state of the cell automata.
-The NES graphics hardware is not optimized for frequent large changes to nametables.
+NES graphics hardware is not optimized for frequent large changes to nametables.
 Fortunately, most frame-to-frame changes in Conway's Game of Life are relatively small.
 
 {% image frame0.png %}
@@ -98,33 +98,38 @@ it will necessarily take several frames to perform the update.
 
 The renderer takes a variable number of frames to render a single generation of Game of Life,
 taking fewer frames when inter-generation change is less dramatic.
+This is a slowed down recording in which the variability of the effective frame rate is clearly visible.
 
 {% image slow.webp %}
 
-### Just Redraw What's Changed
+### NES Graphics Primer
 
 The background nametable is stored in video memory. This is memory connected to the graphics
 chip, and isn't directly accessible to the CPU. Each element of the nametable is a single byte,
 and is treated as an index into the _pattern table_, which contains the shapes of tiles.
 The NES screen resolution is 256x240 pixels, or 32x30 tiles, 8x8 pixels each, so the nametable
-has 960 such entries.
+has 32 x 30 = 960 entries.
 
 The CPU updates the nametable by writing to a pair of memory-mapped registers (0x2006 and 0x2007 to be precise).
 One register sets the current video memory address in two successive writes (video memory addresses are
 2 bytes, but the register is only 1 byte wide). The second register is used to write a byte of data
 to the current video memory address, and increment the current address. In this way, it's possible to
-set a sequence of consecutive nametable entries with 1 write per tile, plus 2 writes initially to set
+set a sequence of consecutive nametable entries with 1 write per entry, plus 2 writes initially to set
 the address of the start of the sequence.
 
 This pair of registers may only be accessed during the vertical blanking interval (VBLANK), which is a period
-of 2273 CPU cycles (~1.27ms) once per frame (the NES runs at 60 FPS). That's not much time, so
+of 2273 CPU cycles (~1.27ms) once per frame (the NES runs at 60 FPS), during which the graphics hardware isn't
+updating the display.
+That's not much time, so
 it can be worth it to
 spend
 a little extra time outside of VBLANK to make things run more smoothly within the interval.
 
-My rendering strategy is to use the time outside of VBLANK to look at the differences between each pair of
-consecutive states, and build a _draw queue_ listing all the parts of the nametable that need to be updated,
-and what they need to be update to. Then during VBLANK, iterate over the draw queue, applying the changes.
+### Just Redraw What's Changed
+
+My rendering strategy is to use some of the time outside of VBLANK to look at the differences between each pair of
+consecutive states, and build a _draw queue_ listing all the parts of the nametable that need to be updated
+and what they need to be updated to. Then during VBLANK, iterate over the draw queue, applying the changes.
 The fewer the changes, the less time it will take.
 
 Since every cell in Conway's Game of Life is either dead or alive, I use a single bit
@@ -135,12 +140,12 @@ to represent the current state of each cell. Each tile of the nametable represen
 {% image frame1-byte-outlines.png %}
 
 To compute the current generation of Game of Life, the previous generation must remain in-tact.
-This means that at any point in time, the current and previous generations are in memory.
+This means that at any point in time, the current and previous generations are both in memory.
 Bitwise XOR-ing each byte of the current generation with each byte of the previous generation
 is a quick way to find out which bytes have changed.
 
-Here's the second generation above with the bytes blacked-out if their bitwise XOR with the previous
-generation is 0.
+Here's the second generation above with bytes blacked-out if the bitwise XOR with the corresponding byte in the previous
+generation is 0 (ie. there was no change in that byte between the two generations).
 
 <div class="nes-screenshot">
 {% image frame1-byte-outlines-xor.png %}
@@ -150,12 +155,12 @@ Since the current video memory address is incremented with every video memory wr
 there is no need to explicitly set the video memory address between two consecutive strips of 8 tiles.
 Thus, the draw queue is a sequence of _runs_ of consecutive 8-tile strips.
 
-The draw queue is stored within the first 256 bytes of memory, as there are special instructions
-for accessing this region faster than other regions of memory. It's a sequence of variable-length
+The draw queue is stored within the first 256 bytes of memory as an optimization, as there are special instructions
+for accessing this region faster than other regions of memory. The draw queue is made up of variable-length
 blocks of the form:
  - **Screen Position**: A single byte between 0 and 119 indicating which byte is being updated. To convert
  this value to a video memory address, multiply it by 8, and add the base nametable address.
- - **Size**: A single positive byte indicating how many bytes of tile data follow
+ - **Size**: A single byte indicating how many bytes of tile data follow
  - **Tile Data**: A sequence of **Size** bytes, where the value of each bit indicates the state of a cell
  in the current Game of Life generation
 
@@ -217,7 +222,7 @@ Here's a visualization of the nametable entries that are written on each frame.
 
 The animation above shows the locations in the nametable being written to on each frame.
 Each nametable entry is a single byte, which is treated as an index into the _pattern table_.
-A pattern table is a 4kb region of video memory containing 256 _patterns_.
+The pattern table is a 4kb region of video memory containing 256 _patterns_.
 A pattern is a 16 byte = 128 bit description of an 8 x 8 = 64 pixel tile, where every pair of bits determines
 the colour of a pixel.
 
@@ -265,7 +270,7 @@ for i in 0..8 {
 ```
 
 This works, but can be improved. The CPU in the NES only has one general purpose register, known as the _accumuluator_.
-When bitwise-AND-ing, the current accumulator value is replaced with the result of the AND. In order to then right shift
+When bitwise-AND-ing, the current accumulator value is replaced with the result of the AND. In order to right shift
 and read the next bit, we'd need to _backup_ the original accumulator value, AND it with 1 to get the current bit, write the result
 to video memory, then _restore_ the original accumulator value from backup before right-shifting. This all has to happen during the
 precious VBLANK interval.
@@ -330,7 +335,7 @@ and _writing_ NES ROM files in the [INES](https://wiki.nesdev.com/w/index.php/IN
 is the standard file format understood by all NES emulators.
 
 ```rust
-// Read the state of the controller into address 0x00FF
+// Function to read the state of the controller into address 0x00FF
 b.label("controller-to-255");
 const CONTROLLER_REG: Addr = Addr(0x4016);
 
@@ -350,25 +355,25 @@ b.inst(Rol(ZeroPage), 255); // shift carry flag into 255, and MSB of 255 into ca
 // if that set the carry flag, this was the 8th iteration
 b.inst(Bcc, LabelRelativeOffset("controller-to-255-loop"));
 
-b.inst(Rts, ());
+b.inst(Rts, ()); // return from subroutine
 ```
 
 In order for an emulator to decode and emulate instructions, it needs to know the opcode and argument layout of each instruction.
 The same information is needed by the assembler to generate binary code corresponding to a 6502 program.
 The definitions of instructions are taken straight from the core of my emulator, _another_ rust library: [mos6502\_model](https://crates.io/crates/mos6502_model).
 It took a little extra work per instruction when making that library to allow it to be used in both my emulator and assembler,
-but it means that all the information for any given instruction is in the same place.
+but it means that the information for any given instruction is all in the same place.
 
 ### Pre-Processing
 
 Embedding an assembler in a general-purpose programming language means you get to use the host language as a powerful pre-processor.
 
 In the code example above, the address of the controller register, `0x4016`, is assigned to a rust constant `CONTROLLER_REG`.
-The ability to assign values to names is a stable in most assemblers, but when your assembler is embedded in a general purpose language
+The ability to assign values to names is a staple in most assemblers, but when your assembler is embedded in a general purpose language
 it's as simple as a variable/constant assignment!
 
 Another benefit is using host language loops instead of loops in assembly. For loops iterating a small constant number of times,
-unrolling the loop by repeatedly emitting the code within is easier than writing the loop in assembly.
+unrolling the loop by repeatedly emitting the code within is easier and faster than writing the loop in assembly.
 
 ```rust
 // zero-out first 8 bytes of memory
@@ -382,7 +387,7 @@ The 6502 only has 3 registers, so in code with nested loops, it's common to run 
 This isn't the end of the world - loop counters can be stored in memory, but this is a bit of a pain and
 incurs a runtime cost, so I frequently use this technique to
 relieve some of the pressure. Of course this comes at the cost of increased code size. On more modern architectures
-I'd mention how this hurts code and will lead to more cache misses, but the 6502 has no cache.
+I'd mention how this hurts locality and will lead to more cache misses, but the 6502 has no cache.
 
 ### Validation
 
@@ -406,18 +411,18 @@ The next line is...
 b.inst(Sta(ZeroPage), 255);
 ```
 ...which has the addressing mode "Zero Page", and an argument of 255 (0xFF in hex). The Zero Page addressing mode reads
-the _single_ byte after the instruction opcode, and treats it
+a _single_ byte after the instruction opcode, and treats it
 as an index into the first 256 bytes of memory (ie. the "zero page" in 6502 parlance).
 This line stores the current accumulator value at address 0x00FF.
 
-A third addressing mode, "Immediate", reads the single byte after the instruction opcode and treats it as a literal value rather
+A third addressing mode, "Immediate", reads a single byte after the instruction opcode and treats it as a literal value rather
 than an address.
 
 ```rust
 b.inst(Lda(Immediate), 42); // Load the accumulator with the value 42
 ```
 
-It's only meaningful when the instruction would read from memory. Using the Immediate addressing mode with the STA
+It's only meaningful when the instruction would _read_ from memory. Using the Immediate addressing mode with the STA
 is impossible, as it doesn't make sense to store the current accumulator value at a literal value.
 
 Rather than writing a check to prevent illegal instructions from being compiled, I encode the valid addressing
@@ -449,24 +454,25 @@ error[E0277]: the trait bound
 
 ## Game of Life
 
-The state of the 960 cells is stored in a 120 byte array, which is initialized randomly using a simple random number generator ([32-bit Xorshift](https://en.wikipedia.org/wiki/Xorshift)).
+The state of the 960 cells is stored in a 120 byte array, which is initialized randomly using a simple random number generator ([32-bit Xorshift](https://en.wikipedia.org/wiki/Xorshift))
+seeded by the number of frames since start up.
 Computing the second generation of the automata populates a second 120 byte array with the new cell states.
 The third generation overwrites the first cell states, the fourth overwrites the second, and so on.
 At any point, the previous 2 generations of cells are present in a pair of arrays.
 
 ### Update 8 Cells at a Time
 
-As each byte of state represents the state of 8 cells, it's convenient to compute the new cell states of 8 at a time - that is,
+As each byte of state represents the state of 8 cells, it's convenient to compute the new cell states 8 at a time - that is,
 one byte of state at a time.
 For each bit of the current byte, count the living cells adjacent to the cell represented to that bit.
-Build up all 8 counts at the same time. This way, for each byte, only 9 bytes (the 8 neighbouring bytes, and the byte itself)
+Build up all 8 counts at the same time. This way, for each byte, only 9 bytes (the 8 neighbouring bytes, and the current byte itself)
 need to be read from memory.
 
 <div class="nes-3x3">
 {% image 3x3-1.png %}
 </div>
 
-The method of incrementing living neighbours of a cell based on a neighbouring byte depends on which neighbour it is.
+The method of incrementing living neighbour count of a cell based on a neighbouring byte depends on which neighbour it is.
 For example in the byte above the current byte, each bit is neighbour to the corresponding bit in the current byte,
 as well as the bit one to the left, and the bit one to the right (diagonal adjacency counts as adjacency).
 In the byte which is down and to the left of the current byte, only the left-most bit need be considered, and it is
@@ -475,6 +481,9 @@ only neighbour to the right-most bit of the current byte.
 <div class="nes-3x3">
 {% image 3x3-2.png %}
 </div>
+
+Once all the living neighbours of each of the 8 cells have been counted, the state of the corresponding cells in the next
+generation is decided based on the living neighbour counts and current cell states.
 
 ### Precomputed Neighbours
 
@@ -497,7 +506,7 @@ The indices of the first few rows of the grid are:
  ...
 ```
 
-The rust code that generates the rom precomputes the index neighbours of each byte,
+The rust code that generates the rom precomputes the indices of neighbours of each byte,
 in the order top, bottom, left, top-left, bottom-left, right, top-right, bottom-right.
 
 ```
@@ -511,8 +520,7 @@ is on the edge of the grid. In the precomputed neighbour table, the value `120` 
 in place of `X`. There are 120 bytes in the state, with indices ranging from 0 to 119.
 After the last byte of state, at offset 120, I store the value 0.
 Thus when reading the neighbouring byte of a byte with no such neighbour, a 0 is read instead.
-This effectively means that each byte on the edge of the grid has a neighbour of 0, indicating that all the cells
-in that neighbour are dead.
+It is as if the visible area of the grid were surrounded by a border of cells which are always dead.
 
 ## Source Code
 
