@@ -5,9 +5,16 @@ date: 2020-05-21 16:00:00 +1000
 categories: procgen emulation
 permalink: /conways-game-of-life-on-the-nes-in-rust/
 excerpt_separator: <!--more-->
+og_image: lazy.webp
 ---
 
 <style>
+.nes-3x3 img {
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    width: 384px;
+    height: 48px;
+}
 .pattern-table img {
     image-rendering: crisp-edges;
     image-rendering: pixelated;
@@ -187,9 +194,21 @@ Operating on entire bytes at a time is convenient, and allows the state to be re
 but this comes at a cost. I wouldn't be surprised if there are still large performance gains to be
 had by updating the display at a finer granularity.
 
-During VBLANK, as much of the draw queue is processed as there is time for. If the end of the VBLANK
-interval is approaching and there is unprocessed draw queue entries remaining rendering pauses until the beginning
-of the _next_ VBLANK interval before continuing from where it left off.
+### Timing
+
+In the ideal situation, all the application logic would take place outside of VBLANK, while the graphics hardware
+is busy updating the display. Then the renderer would be invoked. It waits until the start of VBLANK, then begins
+updating nametable entries, and processes the entire draw queue before the end of VBLANK.
+
+{% image timing0.png %}
+
+In reality, it often takes several frames to process the draw queue. When the end of VBLANK is getting close, the
+renderer will spin until the start of the next VBLANK, then continue where it left off.
+
+{% image timing1.png %}
+
+Any changes made to the nametable during a VBLANK interval are visible the next time the display is updated.
+This is the reason for the vertical wipe artefact visible when the effective framerate is low.
 
 Here's a visualization of the nametable entries that are written on each frame.
 
@@ -218,7 +237,7 @@ Writing a 0 to a nametable entry would set the corresponding background tile to 
 {% image dead.png %}
 </div>
 
-and wrliting a 1 would show a live cell.
+and writing a 1 would show a live cell.
 
 <div class="pattern">
 {% image alive.png %}
@@ -430,3 +449,91 @@ error[E0277]: the trait bound
     = note: required by `mos6502_model::instruction::sta::Inst`
 
 ```
+
+## Game of Life
+
+The state of the 960 cells is stored in a 120 byte array, which is initialized randomly using a simple random number generator ([32-bit Xorshift](https://en.wikipedia.org/wiki/Xorshift)).
+Computing the second generation of the automata populates a second 120 byte array with the new cell states.
+The third generation overwrites the first cell states, the fourth overwrites the second, and so on.
+At any point, the previous 2 generations of cells are present in a pair of arrays.
+
+### Update 8 Cells at a Time
+
+As each byte of state represents the state of 8 cells, it's convenient to compute the new cell states of 8 at a time - that is,
+one byte of state at a time.
+For each bit of the current byte, count the living cells adjacent to the cell represented to that bit.
+Build up all 8 counts at the same time. This way, for each byte, only 9 bytes (the 8 neighbouring bytes, and the byte itself)
+need to be read from memory.
+
+<div class="nes-3x3">
+{% image 3x3-1.png %}
+</div>
+
+The method of incrementing living neighbours of a cell based on a neighbouring byte depends on which neighbour it is.
+For example in the byte above the current byte, each bit is neighbour to the corresponding bit in the current byte,
+as well as the bit one to the left, and the bit one to the right (diagonal adjacency counts as adjacency).
+In the byte which is down and to the left of the current byte, only the left-most bit need be considered, and it is
+only neighbour to the right-most bit of the current byte.
+
+<div class="nes-3x3">
+{% image 3x3-2.png %}
+</div>
+
+### Precomputed Neighbours
+
+To compute the next state of an 8-cell strip, the 8 neighbouring bytes in the 4x30 byte grid need to be considered.
+
+<div class="nes-screenshot">
+{% image darkened.png %}
+</div>
+
+Computing the indices of the neighbours of a cell with a given index is not a hard problem, but computing the 8 neighbours
+of 120 bytes is still a non-trivial amount of work for the NES to do each frame, especially when dealing with the fact
+that bytes along the edges of the grid don't have neighbours on some of their sides.
+
+The indices of the first few rows of the grid are:
+
+```
+ 0 |  1 |  2 |  3
+ 4 |  5 |  6 |  7
+ 8 |  9 | 10 | 11
+ ...
+```
+
+The rust code that generates the rom precomputes the index neighbours of each byte,
+in the order top, bottom, left, top-left, bottom-left, right, top-right, bottom-right.
+
+```
+X,4,X,X,X,1,X,5 | X,5,0,X,4,2,X,6  | X,6,1,X,5,3,X,7   | X,7,2,X,6,X,X,X
+0,4,X,X,X,5,1,9 | 1,9,4,0,8,6,2,10 | 2,10,5,1,9,7,3,11 | 3,11,6,2,10,X,X,X
+...
+```
+
+The `X`'s in the table above indicate neighbours which don't exist, because the byte
+is on the edge of the grid. In the precomputed neighbour table, the value `120` is used
+in place of `X`. There are 120 bytes in the state, with indices ranging from 0 to 119.
+After the last byte of state, at offset 120, I store the value 0.
+Thus when reading the neighbouring byte of a byte with no such neighbour, a 0 is read instead.
+This effectively means that each byte on the edge of the grid has a neighbour of 0, indicating that all the cells
+in that neighbour are dead.
+
+## Outtake
+
+When I first implemented Game of Life and ran it on a simple configuration of [gliders](https://www.conwaylife.com/wiki/Glider)
+it mostly worked, but exploded when the frame-to-frame difference became zero.
+
+<div class="nes-screenshot">
+{% image outtake.webp %}
+</div>
+
+When populating the draw queue, I wasn't handling the case where there is no frame-to-frame difference.
+As a result, the renderer was getting stuck in a loop updating video memory.
+The visual artefacts are caused by updating current video memory address outside of VBLANK.
+
+About half-way through the clip there is a frame where the screen shakes (before it totally crashes).
+This was caused by the renderer continuing to run slightly passed the end of VBLANK, and as above,
+updated the current video memory address.
+
+In a previous blog post I explain these glitches in more detail, and show how the original Legend of Zelda
+used them to great effect to implement scrolling:
+{% local zelda-screen-transitions-are-undefined-behaviour | Zelda Screen Transitions are Undefined Behaviour %}
