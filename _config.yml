@@ -22,6 +22,8 @@ itch_username: gridbugs
 twitch_username: gridbugs
 twitter_username: gridbugstv
 
+host: 0.0.0.0
+
 minima:
   date_format: "%Y-%m-%d"
 
