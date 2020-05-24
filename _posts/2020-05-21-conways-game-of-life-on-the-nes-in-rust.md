@@ -58,7 +58,8 @@ $ fceux life.nes    # fceux is a NES emulator
 
 <!--more-->
 
-Press any button on your controller to restart the demo from a randomized state.
+When running in an emulator,
+press any button on your controller to restart from a randomized state.
 
 ## NES Rendering
 
@@ -72,13 +73,13 @@ usually used for game characters and objects:
 {% image only-sprites.webp %}
 
 The _background_ is a 2D grid of 8x8 pixel tiles, called a _nametable_. Individual tiles can be replaced, and the
-entire background can be smoothly scrolled. It's typically used for mostly-static backgrounds
+entire background can be scrolled smoothly. It's typically used for mostly-static backgrounds
 and user-interface elements:
 
 {% image only-background.webp %}
 
 For Conway's Game of Life, I only render the background, and replace nametable entries to keep the grid of tiles
-up to date with the state of the cell automata.
+up to date with the state of the cells.
 NES graphics hardware is not optimized for frequent large changes to nametables.
 Fortunately, most frame-to-frame changes in Conway's Game of Life are relatively small.
 
@@ -94,7 +95,7 @@ the first few frames have dramatic frame-to-frame differences.
 The NES processor is too slow relative to the framerate of its graphics hardware
 (in particular the [vertical-blanking interval](https://en.wikipedia.org/wiki/Vertical_blanking_interval)),
 to update the entire nametable each frame, so when the frame-to-frame difference is large,
-it will necessarily take several frames to perform the update.
+it requires several frames to perform the update.
 
 The renderer takes a variable number of frames to render a single generation of Game of Life,
 taking fewer frames when inter-generation change is less dramatic.
@@ -102,7 +103,7 @@ This is a slowed down recording in which the variability of the effective frame 
 
 {% image slow.webp %}
 
-### NES Graphics Primer
+### Quick intro to NES Background Graphics
 
 The background nametable is stored in video memory. This is memory connected to the graphics
 chip, and isn't directly accessible to the CPU. Each element of the nametable is a single byte,
@@ -130,7 +131,7 @@ a little extra time outside of VBLANK to make things run more smoothly within th
 My rendering strategy is to use some of the time outside of VBLANK to look at the differences between each pair of
 consecutive states, and build a _draw queue_ listing all the parts of the nametable that need to be updated
 and what they need to be updated to. Then during VBLANK, iterate over the draw queue, applying the changes.
-The fewer the changes, the less time it will take.
+The fewer changes, the less time it will take.
 
 Since every cell in Conway's Game of Life is either dead or alive, I use a single bit
 to represent the current state of each cell. Each tile of the nametable represents a cell, so there are
@@ -160,9 +161,9 @@ for accessing this region faster than other regions of memory. The draw queue is
 blocks of the form:
  - **Screen Position**: A single byte between 0 and 119 indicating which byte is being updated. To convert
  this value to a video memory address, multiply it by 8, and add the base nametable address.
- - **Size**: A single byte indicating how many bytes of tile data follow
+ - **Size**: A single byte indicating how many bytes of tile data follow.
  - **Tile Data**: A sequence of **Size** bytes, where the value of each bit indicates the state of a cell
- in the current Game of Life generation
+ in the current Game of Life generation.
 
 The draw queue is terminated with a negative screen position.
 
@@ -190,7 +191,7 @@ Data:
 0x00 (0b00000000)
 ```
 
-Note that because updates are specified a byte at a time, some (many in fact) tile updates are redundant
+Note that because updates are specified a byte at a time, some tile updates (many in fact) are redundant
 (ie. the nametable entry is updated to the value which it already has).
 Operating on entire bytes at a time is convenient, and allows the state to be represented compactly,
 but this comes at a cost. I wouldn't be surprised if there are still large performance gains to be
@@ -475,8 +476,8 @@ need to be read from memory.
 The method of incrementing living neighbour count of a cell based on a neighbouring byte depends on which neighbour it is.
 For example in the byte above the current byte, each bit is neighbour to the corresponding bit in the current byte,
 as well as the bit one to the left, and the bit one to the right (diagonal adjacency counts as adjacency).
-In the byte which is down and to the left of the current byte, only the left-most bit need be considered, and it is
-only neighbour to the right-most bit of the current byte.
+In the byte which is down and to the left of the current byte, only the left-most bit need be considered.
+The cell represented by this bit is only adjacent to the right-most bit of the current byte.
 
 <div class="nes-3x3">
 {% image 3x3-2.png %}
@@ -494,7 +495,8 @@ To compute the next state of an 8-cell strip, the 8 neighbouring bytes in the 4x
 </div>
 
 Computing the indices of the neighbours of a cell with a given index is not a hard problem, but computing the 8 neighbours
-of 120 bytes is still a non-trivial amount of work for the NES to do each frame, especially when dealing with the fact
+of each of the 120 bytes is still a non-trivial amount of work for the NES to do each frame,
+especially when dealing with the fact
 that bytes along the edges of the grid don't have neighbours on some of their sides.
 
 The indices of the first few rows of the grid are:
