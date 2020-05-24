@@ -5,7 +5,7 @@ date: 2020-05-21 16:00:00 +1000
 categories: procgen emulation
 permalink: /conways-game-of-life-on-the-nes-in-rust/
 excerpt_separator: <!--more-->
-og_image: lazy.webp
+og_image: frame0.png
 ---
 
 <style>
@@ -32,9 +32,6 @@ og_image: lazy.webp
     height: 480px;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
-}
-.short-table tr {
-    line-height: 0px;
 }
 </style>
 
@@ -516,6 +513,10 @@ After the last byte of state, at offset 120, I store the value 0.
 Thus when reading the neighbouring byte of a byte with no such neighbour, a 0 is read instead.
 This effectively means that each byte on the edge of the grid has a neighbour of 0, indicating that all the cells
 in that neighbour are dead.
+
+## Source Code
+
+All my NES-related rust libraries and executables are in [this repo](https://gitlab.com/stevebob/mos6502).
 
 ## Outtake
 
