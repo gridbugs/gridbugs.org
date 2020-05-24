@@ -1,3 +1,19 @@
+# Gridbugs.org
+
+## Production Site
+
+https://gridbugs.org
+
+## Staging Site
+
+https://stevebob.gitlab.io/gridbugs.org/
+
+## Deploy
+
+```
+scripts/publish.sh
+```
+
 ## Setting up jekyll
 
 ```
