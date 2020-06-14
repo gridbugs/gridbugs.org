@@ -36,9 +36,9 @@ $ cargo new --bin chargrid-roguelike-tutorial-2020
 This command creates a directory structure:
 
 ```
-├── Cargo.toml                    # manifest - we'll mainly update it to add dependencies
-└── src                           # all the project's source code will live under this directory
-    └── main.rs                   # entry point for the program
+├── Cargo.toml   # manifest - we'll mainly update it to add dependencies
+└── src          # all the project's source code will live under this directory
+    └── main.rs  # entry point for the program
 ```
 
 From within the "chargrid-roguelike-tutorial-2020" directory, run:
