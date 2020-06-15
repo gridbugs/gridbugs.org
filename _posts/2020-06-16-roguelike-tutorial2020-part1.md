@@ -6,6 +6,7 @@ categories: gamedev roguelikes tutorial
 permalink: /roguelike-tutorial-2020-part-1/
 excerpt_separator: <!--more-->
 future: true
+og_image: screenshot.png
 ---
 
 For getting set up for this tutorial, see {% local roguelike-tutorial-2020-part-0 | Part 0 %}.
@@ -83,6 +84,81 @@ about how to render a grid of characters in a window:
 - `font_source_dimensions`: size of each character in the source font in pixels (usually the same as `font_dimensions`)
 - `underline_width`: how much of the height of each cell should be taken up by the underline as a proportion of cell height
 - `underline_top_offset`: how far from the top of each cell should the underline begin as a proportion of cell height
+
+Once the context has been created with `Context::new`, the remaining two lines in `main` at this stage are:
+```rust
+let app = App::new();
+context.run_app(app);
+```
+
+This creates an `App` - a type which is not yet defined. The `App` type will contain all the state and
+logic of the application - a roguelike game in this case. As hinted above, our `App` type will implement
+the trait `chargrid::app::App` which will tell chargrid how to run the application. Finally, `context.run_app(app)`
+takes the application and, well, runs it, in a graphical context, sending it keyboard and mouse events received by the window,
+and drawing the grid of characters to the window.
+
+The `App` type:
+
+```rust
+struct App {}
+
+impl App {
+    fn new() -> Self {
+        Self {}
+    }
+}
+```
+
+Currently the application has no state or logic, so this is just an empty struct for now.
+
+Implement the `chargrid::app::App` trait:
+```rust
+impl chargrid::app::App for App {
+
+    fn on_input(&mut self, input: chargrid::app::Input) -> Option<chargrid::app::ControlFlow> {
+        use chargrid::input::{keys, Input};
+        match input {
+            Input::Keyboard(keys::ETX) | Input::Keyboard(keys::ESCAPE) => {
+                Some(chargrid::app::ControlFlow::Exit)
+            }
+            _ => None,
+        }
+    }
+
+    fn on_frame<F, C>(
+        &mut self,
+        _since_last_frame: chargrid::app::Duration,
+        _view_context: chargrid::app::ViewContext<C>,
+        _frame: &mut F,
+    ) -> Option<chargrid::app::ControlFlow>
+    where
+        F: chargrid::app::Frame,
+        C: chargrid::app::ColModify,
+    {
+        None
+    }
+}
+```
+
+Every chargrid application must implement 2 methods:
+- `on_input` is called each time a keyboard or mouse event occurs, and is passed a normalized representation of the event
+- `on_frame` is called periodically, right before the context updates the contents of the window
+
+Both methods return an `Option<chargrid::app::ControlFlow>`. A `chargrid::app::ControlFlow` is an `enum` of control flow actions
+the application can take. At the time of writing, it can only be used to specify that the application should be terminated.
+
+The application doesn't render anything yet, so `on_frame` does nothing.
+
+Since it's annoying to have a program which opens a window that can't be closed, `on_input` terminates the application
+by returning `Some(chargrid::app::ControlFlow::Exit)` when certain keys are pressed. `keys::ESCAPE` corresponds to the
+escape key. `keys::ETX` actually corresponds to the user closing the window (e.g. by pressing the 'X' button in its corner).
+The name "ETX", and the fact that this event pretends to be a keyboard event, is a remnant from the days when chargrid
+applications could only run in unix terminals. When the user presses CTRL-C in a terminal, this manifests as a character
+on standard input named "ETX" or "end of text".
+
+This is now a complete chargrid application. Run it with `cargo run` and it will open an empty window:
+
+{% image screenshot-blank.png %}
 
 ## Draw the Player
 
