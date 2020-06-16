@@ -16,11 +16,20 @@ This part will take you from printing "Hello, World!" to opening a window, drawi
 
 <!--more-->
 
+<style>
+.small-images img {
+    padding-left: 20px;
+    width: 240px;
+}
+</style>
+
 ## Open a Window
 
 Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 
 {% pygments toml %}
+# Cargo.toml
+...
 [dependencies]
 chargrid_graphical = "0.2"  # graphical frontend for chargrid applications
 chargrid = "0.1"            # library for implementing chargrid applications
@@ -29,6 +38,8 @@ chargrid = "0.1"            # library for implementing chargrid applications
 Now update your main function:
 
 {% pygments rust %}
+// src/main.rs
+
 fn main() {
     use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
     const CELL_SIZE_PX: f64 = 16.;
@@ -161,6 +172,149 @@ This is now a complete chargrid application! Run it with `cargo run` and it will
 Reference implementation branch: [part-1.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.0)
 
 ## Draw the Player
+
+Let's place the player character in the centre of the game area, then render the player.
+
+Start by adding some more dependencies to help represent locations and colours.
+
+{% pygments toml %}
+# Cargo.tom
+...
+[dependencies]
+...
+coord_2d = "0.2"        # representation of 2D integer coordinates and sizes
+rgb24 = "0.2"           # representation of 24-bit colour
+{% endpygments %}
+
+{% pygments rust %}
+// src/main.rs
+
+use coord_2d::{Coord, Size};
+use rgb24::Rgb24;
+
+fn main() {
+...
+{% endpygments %}
+
+Now we need to add the player's coordinate to the `App` type. We could introduce a new field directly to `App`
+containing the coordinate, but we'll do something a little different. Chargrid applications typically define two
+top-level types - one for storing the application's _data_, and another representing a _view_ of the application's data.
+The data itself doesn't know anything about how it will be rendered to the screen. The view knows how to render the
+application's data, and tends to have very little (if any) state of its own. In practice, applications tend to be
+made up of several discrete visual elements, each representing some abstract data. It's typical for the data and
+view types in a chargrid app to be composed of simpler data and view types representing discrete application components.
+
+The player's location is part of the application's data:
+{% pygments rust %}
+struct AppData {
+    player_coord: Coord,
+}
+
+impl AppData {
+    fn new(screen_size: Size) -> Self {
+        Self {
+            player_coord: screen_size.to_coord().unwrap() / 2,
+        }
+    }
+}
+{% endpygments %}
+
+Note that `AppData::new` takes the screen size, so it can initialize the player's location to the middle of the game area.
+
+As is common, the app's view has no state, and is just an empty struct:
+{% pygments rust %}
+struct AppView {}
+
+impl AppView {
+    fn new() -> Self {
+        Self {}
+    }
+}
+{% endpygments %}
+
+The `App` type now just combines the data and view:
+{% pygments rust %}
+struct App {
+    data: AppData,
+    view: AppView,
+}
+
+impl App {
+    fn new(screen_size: Size) -> Self {
+        Self {
+            data: AppData::new(screen_size),
+            view: AppView::new(),
+        }
+    }
+}
+{% endpygments %}
+
+We added an argument to `App::new`, so update the call site in `main` to pass the screen size:
+
+{% pygments rust %}
+fn main() {
+    ...
+    let screen_size = Size::new(60, 40);
+    let app = App::new(screen_size);
+    context.run_app(app);
+}
+{% endpygments %}
+
+As mentioned above, the app's view needs to know how to render the app's data. In concrete terms, the type `AppView`
+must implement the trait `chargrid::render::View<&AppData>`.
+
+{% pygments rust %}
+impl<'a> chargrid::render::View<&'a AppData> for AppView {
+    fn view<F: chargrid::app::Frame, C: chargrid::app::ColModify>(
+        &mut self,
+        data: &'a AppData,
+        context: chargrid::app::ViewContext<C>,
+        frame: &mut F,
+    ) {
+        let view_cell = chargrid::render::ViewCell::new()
+            .with_character('@')
+            .with_foreground(Rgb24::new_grey(255));
+        frame.set_cell_relative(data.player_coord, 0, view_cell, context);
+    }
+}
+{% endpygments %}
+
+Lots of new things here:
+- `chargrid::app::Frame` represents the visible output of the application. Calling `set_cell_relative` on it draws a character at a position in the window.
+- `chargrid::app::ColModify` represents the current colour modifier. In chargrid, views are often hierarchical, and a view may want to indicate that when a child
+view says "give that cell a bright-green background", it actually means "give that cell a medium-green background".
+This is mainly used to dim the game area while a menu is visible.
+<div class="small-images">
+{% image slime99-bright.png %} {% image slime99-dark.png %}
+</div>
+- `chargrid::app::ViewContext` allows a view to tell child views to render at an offset, or with constraints on their size.
+It's also the mechanism by which colour modifiers are passed to child views (note the `C: chargrid::app::ColModify` type argument).
+- `chargrid::render::ViewCell` is a character with a foreground and background colour, which is possibly bold or underlined. Here
+it describes a white '@' sign, which will represent the player in our game.
+
+Now that the view is defined, invoke it in the `on_frame` method to render the game:
+
+{% pygments rust %}
+impl chargrid::app::App for App {
+    ...
+    fn on_frame<F, C>(
+        &mut self,
+        _since_last_frame: chargrid::app::Duration,
+        view_context: chargrid::app::ViewContext<C>,
+        frame: &mut F,
+    ) -> Option<chargrid::app::ControlFlow>
+    where
+        F: chargrid::app::Frame,
+        C: chargrid::app::ColModify,
+    {
+        use chargrid::render::View;
+        self.view.view(&self.data, view_context, frame);
+        None
+    }
+}
+{% endpygments %}
+
+An '@' sign will now be rendered in the centre of the screen:
 
 {% image screenshot.png %}
 
