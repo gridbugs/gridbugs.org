@@ -5,7 +5,6 @@ date: 2020-06-12 20:00:00 +1000
 categories: gamedev roguelikes tutorial
 permalink: /roguelike-tutorial-2020-part-0/
 excerpt_separator: <!--more-->
-future: true
 ---
 
 This is the first of a series of posts where I follow the

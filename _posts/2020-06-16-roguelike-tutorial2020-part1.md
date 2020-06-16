@@ -5,7 +5,6 @@ date: 2020-06-12 20:00:00 +1000
 categories: gamedev roguelikes tutorial
 permalink: /roguelike-tutorial-2020-part-1/
 excerpt_separator: <!--more-->
-future: true
 og_image: screenshot.png
 ---
 
@@ -15,6 +14,8 @@ This part will take you from printing "Hello, World!" to opening a window, drawi
 (representing the player character) and moving the player around with the arrow keys.
 
 <!--more-->
+
+Reference implementation branch for starting point: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
 
 <style>
 .small-images img {
@@ -321,5 +322,102 @@ An '@' sign will now be rendered in the centre of the screen:
 Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.1)
 
 ## Move the Player
+
+To add the most basic of gameplay, begin by adding one more dependency to let us talk about directions:
+{% pygments toml %}
+# Cargo.tom
+...
+[dependencies]
+...
+directions = "0.17"           # representation of directions
+{% endpygments %}
+
+This game will only allow movement in cardinal directions (north, south, east, west). Import the corresponding type:
+
+{% pygments rust %}
+// src/main.rs
+...
+use direction::CardinalDirection;
+
+fn main() {
+...
+{% endpygments %}
+
+Add the screen size to the `AppData` type so we can prevent the player from walking off the screen:
+
+{% pygments rust %}
+struct AppData {
+    screen_size: Size,
+    player_coord: Coord,
+}
+
+impl AppData {
+    fn new(screen_size: Size) -> Self {
+        Self {
+            screen_size,
+            player_coord: screen_size.to_coord().unwrap() / 2,
+        }
+    }
+    ...
+}
+{% endpygments %}
+
+Add a helper method to `AppData` for moving the player in a direction:
+
+{% pygments rust %}
+impl AppData {
+    ...
+    fn maybe_move_player(&mut self, direction: CardinalDirection) {
+        let new_player_coord = self.player_coord + direction.coord();
+        if new_player_coord.is_valid(self.screen_size) {
+            self.player_coord = new_player_coord;
+        }
+    }
+}
+{% endpygments %}
+
+...and a method for handling input events which calls `maybe_move_player` with the
+directions corresponding to each arrow key:
+{% pygments rust %}
+impl AppData {
+    ...
+    fn handle_input(&mut self, input: chargrid::input::Input) {
+        use chargrid::input::{Input, KeyboardInput};
+        match input {
+            Input::Keyboard(key) => match key {
+                KeyboardInput::Left => self.maybe_move_player(CardinalDirection::West),
+                KeyboardInput::Right => self.maybe_move_player(CardinalDirection::East),
+                KeyboardInput::Up => self.maybe_move_player(CardinalDirection::North),
+                KeyboardInput::Down => self.maybe_move_player(CardinalDirection::South),
+                _ => (),
+            },
+            _ => (),
+        }
+    }
+}
+{% endpygments %}
+
+Finally, call `handle_input` from the `on_input` method of `App`'s implementation of `chargrid::app::App`:
+
+{% pygments rust %}
+impl chargrid::app::App for App {
+    fn on_input(&mut self, input: chargrid::app::Input) -> Option<chargrid::app::ControlFlow> {
+        use chargrid::input::{keys, Input};
+        match input {
+            Input::Keyboard(keys::ETX) | Input::Keyboard(keys::ESCAPE) => {
+                Some(chargrid::app::ControlFlow::Exit)
+            }
+            other => {
+                self.data.handle_input(other);
+                None
+            }
+        }
+    }
+    ...
+}
+
+{% endpygments %}
+
+That's it! Run the game, press the arrow keys, and the player will move around.
 
 Reference implementation branch: [part-1.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.2)
