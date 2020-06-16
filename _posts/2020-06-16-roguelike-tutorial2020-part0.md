@@ -86,7 +86,7 @@ If you get stuck, or something in these tutorials doesn't make sense, take a loo
 For each part and subsection of this tutorial, there is a corresponding branch showing the state of the repo
 at that stage of the tutorial. This makes it easy to show the changes introduced in each part of the tutorial.
 
-For example to show the change to `src/main` between part 0.0 and 1.0, clone the repo and run:
+For example to show the change to `src/main.rs` between part 0.0 and 1.0, clone the repo and run:
 ```
 git diff part-0.0 part-1.0 src/main.rs
 ```
