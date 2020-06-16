@@ -4,12 +4,20 @@ module Jekyll
   class PygmentsHighlight < Liquid::Block
     def initialize(tag_name, arg, options)
       super
-      @arg = arg.strip
+      if arg
+        @arg = arg.strip
+      else
+        @arg = nil
+      end
     end
 
     def render(context)
       text = super
-      Pygments.highlight(text, :lexer => @arg)
+      if @arg
+        Pygments.highlight(text, :lexer => @arg)
+      else
+        Pygments.highlight(text)
+      end
     end
 
   end

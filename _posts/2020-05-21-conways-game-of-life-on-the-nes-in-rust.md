@@ -37,19 +37,19 @@ og_image: frame0.png
 
 This post is about a Rust program...
 
-```bash
+```
 $ cargo install conway-nes
 ```
 
 ...that prints out a NES binary...
 
-```bash
+```
 $ conway-nes > life.nes
 ```
 
 ...that runs Conway's Game of Life!
 
-```bash
+```
 $ fceux life.nes    # fceux is a NES emulator
 ```
 <div class="nes-screenshot">
@@ -250,7 +250,7 @@ In the draw queue, each 8-tile horizontal strip is represented by a single byte,
 encodes the state of a cell. To render a byte, iterate over each bit, and send the value of the bit
 to graphics hardware:
 
-```rust
+{% pygments rust %}
 // Note that this is pseudocode!
 // I don't compile rust to run on the NES.
 // I write assmebly in a rust DSL. See below.
@@ -268,7 +268,7 @@ for i in 0..8 {
     // right shift so the next bit can be tested
     byte_to_render = byte_to_render >> 1;
 }
-```
+{% endpygments %}
 
 This works, but can be improved. The CPU in the NES only has one general purpose register, known as the _accumuluator_.
 When bitwise-AND-ing, the current accumulator value is replaced with the result of the AND. In order to right shift
@@ -290,7 +290,7 @@ Every even entry is dead, and every odd entry is alive.
 
 The code to render a byte can be simplified:
 
-```rust
+{% pygments rust %}
 let mut byte_to_render = next_byte_from_draw_queue();
 for i in 0..8 {
     // assume this increments the current video memory address
@@ -299,7 +299,7 @@ for i in 0..8 {
     // right shift so the next bit can be tested
     byte_to_render = byte_to_render >> 1;
 }
-```
+{% endpygments %}
 
 This translates into simple assembly:
 
@@ -335,7 +335,7 @@ library I made as part of my emulator, [ines](https://crates.io/crates/ines), al
 and _writing_ NES ROM files in the [INES](https://wiki.nesdev.com/w/index.php/INES) format, which
 is the standard file format understood by all NES emulators.
 
-```rust
+{% pygments rust %}
 // Function to read the state of the controller into address 0x00FF
 b.label("controller-to-255");
 const CONTROLLER_REG: Addr = Addr(0x4016);
@@ -357,7 +357,7 @@ b.inst(Rol(ZeroPage), 255); // shift carry flag into 255, and MSB of 255 into ca
 b.inst(Bcc, LabelRelativeOffset("controller-to-255-loop"));
 
 b.inst(Rts, ()); // return from subroutine
-```
+{% endpygments %}
 
 In order for an emulator to decode and emulate instructions, it needs to know the opcode and argument layout of each instruction.
 The same information is needed by the assembler to generate binary code corresponding to a 6502 program.
@@ -376,13 +376,13 @@ it's as simple as a variable/constant assignment!
 Another benefit is using host language loops instead of loops in assembly. For loops iterating a small constant number of times,
 unrolling the loop by repeatedly emitting the code within is easier and faster than writing the loop in assembly.
 
-```rust
+{% pygments rust %}
 // zero-out first 8 bytes of memory
 b.inst(Lda(Immediate), 0);
 for i in 0..8 {
     b.inst(Sta(ZeroPage), i);
 }
-```
+{% endpygments %}
 
 The 6502 only has 3 registers, so in code with nested loops, it's common to run out of registers to store loop counters.
 This isn't the end of the world - loop counters can be stored in memory, but this is a bit of a pain and
@@ -399,18 +399,19 @@ memory addresses as arguments are parameterized by an "addressing mode", which d
 an address.
 
 In the example above, there is a line...
-```rust
+{% pygments rust %}
 const CONTROLLER_REG: Addr = Addr(0x4016);
 b.inst(Sta(Absolute), CONTROLLER_REG);
-```
+{% endpygments %}
 ...which has the addressing mode "Absolute", and an argument of 0x4016. The Absolute addressing mode reads the next 2 bytes after
 the instruction opcode in memory and treats it as an address (6502 addresses are 16-bit). This line stores the current accumulator
 value in 0x4016.
 
 The next line is...
-```rust
+{% pygments rust %}
 b.inst(Sta(ZeroPage), 255);
-```
+{% endpygments %}
+
 ...which has the addressing mode "Zero Page", and an argument of 255 (0xFF in hex). The Zero Page addressing mode reads
 a _single_ byte after the instruction opcode, and treats it
 as an index into the first 256 bytes of memory (ie. the "zero page" in 6502 parlance).
@@ -419,9 +420,9 @@ This line stores the current accumulator value at address 0x00FF.
 A third addressing mode, "Immediate", reads a single byte after the instruction opcode and treats it as a literal value rather
 than an address.
 
-```rust
+{% pygments rust %}
 b.inst(Lda(Immediate), 42); // Load the accumulator with the value 42
-```
+{% endpygments %}
 
 It's only meaningful when the instruction would _read_ from memory. Using the Immediate addressing mode with the STA
 is impossible, as it doesn't make sense to store the current accumulator value at a literal value.
@@ -431,9 +432,9 @@ modes for each instruction in the type system.
 
 If I tried to write this...
 
-```rust
+{% pygments rust %}
 b.inst(Sta(Immediate), 42); // Store the accumulator with the value 42
-```
+{% endpygments %}
 
 ...it would be a type error:
 

@@ -29,7 +29,7 @@ To follow this tutorial you will need a rust compiler. Follow the instructions [
 
 After rust is installed you'll have a command named `cargo`. Use it to create a new rust project:
 
-```bash
+```
 $ cargo new --bin chargrid-roguelike-tutorial-2020
 ```
 
@@ -80,6 +80,34 @@ Your source tree should now look like this:
     │   └── PxPlus_IBM_CGA.ttf
     └── main.rs
 ```
+## Reference Implementation
+
+If you get stuck, or something in these tutorials doesn't make sense, take a look at the git repo at
+[https://github.com/stevebob/chargrid-roguelike-tutorial-2020](https://github.com/stevebob/chargrid-roguelike-tutorial-2020).
+For each part and subsection of this tutorial, there is a corresponding branch showing the state of the repo
+at that stage of the tutorial. This makes it easy to show the changes introduced in each part of the tutorial.
+
+For example to show the change to `src/main` between part 0.0 and 1.0, clone the repo and run:
+```
+git diff part-0.0 part-1.0 src/main.rs
+```
+
+{% pygments diff %}
+diff --git a/src/main.rs b/src/main.rs
+index e7a11a9..b7dbe34 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -1,3 +1,64 @@
+ fn main() {
+-    println!("Hello, world!");
++    use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
++    const CELL_SIZE_PX: f64 = 16.;
++    let context = Context::new(ContextDescriptor {
+...
+{% endpygments %}
+
+Reference implementation branch: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
+
 ## Ready to begin?
 
 {% local roguelike-tutorial-2020-part-1 | Click here for part 1 of the tutorial! %}

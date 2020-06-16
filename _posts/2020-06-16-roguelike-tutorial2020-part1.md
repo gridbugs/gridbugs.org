@@ -20,17 +20,15 @@ This part will take you from printing "Hello, World!" to opening a window, drawi
 
 Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 
-```toml
-# Cargo.toml
-...
+{% pygments toml %}
 [dependencies]
 chargrid_graphical = "0.2"  # graphical frontend for chargrid applications
 chargrid = "0.1"            # library for implementing chargrid applications
-```
+{% endpygments %}
 
 Now update your main function:
 
-```rust
+{% pygments rust %}
 fn main() {
     use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
     const CELL_SIZE_PX: f64 = 16.;
@@ -63,7 +61,7 @@ fn main() {
     let app = App::new();
     context.run_app(app);
 }
-```
+{% endpygments %}
 
 This creates a new graphical context for running chargrid applications.
 Chargrid is designed with the aim of being able to define an application which can run
@@ -86,10 +84,10 @@ about how to render a grid of characters in a window:
 - `underline_top_offset`: how far from the top of each cell should the underline begin as a proportion of cell height
 
 Once the context has been created with `Context::new`, the remaining two lines in `main` at this stage are:
-```rust
+{% pygments rust %}
 let app = App::new();
 context.run_app(app);
-```
+{% endpygments %}
 
 This creates an `App` - a type which is not yet defined. The `App` type will contain all the state and
 logic of the application - a roguelike game in this case. As hinted above, our `App` type will implement
@@ -99,7 +97,7 @@ and drawing the grid of characters to the window.
 
 The `App` type:
 
-```rust
+{% pygments rust %}
 struct App {}
 
 impl App {
@@ -107,12 +105,12 @@ impl App {
         Self {}
     }
 }
-```
+{% endpygments %}
 
 Currently the application has no state or logic, so this is just an empty struct for now.
 
 Implement the `chargrid::app::App` trait:
-```rust
+{% pygments rust %}
 impl chargrid::app::App for App {
 
     fn on_input(&mut self, input: chargrid::app::Input) -> Option<chargrid::app::ControlFlow> {
@@ -138,7 +136,7 @@ impl chargrid::app::App for App {
         None
     }
 }
-```
+{% endpygments %}
 
 Every chargrid application must implement 2 methods:
 - `on_input` is called each time a keyboard or mouse event occurs, and is passed a normalized representation of the event
@@ -156,12 +154,18 @@ The name "ETX", and the fact that this event pretends to be a keyboard event, is
 applications could only run in unix terminals. When the user presses CTRL-C in a terminal, this manifests as a character
 on standard input named "ETX" or "end of text".
 
-This is now a complete chargrid application. Run it with `cargo run` and it will open an empty window:
+This is now a complete chargrid application! Run it with `cargo run` and it will open an empty window:
 
 {% image screenshot-blank.png %}
+
+Reference implementation branch: [part-1.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.0)
 
 ## Draw the Player
 
 {% image screenshot.png %}
 
+Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.1)
+
 ## Move the Player
+
+Reference implementation branch: [part-1.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.2)
