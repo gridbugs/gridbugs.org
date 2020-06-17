@@ -17,14 +17,13 @@ This part will take you from printing "Hello, World!" to opening a window, drawi
 
 Reference implementation branch for starting point: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
 
-<style>
-.small-images img {
-    padding-left: 20px;
-    width: 240px;
-}
-</style>
+## Table of Contents
 
-## Open a Window
+- [Open a Window](#open-a-window)
+- [Draw the Player](#draw-the-player)
+- [Move the Player](#move-the-player)
+
+## <a name="open-a-window">Open a Window</a>
 
 Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 
@@ -77,13 +76,11 @@ fn main() {
 
 This creates a new graphical context for running chargrid applications.
 Chargrid is designed with the aim of being able to define an application which can run
-in a window (as we are doing now), a unix terminal, or a web page. For each of these _frontends_,
+in a window (as we are doing now), a unix terminal, or a web browser. For each of these "frontends",
 there is a `Context` type which knows all the frontend-specific details, and knows how to take
 an implementation of the `chargrid::app::App` trait (see below) and run it by feeding it input
 from the keyboard and mouse, and allowing it to render its output to the screen.
 
-As its name suggests, chargrid allows you to render a grid of characters, get input from the keyboard
-and mouse, and not much else.
 The graphical context is configured using a `ContextDescriptor` which specifies the following details
 about how to render a grid of characters in a window:
 - `font_bytes`: which font to use to render characters
@@ -101,7 +98,7 @@ let app = App::new();
 context.run_app(app);
 {% endpygments %}
 
-This creates an `App` - a type which is not yet defined. The `App` type will contain all the state and
+This creates an `App` (defined below) which will contain all the state and
 logic of the application - a roguelike game in this case. As hinted above, our `App` type will implement
 the trait `chargrid::app::App` which will tell chargrid how to run the application. Finally, `context.run_app(app)`
 takes the application and, well, runs it, in a graphical context, sending it keyboard and mouse events received by the window,
@@ -125,7 +122,10 @@ Implement the `chargrid::app::App` trait:
 {% pygments rust %}
 impl chargrid::app::App for App {
 
-    fn on_input(&mut self, input: chargrid::app::Input) -> Option<chargrid::app::ControlFlow> {
+    fn on_input(
+        &mut self,
+        input: chargrid::app::Input,
+    ) -> Option<chargrid::app::ControlFlow> {
         use chargrid::input::{keys, Input};
         match input {
             Input::Keyboard(keys::ETX) | Input::Keyboard(keys::ESCAPE) => {
@@ -172,7 +172,7 @@ This is now a complete chargrid application! Run it with `cargo run` and it will
 
 Reference implementation branch: [part-1.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.0)
 
-## Draw the Player
+## <a name="draw-the-player">Draw the Player</a>
 
 Let's place the player character in the centre of the game area, then render the player.
 
@@ -280,6 +280,13 @@ impl<'a> chargrid::render::View<&'a AppData> for AppView {
 }
 {% endpygments %}
 
+<style>
+.small-images img {
+    padding-left: 20px;
+    width: 240px;
+}
+</style>
+
 Lots of new things here:
 - `chargrid::app::Frame` represents the visible output of the application. Calling `set_cell_relative` on it draws a character at a position in the window.
 - `chargrid::app::ColModify` represents the current colour modifier. In chargrid, views are often hierarchical, and a view may want to indicate that when a child
@@ -321,7 +328,7 @@ An '@' sign will now be rendered in the centre of the screen:
 
 Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.1)
 
-## Move the Player
+## <a name="move-the-player">Move the Player</a>
 
 To add the most basic of gameplay, begin by adding one more dependency to let us talk about directions:
 {% pygments toml %}
@@ -401,7 +408,10 @@ Finally, call `handle_input` from the `on_input` method of `App`'s implementatio
 
 {% pygments rust %}
 impl chargrid::app::App for App {
-    fn on_input(&mut self, input: chargrid::app::Input) -> Option<chargrid::app::ControlFlow> {
+    fn on_input(
+        &mut self,
+        input: chargrid::app::Input,
+    ) -> Option<chargrid::app::ControlFlow> {
         use chargrid::input::{keys, Input};
         match input {
             Input::Keyboard(keys::ETX) | Input::Keyboard(keys::ESCAPE) => {
