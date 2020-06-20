@@ -15,9 +15,12 @@ This part will take you from printing "Hello, World!" to opening a window, drawi
 
 <!--more-->
 
-Reference implementation branch for starting point: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
+This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-1/) of the
+python tcod tutorial.
 
-## Table of Contents
+Reference implementation branch for starting point: [part-0-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0-end)
+
+In this post:
 
 - [Open a Window](#open-a-window)
 - [Draw the Player](#draw-the-player)
@@ -430,4 +433,6 @@ impl chargrid::app::App for App {
 
 That's it! Run the game, press the arrow keys, and the player will move around.
 
-Reference implementation branch: [part-1.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.2)
+Reference implementation branch: [part-1-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1-end)
+
+{% local roguelike-tutorial-2020-part-2 | Click here for the next part! %}
