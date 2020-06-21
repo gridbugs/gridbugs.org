@@ -13,6 +13,10 @@ For getting set up for this tutorial, see {% local roguelike-tutorial-2020-part-
 This part will take you from printing "Hello, World!" to opening a window, drawing a '@' symbol
 (representing the player character) and moving the player around with the arrow keys.
 
+By the end of this part, the game will look like this:
+
+{% image screenshot.png %}
+
 <!--more-->
 
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-1/) of the
@@ -45,7 +49,7 @@ Now update your main function:
 
 fn main() {
     use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
-    const CELL_SIZE_PX: f64 = 16.;
+    const CELL_SIZE_PX: f64 = 24.;
     let context = Context::new(ContextDescriptor {
         font_bytes: FontBytes {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin.ttf").to_vec(),
@@ -54,7 +58,7 @@ fn main() {
         title: "Chargrid Tutorial".to_string(),
         window_dimensions: Dimensions {
             width: 960.,
-            height: 640.,
+            height: 720.,
         },
         cell_dimensions: Dimensions {
             width: CELL_SIZE_PX,
@@ -258,7 +262,7 @@ We added an argument to `App::new`, so update the call site in `main` to pass th
 {% pygments rust %}
 fn main() {
     ...
-    let screen_size = Size::new(60, 40);
+    let screen_size = Size::new(40, 30);
     let app = App::new(screen_size);
     context.run_app(app);
 }
@@ -433,6 +437,6 @@ impl chargrid::app::App for App {
 
 That's it! Run the game, press the arrow keys, and the player will move around.
 
-Reference implementation branch: [part-1-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1-end)
+Reference implementation branch: [part-1.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.2)
 
 {% local roguelike-tutorial-2020-part-2 | Click here for the next part! %}
