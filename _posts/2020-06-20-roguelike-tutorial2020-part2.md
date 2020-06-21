@@ -465,7 +465,7 @@ Only entities associated with layers will be returned when querying which entiti
 Here's the relevant part of the api to `SpatialTable`. Note that it's generic over the type of layers in each cell.
 The full documentation is in [`spatial_table`'s documentation](https://docs.rs/spatial_table/0.2.0/spatial_table/struct.SpatialTable.html).
 {% pygments rust %}
-impl<L: Layers> SpatialTable<L> {
+impl<L: spatial_table::Layers> SpatialTable<L> {
     // creates a new SpatialTable<L> with given dimensions
     pub fn new(size: Size) -> Self { ... }
 
