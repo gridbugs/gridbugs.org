@@ -23,4 +23,4 @@ python tcod tutorial.
 
 Reference implementation branch for starting point: [part-2-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2-end)
 
-Reference implementation branch: [part-3-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3-end)
+Reference implementation branch: [part-3.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3.0)

@@ -478,8 +478,13 @@ impl<L: spatial_table::Layers> SpatialTable<L> {
     // Returns the layers at a given coord, panicking if coord is out of bounds
     pub fn layers_at_checked(&self, coord: Coord) -> &L { ... }
 
-    // Update the coord associated with an entity to a given value
-    pub fn update_coord(&mut self, entity: Entity, coord: Coord) -> Result<(), UpdateError> { ... }
+    // Update the location (coord and layer) associated with an entity
+    pub fn update(&mut self, entity: Entity, location: Location<L::Layer>)
+        -> Result<(), UpdateError> {
+
+    // Update the coord associated with an entity
+    pub fn update_coord(&mut self, entity: Entity, coord: Coord)
+        -> Result<(), UpdateError> { ... }
 }
 
 pub enum UpdateError {
@@ -488,11 +493,300 @@ pub enum UpdateError {
 }
 {% endpygments %}
 
+Remove the `coord` component table. It will be replaced with a `SpatialTable`.
+
+{% pygments rust %}
+entity_table::declare_entity_module! {
+    components {
+        tile: Tile,
+    }
+}
+{% endpygments %}
+
+Add a `SpatialTable` to `GameState`.
+{% pygments rust %}
+pub struct GameState {
+    screen_size: Size,
+    components: Components,
+    spatial_table: SpatialTable,
+    player_entity: Entity,
+}
+...
+impl GameState {
+    pub fn new(screen_size: Size) -> Self {
+        let mut entity_allocator = EntityAllocator::default();
+        let components = Components::default();
+        let spatial_table = SpatialTable::new(screen_size);
+        let player_entity = entity_allocator.alloc();
+        let mut game_state = Self {
+            screen_size,
+            components,
+            spatial_table,
+            player_entity,
+        };
+        game_state.populate(screen_size.to_coord().unwrap() / 2);
+        game_state
+    }
+    ...
+}
+{% endpygments %}
+
+Update `spawn_player` to add the player `Entity` to the `SpatialTable`.
+
+{% pygments rust %}
+impl GameState {
+    fn spawn_player(&mut self, coord: Coord) {
+        self.spatial_table
+            .update(
+                self.player_entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components
+            .tile
+            .insert(self.player_entity, Tile::Player);
+    }
+    ...
+}
+{% endpygments %}
+
+Update `maybe_move_player` to update the `SpatialTable`.
+{% pygments rust %}
+impl GameState {
+    ...
+    pub fn maybe_move_player(&mut self, direction: CardinalDirection) {
+        let player_coord = self
+            .spatial_table
+            .coord_of(self.player_entity)
+            .expect("player has no coord");
+        let new_player_coord = player_coord + direction.coord();
+        if new_player_coord.is_valid(self.screen_size) {
+            self.spatial_table
+                .update_coord(self.player_entity, new_player_coord)
+                .unwrap();
+        }
+    }
+    ...
+}
+{% endpygments %}
+
+And update `entities_to_render` to use the `SpatialTable`.
+Replace the `coord: Coord` field of `EntityToRender` with a `location: Location` field
+so the render knows which layer each entity is on. This will help later on when we need
+to render a scene with multiple entities at a single coordinate and need to know which
+one to draw on top.
+
+{% pygments rust %}
+pub struct EntityToRender {
+    pub tile: Tile,
+    pub location: Location,
+}
+
+impl GameState {
+    ...
+    pub fn entities_to_render<'a>(&'a self) -> impl 'a + Iterator<Item = EntityToRender> {
+        let tile_component = &self.components.tile;
+        let spatial_table = &self.spatial_table;
+        tile_component.iter().filter_map(move |(entity, &tile)| {
+            let &location = spatial_table.location_of(entity)?;
+            Some(EntityToRender { tile, location })
+        })
+    }
+    ...
+}
+{% endpygments %}
+
+Finally, update the rendering logic in `app.rs` to understand the new `location` field of `EntityToRender`.
+{% pygments rust %}
+// app.rs
+
+impl<'a> View<&'a AppData> for AppView {
+    fn view<F: Frame, C: ColModify>(
+        &mut self,
+        data: &'a AppData,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
+        for entity_to_render in data.game_state.entities_to_render() {
+            let view_cell = ...;
+            frame.set_cell_relative(entity_to_render.location.coord, 0, view_cell, context);
+        }
+    }
+}
+{% endpygments %}
 
 Reference implementation branch: [part-2.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.3)
 
 ## {% anchor walls-and-floors | Walls and Floors %}
 
-Reference implementation branch: [part-2-4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2-4)
+Let's add walls and floors, and make it so the player can't walk through walls.
+
+Add `Tile`s for walls and floors:
+{% pygments rust %}
+// game.rs
+
+pub enum Tile {
+    Player,
+    Floor,
+    Wall,
+}
+{% endpygments %}
+
+So that we can spawn new entities in addition to the player, add the `EntityAllocator` created in `GameState::new`
+to `GameState`:
+{% pygments rust %}
+pub struct GameState {
+    screen_size: Size,
+    entity_allocator: EntityAllocator,
+    components: Components,
+    spatial_table: SpatialTable,
+    player_entity: Entity,
+}
+
+
+impl GameState {
+    ...
+    pub fn new(screen_size: Size) -> Self {
+        let mut entity_allocator = EntityAllocator::default();
+        let components = Components::default();
+        let spatial_table = SpatialTable::new(screen_size);
+        let player_entity = entity_allocator.alloc();
+        let mut game_state = Self {
+            screen_size,
+            entity_allocator,
+            components,
+            spatial_table,
+            player_entity,
+        };
+        game_state.populate(screen_size.to_coord().unwrap() / 2);
+        game_state
+    }
+    ...
+}
+{% endpygments %}
+
+Add methods for spawning walls and floors, and update `GameState::populate` to place floor tiles everywhere, and
+walls in a few select locations.
+{% pygments rust %}
+impl GameState {
+    fn spawn_wall(&mut self, coord: Coord) {
+        let entity = self.entity_allocator.alloc();
+        self.spatial_table
+            .update(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::Wall);
+    }
+    fn spawn_floor(&mut self, coord: Coord) {
+        let entity = self.entity_allocator.alloc();
+        self.spatial_table
+            .update(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Floor),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::Floor);
+    }
+    ...
+    fn populate(&mut self, player_coord: Coord) {
+        self.spawn_player(player_coord);
+        for coord in self.screen_size.coord_iter_row_major() {
+            self.spawn_floor(coord);
+        }
+        self.spawn_wall(player_coord + Coord::new(-1, 2));
+        self.spawn_wall(player_coord + Coord::new(0, 2));
+        self.spawn_wall(player_coord + Coord::new(1, 2));
+    }
+    ...
+}
+{% endpygments %}
+
+To prevent the player walking through walls, update `GameState::maybe_move_player`. For now, treat all cells with a feature or
+a character as solid. This will change later.
+
+{% pygments rust %}
+impl GameState {
+    ...
+    pub fn maybe_move_player(&mut self, direction: CardinalDirection) {
+        let player_coord = self
+            .spatial_table
+            .coord_of(self.player_entity)
+            .expect("player has no coord");
+        let new_player_coord = player_coord + direction.coord();
+        if new_player_coord.is_valid(self.screen_size) {
+            let dest_layers = self.spatial_table.layers_at_checked(new_player_coord);
+            if dest_layers.character.is_none() && dest_layers.feature.is_none() {
+                self.spatial_table
+                    .update_coord(self.player_entity, new_player_coord)
+                    .unwrap();
+            }
+        }
+    }
+    ...
+}
+{% endpygments %}
+
+Finally, update the rendering logic to render wall and floor tiles. The cell containing the player will also contain a floor.
+We need to make sure that the floor is drawn "below" the player. The `set_cell_relative` method we've been calling to draw a cell
+takes a `depth` argument. Thus far we've been passing 0, but now we'll derive it from the layer.
+
+{% pygments rust %}
+// app.rs
+...
+use crate::game::{GameState, Layer, Tile};
+
+...
+
+impl<'a> View<&'a AppData> for AppView {
+    fn view<F: Frame, C: ColModify>(
+        &mut self,
+        data: &'a AppData,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
+        for entity_to_render in data.game_state.entities_to_render() {
+            let view_cell = match entity_to_render.tile {
+                Tile::Player => ViewCell::new()
+                    .with_character('@')
+                    .with_foreground(Rgb24::new_grey(255)),
+                Tile::Floor => ViewCell::new()
+                    .with_character('.')
+                    .with_foreground(Rgb24::new_grey(63))
+                    .with_background(Rgb24::new(0, 0, 63)),
+                Tile::Wall => ViewCell::new()
+                    .with_character('#')
+                    .with_foreground(Rgb24::new(127, 255, 255))
+                    .with_background(Rgb24::new(63, 127, 127)),
+            };
+            let depth = match entity_to_render.location.layer {
+                None => -1,
+                Some(Layer::Floor) => 0,
+                Some(Layer::Feature) => 1,
+                Some(Layer::Character) => 2,
+            };
+            frame.set_cell_relative(entity_to_render.location.coord, depth, view_cell, context);
+        }
+    }
+}
+{% endpygments %}
+
+Now run the game! It should look like this:
+
+{% image screenshot-end.png %}
+
+Try to move the player character through the walls (`#`)!
+
+Reference implementation branch: [part-2.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.4)
 
 {% local roguelike-tutorial-2020-part-3 | Click here for the next part! %}
