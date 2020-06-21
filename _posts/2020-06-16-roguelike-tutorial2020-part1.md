@@ -26,7 +26,7 @@ In this post:
 - [Draw the Player](#draw-the-player)
 - [Move the Player](#move-the-player)
 
-## <a name="open-a-window">Open a Window</a>
+## {% anchor open-a-window | Open a Window %}
 
 Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 
@@ -175,7 +175,7 @@ This is now a complete chargrid application! Run it with `cargo run` and it will
 
 Reference implementation branch: [part-1.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.0)
 
-## <a name="draw-the-player">Draw the Player</a>
+## {% anchor draw-the-player | Draw the Player %}
 
 Let's place the player character in the centre of the game area, then render the player.
 
@@ -331,7 +331,7 @@ An '@' sign will now be rendered in the centre of the screen:
 
 Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.1)
 
-## <a name="move-the-player">Move the Player</a>
+## {% anchor move-the-player | Move the Player %}
 
 To add the most basic of gameplay, begin by adding one more dependency to let us talk about directions:
 {% pygments toml %}
