@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Roguelike Tutorial 2020: Part 2 - Generic Entities, Rendering, and the Map"
+title: "Roguelike Tutorial 2020: Part 2 - Entities, Rendering, Map"
 date: 2020-06-19 20:00:00 +1000
 categories: gamedev roguelikes tutorial
 permalink: /roguelike-tutorial-2020-part-2/
