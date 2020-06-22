@@ -766,7 +766,7 @@ impl<'a> View<&'a AppData> for AppView {
                     .with_background(Rgb24::new(0, 0, 63)),
                 Tile::Wall => ViewCell::new()
                     .with_character('#')
-                    .with_foreground(Rgb24::new(127, 255, 255))
+                    .with_foreground(Rgb24::new(0, 63, 63))
                     .with_background(Rgb24::new(63, 127, 127)),
             };
             let depth = match entity_to_render.location.layer {
