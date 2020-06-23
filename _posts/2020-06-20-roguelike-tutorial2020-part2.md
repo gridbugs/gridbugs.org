@@ -35,7 +35,8 @@ In this post:
 
 ## {% anchor refactor | Refactor %}
 
-But first, a minor refactor to split the code into 3 files. This will make future changes easier to talk about.
+First, a minor refactor to split the code into 3 files. This won't change any logic - it will
+just make future changes easier to talk about.
 
 A new file `game.rs` will contain all the game-specific logic, mostly agnostic of the fact that it is a chargrid application.
 For now this will look a lot like the `AppData` type. Note the `player_coord` method. For now this will just return the value
@@ -132,7 +133,7 @@ To this end, we need a generic way of representing a game entity.
 The general idea is this: For each property that an entity can have, we'll make a table associating an entity's id (just a number)
 with the property value. Each entity's data will be "spread out" over a number of tables corresponding to all the properties
 which the entity has. This is based on the idea of "components" from [Entity Component Systems](https://en.wikipedia.org/wiki/Entity_component_system).
-From now on in this and further parts, the term "component" will refer to a property of a game entity.
+From now on the term "component" will refer to a property of a game entity.
 
 Add a dependency to help represent game state as a collection of component tables:
 {% pygments toml %}
@@ -155,7 +156,7 @@ pub enum Tile {
 }
 {% endpygments %}
 
-Rather than storing how to draw the player (which symbol, colour, etc to use), store an abstract value in the game state,
+Rather than storing how to draw the player (symbol, colour, etc), store an abstract value in the game state,
 and let the rendering logic decide how to draw the player.
 
 Now to define our components:
@@ -230,7 +231,7 @@ impl GameState {
 
 The existing methods of `GameState` need to be updated to match its new definition.
 
-So far we haven't talked about how new values of `Entity` are created. The are effectively just numbers, but
+So far we haven't talked about how new values of `Entity` are created. They are effectively just numbers, but
 their numerical representation is opaque. They must be created with an `EntityAllocator` - another type
 defined in `entity_table` which allows entity ids to be created and destroyed. Update `GameState::new` to create a `Components`,
 and use an `EntityAllocator` to allocate an `Entity` representing the player. Then populate the `GameState` by calling
@@ -255,7 +256,7 @@ impl GameState {
 {% endpygments %}
 
 The logic for moving the player must be updated to operate on the `coord` component table rather than a single
-`coord` value. It take a mutable reference to the player's current position, panicking if the player has no
+`coord` value. It obtains a mutable reference to the player's current position, panicking if the player has no
 current position. This mut ref is used to both check whether the movement is valid, and update the player's
 position.
 {% pygments rust %}
@@ -302,7 +303,7 @@ The rendering logic in `app.rs` is still hard-coded to only render the player ch
 `player_coord`. Before we can add additional entities to the game, rendering logic needs to be generalized to render
 all entities which can be rendered.
 
-Start by giving a way for `GameState` to tell the renderer what needs to be rendered.
+Start by providing a way for `GameState` to tell the renderer what needs to be rendered.
 Define a new type in `game.rs`:
 {% pygments rust %}
 // game.rs
@@ -376,7 +377,7 @@ that are solid, and checking whether their `coord` is the one we're interested i
 It would be useful to have a separate data structure which could be indexed by a `Coord`, and tell us which entities are
 currently at the specified location. The crate [spatial_table](https://crates.io/crates/spatial_table) defines a type
 `SpatialTable` which is similar to a `ComponentTable<Coord>` in that it associates `Entity`s with a `Coord`,
-but it also provides the reverse association - a mapping from `Coord` to `Entity` indicating which entities are
+but it also provides the _reverse_ association - a mapping from `Coord` to `Entity` indicating which entities are
 at a given `Coord`.
 
 Add a dependency on `spatial_table`:
@@ -389,7 +390,7 @@ spatial_table = "0.2"
 
 
 Multiple entities may share a single location (e.g. a floor entity and a character entity may
-co-exist). To represent this fact, a `SpatialTable` associates each coordinate with a collection of `Entity`s
+co-exist in the same cell). To represent this fact, a `SpatialTable` associates each coordinate with a collection of `Entity`s
 where each entity is on a separate "layer". At each coordinate, there are a fixed number of layers, and each layer
 may contain one or zero entities. It might help to visualize a `SpatialTable` as a 2D array of a `Layers` type defined
 as:
@@ -404,7 +405,7 @@ struct Layers {
 In this scenario, every cell of the 2D grid _may_ contain a floor, a character, and a feature (walls, doors, furniture, etc).
 `SpatialTable` doesn't care which entities are stored in a layer. When adding or updating an entity's location, you may also
 set which layer it is on. `SpatialTable` doesn't allow you to update the coordinate or layer of an entity if its destination
-coordinate and feature is already occupied.
+coordinate and layer is already occupied.
 
 `SpatialTable` doesn't assume anything about which layers you will use. Start by defining which layers we will be using for our game:
 {% pygments rust %}
@@ -445,9 +446,10 @@ mod layers {
 }
 {% endpygments %}
 
-The `Layers` type represents which entities are on which layer. There will be one `Layers` value for each cell of the grid
-representing the world.
-The `Layer` type lets you refer to layers at runtime.
+The `Layers` type represents which entities are on which layer. A `SpatialTable` will contain one `Layers` for each
+cell in its grid.
+The `Layer` type lets you refer to layers dynamically, for example when inserting an enity into a `SpatialTable`
+at a specified coordinate and layer.
 
 After the macro invocation, create type aliases to make it convenient to work with `SpatialTable` for our specified set of layers.
 The `Location` type is a `Coord` plus a `Layer`.
@@ -459,14 +461,14 @@ struct Location<L> {
 }
 {% endpygments %}
 
-Note that `layer` is an `Option` - an `Entity` doesn't need to be associated with a layer.
+Note that the `layer` field is an `Option` - an `Entity` doesn't need to be associated with a layer.
 Only entities associated with layers will be returned when querying which entities are at a given coordinate.
 
-Here's the relevant part of the api to `SpatialTable`. Note that it's generic over the type of layers in each cell.
-The full documentation is in [`spatial_table`'s documentation](https://docs.rs/spatial_table/0.2.0/spatial_table/struct.SpatialTable.html).
+Here's the relevant part of the `SpatialTable` interface. Note that it's generic over the type of layers in each cell.
+The full interface is specified in [`spatial_table`'s documentation](https://docs.rs/spatial_table/0.2.0/spatial_table/struct.SpatialTable.html).
 {% pygments rust %}
 impl<L: spatial_table::Layers> SpatialTable<L> {
-    // creates a new SpatialTable<L> with given dimensions
+    // Creates a new SpatialTable<L> with given dimensions
     pub fn new(size: Size) -> Self { ... }
 
     // Returns the location (coord and layer) of a given entity
@@ -576,8 +578,7 @@ impl GameState {
 And update `entities_to_render` to use the `SpatialTable`.
 Replace the `coord: Coord` field of `EntityToRender` with a `location: Location` field
 so the render knows which layer each entity is on. This will help later on when we need
-to render a scene with multiple entities at a single coordinate and need to know which
-one to draw on top.
+to render a scene with multiple entities at a single coordinate and use layers to determine draw order.
 
 {% pygments rust %}
 pub struct EntityToRender {
@@ -713,7 +714,7 @@ impl GameState {
 {% endpygments %}
 
 To prevent the player walking through walls, update `GameState::maybe_move_player`. For now, treat all cells with a feature or
-a character as solid. This will change later.
+a character as solid. This will change in future parts.
 
 {% pygments rust %}
 impl GameState {
@@ -738,7 +739,7 @@ impl GameState {
 {% endpygments %}
 
 Finally, update the rendering logic to render wall and floor tiles. The cell containing the player will also contain a floor.
-We need to make sure that the floor is drawn "below" the player. The `set_cell_relative` method we've been calling to draw a cell
+We need to make sure that the floor is drawn "below" the player. The `set_cell_relative` method (which draws a cell)
 takes a `depth` argument. Thus far we've been passing 0, but now we'll derive it from the layer.
 
 {% pygments rust %}
