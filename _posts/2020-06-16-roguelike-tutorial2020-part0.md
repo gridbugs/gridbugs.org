@@ -15,8 +15,10 @@ in rust using the [chargrid](https://github.com/stevebob/chargrid)
 library, which I've been developing for about 3 years.
 
 This is part of an event where the [roguelikedev subreddit does the complete
-roguelike tutorial](https://www.reddit.com/r/roguelikedev/comments/grccvt/roguelikedev_does_the_complete_roguelike_tutorial/)
+roguelike tutorial](https://old.reddit.com/r/roguelikedev/wiki/python_tutorial_series)
 over the course of several weeks.
+
+{% image logo.png %}
 
 <!--more-->
 
