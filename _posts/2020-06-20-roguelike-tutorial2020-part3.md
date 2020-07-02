@@ -245,7 +245,7 @@ impl Room {
 
 pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
     let mut grid = Grid::new_copy(size, None);
-    let mut player_coord = None;
+    let mut player_placed = false;
 
     // Attempt to add a room a constant number of times
     const NUM_ATTEMPTS: usize = 100;
@@ -256,14 +256,17 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
         // Carve out the room unless it overlaps with an existing room
         if room.only_intersects_empty(&grid) {
             room.carve_out(&mut grid);
-            if player_coord.is_none() {
-                player_coord = Some(room.centre());
+
+            let room_centre = room.centre();
+
+            // Add the player to the centre of the room if it's the first room
+            if !player_placed {
+                *grid.get_checked_mut(room_centre) = Some(TerrainTile::Player);
+                player_placed = true;
             }
         }
     }
 
-    // Start the player in the centre of the first room
-    *grid.get_checked_mut(player_coord.unwrap()) = Some(TerrainTile::Player);
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
 {% endpygments %}
@@ -309,8 +312,14 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
         if room.only_intersects_empty(&grid) {
             room.carve_out(&mut grid);
 
-            // Build up a list of room centres
             let room_centre = room.centre();
+
+            // Add the player to the centre of the room if it's the first room
+            if room_centres.is_empty() {
+                *grid.get_checked_mut(room_centre) = Some(TerrainTile::Player);
+            }
+
+            // Build up a list of all room centres for use in constructing corridors
             room_centres.push(room_centre);
         }
     }
@@ -320,8 +329,6 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
         carve_corridor(window[0], window[1], &mut grid);
     }
 
-    // Start the player in the centre of the first room
-    *grid.get_checked_mut(room_centres[0]) = Some(TerrainTile::Player);
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
 {% endpygments %}
