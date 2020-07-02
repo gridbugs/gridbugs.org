@@ -291,10 +291,16 @@ of room centres.
 // Carve out an L-shaped corridor between a pair of coordinates
 fn carve_corridor(start: Coord, end: Coord, grid: &mut Grid<Option<TerrainTile>>) {
     for i in start.x.min(end.x)..=start.x.max(end.x) {
-        *grid.get_checked_mut(Coord { x: i, ..start }) = Some(TerrainTile::Floor);
+        let cell = grid.get_checked_mut(Coord { x: i, ..start });
+        if *cell == None || *cell == Some(TerrainTile::Wall) {
+            *cell = Some(TerrainTile::Floor);
+        }
     }
     for i in start.y.min(end.y)..start.y.max(end.y) {
-        *grid.get_checked_mut(Coord { y: i, ..end }) = Some(TerrainTile::Floor);
+        let cell = grid.get_checked_mut(Coord { y: i, ..end });
+        if *cell == None || *cell == Some(TerrainTile::Wall) {
+            *cell = Some(TerrainTile::Floor);
+        }
     }
 }
 
