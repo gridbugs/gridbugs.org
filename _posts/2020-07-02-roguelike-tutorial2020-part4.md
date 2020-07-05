@@ -94,7 +94,8 @@ In particular, note the new file [src/world.rs](https://github.com/stevebob/char
 ## {% anchor add-field-of-view | Add Field of View %}
 
 Now for the interesting part. We'll be adding visible-area-detection using an implementation of the "Recursive Shadowcast" algorithm.
-For a detailed description of this algorithm, see {% local visible-area-detection-recursive-shadowcast | this post %}.
+For a detailed description of this algorithm, see {% local visible-area-detection-recursive-shadowcast | this post on gridbugs %}
+or [this one on roguebasin](http://www.roguebasin.com/index.php?title=FOV_using_recursive_shadowcasting).
 Grab a crate which contains an implementation of the field-of-view algorithm:
 
 {% pygments toml %}
@@ -104,8 +105,9 @@ Grab a crate which contains an implementation of the field-of-view algorithm:
 shadowcast = "0.7"
 {% endpygments %}
 
-The `shadowcast` crate doesn't assume anything about how the world is represented. In order to compute the visible area,
-it needs to some things about the world. In particular, this trait must be implemented:
+The `shadowcast` crate doesn't assume anything about how the world is represented.
+In order to compute the visible area,
+it needs to know some things about the world. In particular, this trait must be implemented:
 
 {% pygments rust %}
 pub trait InputGrid {
@@ -177,7 +179,7 @@ the following technique:
 Keep a counter which is incremented each time the visible area is updated.
 Each cell of the grid will store the value that the counter had the last time
 that cell was visible. A cell is currently visible if its value is the same as the
-current counter value. A cell was previously visible if its value is above 0.
+current counter value. A cell was previously visible if its value is above 0 (as the counter is initialized to 1).
 
 {% pygments rust %}
 // visibility.rs
@@ -265,7 +267,7 @@ impl VisibilityGrid {
 {% endpygments %}
 
 Computing visible area involves populating some heap-allocated data structures
-(see the implementation of [shadowcast](https://github.com/stevebob/shadowcast/blob/master/src/shadowcast.rs)
+(see the [implementation of shadowcast](https://github.com/stevebob/shadowcast/blob/master/src/shadowcast.rs)
 for details).
 To prevent needing to allocate and free these structures each time the visible area is updated,
 all these data structures are contained in a `shadowcast::Context`, allowing the memory to be re-used
@@ -342,7 +344,7 @@ impl GameState {
 }
 {% endpygments %}
 
-Finally, update the rendering logic to draw cells differently depending on their visibility.
+Update the rendering logic to draw cells differently depending on their visibility.
 
 {% pygments rust %}
 // app.rs
@@ -414,7 +416,19 @@ impl<'a> View<&'a AppData> for AppView {
 }
 {% endpygments %}
 
-And that concludes the implementation of field-of-view.
+And finally update `AppData::handle_innput` to call `update_visibility()` after handling an input event:
+
+{% pygments rust %}
+impl AppData {
+    fn handle_input(&mut self, input: Input) {
+        match input {
+            ...
+        }
+        self.game_state.update_visibility();
+    }
+
+}
+{% endpygments %}
 
 {% image screenshot-end.png %}
 
