@@ -87,7 +87,7 @@ impl GameState {
     ...
     fn populate(&mut self) {
         let terrain = terrain::generate_dungeon(self.screen_size);
-        for (coord, terrain_tile) in terrain.enumerate() {
+        for (coord, &terrain_tile) in terrain.enumerate() {
             match terrain_tile {
                 TerrainTile::Player => {
                     self.spawn_floor(coord);
