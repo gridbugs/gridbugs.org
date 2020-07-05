@@ -137,26 +137,23 @@ Pass a reference to the RNG into `generate_dungeon`.
 {% pygments rust %}
 // game.rs
 
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
 
 ...
 
 impl GameState {
     ...
-    fn populate(&mut self) {
-        let terrain = terrain::generate_dungeon(self.screen_size, &mut self.rng);
+    fn populate<R: Rng>(&mut self, rng: &mut R) {
+        let terrain = terrain::generate_dungeon(self.screen_size, rng);
         ...
     }
     ...
     pub fn new(screen_size: Size) -> Self {
         ...
-        let rng = Isaac64Rng::from_entropy();
-        let mut game_state = Self {
-            ...
-            rng,
-        };
-        ...
+        let mut rng = Isaac64Rng::from_entropy();
+        game_state.populate(&mut rng);
+        game_state
     }
     ...
 }
