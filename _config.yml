@@ -31,6 +31,10 @@ header_pages:
   - about.md
   - tags.md
 
+series:
+  roguelike-tutorial-2020:
+    name: "Roguelike Tutorial 2020"
+
 pagination:
   enabled: true
   per_page: 4
