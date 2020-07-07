@@ -1,12 +1,13 @@
 ---
-layout: post
-title: "Roguelike Tutorial 2020: Part 1 - Drawing and Moving the Player"
+layout: series-part
+series: roguelike-tutorial-2020
+index: 1
 date: 2020-06-12 20:00:00 +1000
-categories: gamedev roguelikes tutorial
-permalink: /roguelike-tutorial-2020-part-1/
-excerpt_separator: <!--more-->
+title: "Part 1 - Drawing and Moving the Player"
+permalink: /roguelike-tutorial-2020-part-1-test/
 og_image: screenshot.png
 ---
+
 
 For getting set up for this tutorial, see {% local roguelike-tutorial-2020-part-0 | Part 0 %}.
 

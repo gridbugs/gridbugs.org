@@ -1,10 +1,11 @@
 ---
-layout: post
-title: "Roguelike Tutorial 2020: Part 0 - Setting Up"
+layout: series-part
+series: roguelike-tutorial-2020
+index: 0
 date: 2020-06-12 20:00:00 +1000
-categories: gamedev roguelikes tutorial
+title: "Part 0 - Setting Up"
 permalink: /roguelike-tutorial-2020-part-0/
-excerpt_separator: <!--more-->
+og_image: logo.png
 ---
 
 This is the first of a series of posts where I follow the
@@ -19,8 +20,6 @@ roguelike tutorial](https://old.reddit.com/r/roguelikedev/wiki/python_tutorial_s
 over the course of several weeks.
 
 {% image logo.png %}
-
-<!--more-->
 
 ## Installation
 
@@ -111,4 +110,4 @@ Reference implementation branch: [part-0.0](https://github.com/stevebob/chargrid
 
 ## Ready to begin?
 
-{% local roguelike-tutorial-2020-part-1 | Click here for part 1 of the tutorial! %}
+{% local roguelike-tutorial-2020-part-1-test | Click here for part 1 of the tutorial! %}

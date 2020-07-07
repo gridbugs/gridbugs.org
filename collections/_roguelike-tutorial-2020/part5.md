@@ -1,10 +1,10 @@
 ---
-layout: post
-title: "Roguelike Tutorial 2020: Part 5 - Placing NPCs"
+layout: series-part
+series: roguelike-tutorial-2020
+index: 5
 date: 2020-07-02 22:00:00 +1000
-categories: gamedev roguelikes tutorial
+title: "Part 5 - Placing NPCs"
 permalink: /roguelike-tutorial-2020-part-5/
-excerpt_separator: <!--more-->
 og_image: screenshot-end.png
 ---
 

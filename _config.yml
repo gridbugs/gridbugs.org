@@ -54,6 +54,12 @@ feed:
   collections:
     - posts
 
+collections_dir: collections
+
+collections:
+  roguelike-tutorial-2020:
+    output: true
+
 # Build settings
 markdown: kramdown
 

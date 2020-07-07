@@ -15,6 +15,14 @@ layout: default
 
   <div class="post-content">
     {{ content }}
+
+    <ul>
+        {% for page in site[page.series] %}
+        {% if page.index %}
+        <li><a href="{{ site.baseurl }}{{ page.permalink }}">{{ page.title }}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
   </div>
 
 </article>

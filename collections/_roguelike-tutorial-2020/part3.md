@@ -1,10 +1,10 @@
 ---
-layout: post
-title: "Roguelike Tutorial 2020: Part 3 - Generating a Dungeon"
+layout: series-part
+series: roguelike-tutorial-2020
+index: 3
+title: "Part 3 - Generating a Dungeon"
 date: 2020-06-19 20:00:00 +1000
-categories: gamedev roguelikes tutorial
 permalink: /roguelike-tutorial-2020-part-3/
-excerpt_separator: <!--more-->
 og_image: screenshot-end.png
 ---
 
