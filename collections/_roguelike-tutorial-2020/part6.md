@@ -271,11 +271,27 @@ fn main() {
         rng_seed,
         visibility_algorithm,
     } = Args::parser().with_help_default().parse_env_or_exit();
+    println!("RNG Seed: {}", rng_seed);
     ...
     let app = App::new(screen_size, rng_seed, visibility_algorithm);
     ...
 }
 {% endpygments %}
+
+If you used the `simon` library for argument parsing, the `with_help_default()` method called above allows you to pass a `--help`
+argument to see usage instructions:
+
+```
+ $ cargo run -- --help
+Usage: target/debug/chargrid-roguelike-tutorial-2020 [options]
+
+Options:
+    -r, --rng-seed INT  seed for random number generator
+        --debug-omniscient
+                        enable omniscience
+    -h, --help          print this help menu
+
+```
 
 Reference implementation branch: [part-6.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.0)
 
