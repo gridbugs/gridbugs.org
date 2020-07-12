@@ -407,3 +407,5 @@ impl GameState {
 Now that the basic framework for AI is set up, it will be easier to add AI in a future part.
 
 Reference implementation branch: [part-5.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-5.2)
+
+{% local roguelike-tutorial-2020-part-6 | Click here for the next part! %}
