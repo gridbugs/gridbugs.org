@@ -28,9 +28,13 @@ In this post:
 
 ## {% anchor basic-health-bar | Basic Health Bar %}
 
+{% image health.png %}
+
 Reference implementation branch: [part-7.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.0)
 
 ## {% anchor pretty-health-bar | Pretty Health Bar %}
+
+{% image health-pretty.png %}
 
 Reference implementation branch: [part-7.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.1)
 
