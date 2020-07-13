@@ -297,6 +297,299 @@ Reference implementation branch: [part-6.0](https://github.com/stevebob/chargrid
 
 ## {% anchor npc-pathfinding | NPC Pathfinding %}
 
+Let's add some rudimentary AI to NPCs. In order for pathfinding to work, we'll need a way of finding out which areas
+of the map can be traversed by an NPC. Add the following to `world.rs`:
+
+{% pygments rust %}
+// world.rs
+...
+impl World {
+    ...
+    pub fn can_npc_enter_ignoring_other_npcs(&self, coord: Coord) -> bool {
+        self.spatial_table
+            .layers_at(coord)
+            .map(|layers| layers.feature.is_none())
+            .unwrap_or(false)
+    }
+    pub fn can_npc_enter(&self, coord: Coord) -> bool {
+        self.spatial_table
+            .layers_at(coord)
+            .map(|layers| {
+                let contains_npc = layers
+                    .character
+                    .map(|entity| self.components.npc_type.contains(entity))
+                    .unwrap_or(false);
+                let contains_feature = layers.feature.is_some();
+                !(contains_npc || contains_feature)
+            })
+            .unwrap_or(false)
+    }
+
+}
+{% endpygments %}
+
+NPCs can enter a cell if it doesn't contain a feature or another NPC. It will also turn out convenient to be able to
+check whether an NPC can enter a cell, _ignoring_ the rule about NPCs not being able to walk on top of each other.
+
+To help with pathfinding, expose one more method in `World` that returns the coordinate of an entity:
+
+{% pygments rust %}
+// world.rs
+impl World {
+    ...
+    pub fn entity_coord(&self, entity: Entity) -> Option<Coord> {
+        self.spatial_table.coord_of(entity)
+    }
+}
+{% endpygments %}
+
+While you're here, remove the `npc_type` method from `World`. We won't be needing it anymore.
+
+To do the heavy lifting of pathfinding, we'll use a library:
+{% pygments toml %}
+# Cargo.toml
+...
+[dependencies]
+grid_search_cardinal = "0.2"
+{% endpygments %}
+
+The general idea for pathfinding is the following: Each time the player moves, populate a grid (called a "distance map") with the distance from
+each NPC-traversable cell to the player. On an NPC's turn, it will consider its local region of this grid, and move in the direction
+which minimises its distance to the player. Note that an NPC may look further than 1 cell away when deciding which
+direction to move, and thus make a decision to step into a cell which increases its distance from the player _on the way to_
+a cell which is nearer to the player.
+
+{% image pathfinding.png %}
+
+The diagram above shows a grid where each floor cell is annotated with its distance from the player.
+The grey cells are walls, and thus have no distance annotation.
+The @ represents the player, and W,X,Y,Z represent NPCs. The red-shaded area is all the traversable
+cells within 3 cells of Z. On its turn, Z will move along a path on the way to one of cells which are 2
+away from the player. The first step along this path will _increase_ Z's distance from the player (from 3 to 4).
+
+I've written more on the topic of pathfinding on a grid in {% local pathfinding-on-a-grid | a previous post %}.
+
+Make a new file called `behaviour.rs`:
+{% pygments rust %}
+// behaviour.rs
+use crate::world::World;
+use coord_2d::{Coord, Size};
+use direction::CardinalDirection;
+use entity_table::Entity;
+use grid_search_cardinal::{
+    distance_map::{
+        DistanceMap, PopulateContext as DistanceMapPopulateContext,
+        SearchContext as DistanceMapSearchContext,
+    },
+    CanEnter,
+};
+
+pub struct BehaviourContext {
+    distance_map_to_player: DistanceMap,
+    distance_map_populate_context: DistanceMapPopulateContext,
+    distance_map_search_context: DistanceMapSearchContext,
+}
+
+impl BehaviourContext {
+    pub fn new(size: Size) -> Self {
+        Self {
+            distance_map_to_player: DistanceMap::new(size),
+            distance_map_populate_context: DistanceMapPopulateContext::default(),
+            distance_map_search_context: DistanceMapSearchContext::new(size),
+        }
+    }
+
+    pub fn update(&mut self, player: Entity, world: &World) {
+        struct NpcCanEnterIgnoringOtherNpcs<'a> {
+            world: &'a World,
+        }
+        impl<'a> CanEnter for NpcCanEnterIgnoringOtherNpcs<'a> {
+            fn can_enter(&self, coord: Coord) -> bool {
+                self.world.can_npc_enter_ignoring_other_npcs(coord)
+            }
+        }
+        let player_coord = world.entity_coord(player).expect("player has no coord");
+        const MAX_APPROACH_DISTANCE: u32 = 20;
+        self.distance_map_populate_context.add(player_coord);
+        self.distance_map_populate_context.populate_approach(
+            &NpcCanEnterIgnoringOtherNpcs { world },
+            MAX_APPROACH_DISTANCE,
+            &mut self.distance_map_to_player,
+        );
+    }
+}
+{% endpygments %}
+
+The `BehaviourContext` type will contain all the re-usable state required for pathfinding.
+The field `distance_map_to_player` is the grid which will contain the distance from each cell to the player.
+The other 2 fields - `distance_map_populate_context` and `distance_map_search_context` contain re-usable
+state for updating the distances in the distance map, and choosing a path through a distance map, respectively.
+
+The `BehaviourContext::update` method updates the distance map such that each cell contains the distance to the player.
+
+Note the `NpcCanEnterIgnoringOtherNpcs` type, which implements the trait `grid_search_cardinal::CanEnter`.
+The `grid_search_cardinal` library assumes nothing about the representation of the world, and uses
+the `CanEnter` trait to tell it whether a particular cell of the world is traversable.
+When populating the distance map, NPC-occupied cells are treated as traversable. This is because all NPCs share
+the distance map, and it isn't re-computed each time an NPC moves (only when the player moves).
+
+Also note the `MAX_APPROACH_DISTANCE` constant. We won't populate the entire distance map each time the player moves -
+only the area within 20 cells of the player. This is an optimization which limits the time spent populating the distance
+map. NPCs more than 20 cells from the player won't be able to approach the player, but this won't really affect gameplay.
+
+Now add the following to `behaviour.rs`:
+
+{% pygments rust %}
+// behaviour.rs
+...
+pub enum NpcAction {
+    Wait,
+    Move(CardinalDirection),
+}
+
+pub struct Agent {}
+
+impl Agent {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn act(
+        &mut self,
+        entity: Entity,
+        world: &World,
+        behaviour_context: &mut BehaviourContext,
+    ) -> NpcAction {
+        struct NpcCanEnter<'a> {
+            world: &'a World,
+        }
+        impl<'a> CanEnter for NpcCanEnter<'a> {
+            fn can_enter(&self, coord: Coord) -> bool {
+                self.world.can_npc_enter(coord)
+            }
+        }
+        let npc_coord = world.entity_coord(entity).expect("npc has no coord");
+        const SEARCH_DISTANCE: u32 = 5;
+        match behaviour_context.distance_map_search_context.search_first(
+            &NpcCanEnter { world },
+            npc_coord,
+            SEARCH_DISTANCE,
+            &behaviour_context.distance_map_to_player,
+        ) {
+            None => NpcAction::Wait,
+            Some(direction) => NpcAction::Move(direction),
+        }
+    }
+}
+{% endpygments %}
+
+Start by enumerating all the different actions an NPC can take in `NpcAction`. Define an `Agent` type which will currently be empty.
+
+The method `Agent::act` chooses an action for an NPC to take. Note a second implementation of `CanEnter` here.
+Since we're no actually choosing the direction an NPC will walk (if any), it's now necessary to account for the fact
+that NPCs can't move through one another, so we should route the current NPC around the other NPCs.
+Recall that `World::can_npc_enter` only considers a cell to be traversable if it contains neither a wall, nor an NPC.
+
+The call to `behaviour_context.distance_map_search_context.search_first` chooses a direction for the NPC to move.
+It will move in the direction of the first step along a path which will take it to the reachable cell nearest to the
+player within `SEARCH_DISTANCE` of the NPC. The lower `SEARCH_DISTANCE`, the less inclined an NPC will be to walk around
+other NPCs to reach the player.
+
+Add a `BehaviourContext` to `GameState`, and update `ai_state` to be a `ComponentTable<Agent>` instead of
+a `ComponentTable<()>`.
+
+{% pygments rust %}
+// game.rs
+use crate::behaviour::{Agent, BehaviourContext, NpcAction};
+...
+pub struct GameState {
+    ...
+    ai_state: ComponentTable<Agent>,
+    behaviour_context: BehaviourContext,
+}
+
+impl GameState {
+    pub fn new(
+        screen_size: Size,
+        rng_seed: u64,
+        initial_visibility_algorithm: VisibilityAlgorithm,
+    ) -> Self {
+        ...
+        let behaviour_context = BehaviourContext::new(screen_size);
+        let mut game_state = Self {
+            ...
+            behaviour_context,
+        };
+        ...
+    }
+    ...
+}
+{% endpygments %}
+
+Update `GameState::ai_turn` to call `Agent::act` so NPCs actually move on their turns:
+
+{% pygments rust %}
+...
+impl GameState {
+    ...
+    fn ai_turn(&mut self) {
+        self.behaviour_context
+            .update(self.player_entity, &self.world);
+        for (entity, agent) in self.ai_state.iter_mut() {
+            let npc_action = agent.act(entity, &self.world, &mut self.behaviour_context);
+            match npc_action {
+                NpcAction::Wait => (),
+                NpcAction::Move(direction) => self.world.maybe_move_character(entity, direction),
+            }
+        }
+    }
+}
+{% endpygments %}
+
+And update `world.rs` to return a `ComponentTable<Agent>` in its `Populate` struct:
+{% pygments rust %}
+// world
+use crate::behaviour::Agent;
+...
+pub struct Populate {
+    pub player_entity: Entity,
+    pub ai_state: ComponentTable<Agent>,
+}
+...
+impl GameState {
+    pub fn populate<R: Rng>(&mut self, rng: &mut R) -> Populate {
+        let mut ai_state = ComponentTable::default();
+        for (coord, &terrain_tile) in terrain.enumerate() {
+            match terrain_tile {
+                ...
+                TerrainTile::Npc(npc_type) => {
+                    let entity = self.spawn_npc(coord, npc_type);
+                    self.spawn_floor(coord);
+                    ai_state.insert(entity, Agent::new());
+                }
+            }
+        }
+        Populate {
+            player_entity: player_entity.unwrap(),
+            ai_state,
+        }
+    }
+}
+{% endpygments %}
+
+Don't forget to add `mod behaviour;` to `main.rs`:
+{% pygments rust %}
+...
+mod behaviour;
+...
+{% endpygments %}
+
+Run this with `--debug-omniscient` and observe pathfinding in action.
+Since there's still no combat system, expect to find yourself trapped in a corner
+surrounded by NPCs!
+
+{% image surrounded.png %}
+
 Reference implementation branch: [part-6.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.1)
 
 ## {% anchor npc-line-of-sight | NPC Line of Sight %}
