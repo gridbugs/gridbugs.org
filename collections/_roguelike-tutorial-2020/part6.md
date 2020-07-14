@@ -594,6 +594,114 @@ Reference implementation branch: [part-6.1](https://github.com/stevebob/chargrid
 
 ## {% anchor npc-line-of-sight | NPC Line of Sight %}
 
+To make the game more realistic, we'll require that NPCs must be able to see the player in order to move towards them.
+Start by adding a method to `World` for testing whether an NPC can see through the cell at a given coordinate.
+
+{% pygments rust %}
+// world.rs
+...
+impl World {
+    ...
+    pub fn can_npc_see_through_cell(&self, coord: Coord) -> bool {
+        self.spatial_table
+            .layers_at(coord)
+            .map(|layers| layers.feature.is_none())
+            .unwrap_or(false)
+    }
+}
+{% endpygments %}
+
+No we could go and run the shadowcast filed-of-view algorithm for each NPC, but that would be expensive.
+Instead, we only need to test if the (straight) line segment between each NPC and the player can be traversed
+without visiting a cell which the NPC can't see through.
+
+To help talk about lines rasterized onto grids, grab a library:
+{% pygments toml %}
+# Cargo.toml
+[dependencies]
+line_2d = "0.4"
+{% endpygments %}
+
+Add a function for testing NPC line of sight to `behaviour.rs`:
+
+{% pygments rust %}
+// behaviour.rs
+...
+use line_2d::LineSegment;
+use shadowcast::{vision_distance, VisionDistance};
+...
+fn npc_has_line_of_sight(src: Coord, dst: Coord, world: &World) -> bool {
+    const NPC_VISION_DISTANCE_SQUARED: u32 = 100;
+    const NPC_VISION_DISTANCE: vision_distance::Circle =
+        vision_distance::Circle::new_squared(NPC_VISION_DISTANCE_SQUARED);
+    if src == dst {
+        return true;
+    }
+    for coord in LineSegment::new(src, dst).iter() {
+        let src_to_coord = coord - src;
+        if !NPC_VISION_DISTANCE.in_range(src_to_coord) {
+            return false;
+        }
+        if !world.can_npc_see_through_cell(coord) {
+            return false;
+        }
+    }
+    true
+}
+{% endpygments %}
+
+Add a `player: Entity` argument to `Agent::act`, and then call our new function to test whether the NPC can
+see the player. For now, just have the NPC wait on their turn if they can't see the player.
+
+{% pygments rust %}
+...
+impl Agent {
+    ...
+    pub fn act(
+        &mut self,
+        entity: Entity,
+        player: Entity,
+        world: &World,
+        behaviour_context: &mut BehaviourContext,
+    ) -> NpcAction {
+        ...
+        if !npc_has_line_of_sight(npc_coord, player_coord, world) {
+            return NpcAction::Wait;
+        }
+        ...
+    }
+}
+{% endpygments %}
+
+Update the call of `Agent::act` in `game.rs` to pass the player:
+
+{% pygments rust %}
+// game.rs
+...
+impl Game {
+    ...
+    fn ai_turn(&mut self) {
+        self.behaviour_context
+            .update(self.player_entity, &self.world);
+        for (entity, agent) in self.ai_state.iter_mut() {
+            let npc_action = agent.act(
+                entity,
+                self.player_entity,
+                &self.world,
+                &mut self.behaviour_context,
+            );
+            match npc_action {
+                NpcAction::Wait => (),
+                NpcAction::Move(direction) => self.world.maybe_move_character(entity, direction),
+            }
+        }
+    }
+}
+{% endpygments %}
+
+Run the game with omniscience and confirm that as soon as there stops being line of sight between
+you and an NPC following you, the NPC freezes.
+
 Reference implementation branch: [part-6.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.2)
 
 ## {% anchor npc-memory | NPC Memory %}
