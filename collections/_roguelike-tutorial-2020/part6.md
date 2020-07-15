@@ -706,9 +706,395 @@ Reference implementation branch: [part-6.2](https://github.com/stevebob/chargrid
 
 ## {% anchor npc-memory | NPC Memory %}
 
+That's still not super realistic. In real life orcs and trolls would keep following you after you left
+their line of sight. To simulate NPCs remembering where they last saw you, let's have NPCs continue to
+follow you for a couple of turns after losing line of sight. The goal of this section is to demonstrate
+how the AI of each NPC can be stateful. We could make the state more complicated, to say, have NPCs move
+to the location where they last saw the player, but that's out of the scope of this tutorial.
+
+The only state each NPC needs in order to follow the player for a number of turns after losing sight,
+is a single counter storing the number of turns since the NPC saw the player:
+
+{% pygments rust %}
+// behaviour.rs
+...
+pub struct Agent {
+    turns_since_last_saw_player: u32,
+}
+...
+impl Agent {
+    pub fn new() -> Self {
+        Self {
+            turns_since_last_saw_player: u32::MAX,
+        }
+    }
+    ...
+}
+{% endpygments %}
+
+Update the counter on each NPC's turn, and use the value in the counter to determine whether
+the NPC moves on their turn.
+
+{% pygments rust %}
+...
+impl Agent {
+    ...
+    pub fn act(
+        &mut self,
+        entity: Entity,
+        player: Entity,
+        world: &World,
+        behaviour_context: &mut BehaviourContext,
+    ) -> NpcAction {
+        ...
+        if npc_has_line_of_sight(npc_coord, player_coord, world) {
+            self.turns_since_last_saw_player = 0;
+        } else {
+            self.turns_since_last_saw_player = self.turns_since_last_saw_player.saturating_add(1);
+        }
+        const MAX_TURNS_TO_CHASE_PLAYER_AFTER_LOSING_SIGHT: u32 = 3;
+        if self.turns_since_last_saw_player > MAX_TURNS_TO_CHASE_PLAYER_AFTER_LOSING_SIGHT {
+            return NpcAction::Wait;
+        }
+        ...
+    }
+}
+{% endpygments %}
+
 Reference implementation branch: [part-6.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.3)
 
 ## {% anchor combat | Combat %}
+
+To implement combat, start by defining a `HitPoints` component, and adding
+hit points to the player and NPC entities.
+
+{% pygments rust %}
+// world.rs
+...
+#[derive(Clone, Copy, Debug)]
+pub struct HitPoints {
+    pub current: u32,
+    pub max: u32,
+}
+
+impl HitPoints {
+    fn new_full(max: u32) -> Self {
+        Self { current: max, max }
+    }
+}
+...
+entity_table::declare_entity_module! {
+    components {
+        tile: Tile,
+        npc_type: NpcType,
+        hit_points: HitPoints,
+    }
+}
+...
+impl World {
+    ...
+    fn spawn_player(&mut self, coord: Coord) -> Entity {
+        ...
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(20));
+        ...
+    }
+
+    fn spawn_npc(&mut self, coord: Coord, npc_type: NpcType) -> Entity {
+        ...
+        let hit_points = match npc_type {
+            NpcType::Orc => HitPoints::new_full(2),
+            NpcType::Troll => HitPoints::new_full(6),
+        };
+        self.components.hit_points.insert(entity, hit_points);
+        ...
+    }
+    ...
+}
+{% endpygments %}
+
+For now we'll just support bump combat. That is, when a character would move,
+if the destination of the move is occupied by an enemy of the moving character,
+instead of moving, an attack occurs.
+
+{% pygments rust %}
+// world.rs
+...
+impl World {
+    ...
+    pub fn maybe_move_character(&mut self, character_entity: Entity, direction: CardinalDirection) {
+        let character_coord = self
+            .spatial_table
+            .coord_of(character_entity)
+            .expect("character has no coord");
+        let new_character_coord = character_coord + direction.coord();
+        if new_character_coord.is_valid(self.spatial_table.grid_size()) {
+            let dest_layers = self.spatial_table.layers_at_checked(new_character_coord);
+            if let Some(dest_character_entity) = dest_layers.character {
+                let character_is_npc = self.components.npc_type.contains(character_entity);
+                let dest_character_is_npc =
+                    self.components.npc_type.contains(dest_character_entity);
+                if character_is_npc != dest_character_is_npc {
+                    self.character_bump_attack(dest_character_entity);
+                }
+            } else if dest_layers.feature.is_none() {
+                self.spatial_table
+                    .update_coord(character_entity, new_character_coord)
+                    .unwrap();
+            }
+        }
+    }
+    fn character_bump_attack(&mut self, victim: Entity) {
+        const DAMAGE: u32 = 1;
+        if let Some(hit_points) = self.components.hit_points.get_mut(victim) {
+            hit_points.current = hit_points.current.saturating_sub(DAMAGE);
+            if hit_points.current == 0 {
+                self.character_die(victim);
+            }
+        }
+    }
+}
+{% endpygments %}
+
+For now, all attacks deal a single point of damage.
+The code above contains a call to `self.character_die(victim)`,
+which we haven't implemented yet. Let's make it so that when a character dies,
+it is replaced by a corpse.
+
+Define tile types for corpses, and add a layer to the spatial table for storing corpse location.
+
+{% pygments rust %}
+// world.rs
+...
+#[derive(Clone, Copy, Debug)]
+pub enum Tile {
+    ...
+    PlayerCorpse,
+    NpcCorpse(NpcType),
+}
+...
+spatial_table::declare_layers_module! {
+    layers {
+        ...
+        corpse: Corpse,
+    }
+}
+{% endpygments %}
+
+Now we can implement the `character_die` method:
+
+{% pygments rust %}
+// world.rs
+...
+impl World {
+    ...
+    fn character_die(&mut self, entity: Entity) {
+        if let Some(occpied_by_entity) = self
+            .spatial_table
+            .update_layer(entity, Layer::Corpse)
+            .err()
+            .map(|e| e.unwrap_occupied_by())
+        {
+            // If a character dies on a cell which contains a corpse, remove the existing corpse
+            // from existence and replace it with the character's corpse.
+            self.remove_entity(occpied_by_entity);
+            self.spatial_table
+                .update_layer(entity, Layer::Corpse)
+                .unwrap();
+        }
+        let current_tile = self.components.tile.get(entity).unwrap();
+        let corpse_tile = match current_tile {
+            Tile::Player => Tile::PlayerCorpse,
+            Tile::Npc(npc_type) => Tile::NpcCorpse(*npc_type),
+            other => panic!("unexpected tile on character {:?}", other),
+        };
+        self.components.tile.insert(entity, corpse_tile);
+    }
+
+    pub fn remove_entity(&mut self, entity: Entity) {
+        self.components.remove_entity(entity);
+        self.spatial_table.remove(entity);
+        self.entity_allocator.free(entity);
+    }
+    ...
+}
+{% endpygments %}
+
+Expose a method of `World` called `is_living_character` which lets us check whether an
+entity refers to a living character:
+{% pygments rust %}
+// world.rs
+...
+impl World {
+    ...
+    pub fn is_living_character(&self, entity: Entity) -> bool {
+        self.spatial_table.layer_of(entity) == Some(Layer::Character)
+    }
+    ...
+}
+{% endpygments %}
+
+In `game.rs`, before all the NPCs take their turn, remove dead NPCs from `ai_state`:
+
+{% pygments rust %}
+// game.rs
+...
+impl GameState {
+    ...
+    fn ai_turn(&mut self) {
+        self.behaviour_context
+            .update(self.player_entity, &self.world);
+        let dead_entities = self
+            .ai_state
+            .entities()
+            .filter(|&entity| !self.world.is_living_character(entity))
+            .collect::<Vec<_>>();
+        for dead_entity in dead_entities {
+            self.ai_state.remove(dead_entity);
+        }
+        for (entity, agent) in self.ai_state.iter_mut() {
+            ...
+        }
+    }
+}
+{% endpygments %}
+
+Expose a method `is_player_alive`:
+{% pygments rust %}
+impl GameState {
+    ...
+    pub fn is_player_alive(&self) -> bool {
+        self.world.is_living_character(self.player_entity)
+    }
+}
+{% endpygments %}
+
+Now in `app.rs` there are two things that need to change.
+
+First, prevent the player from moving if they are dead:
+{% pygments rust %}
+// app.rs
+impl AppData {
+    fn handle_input(&mut self, input: Input) {
+        if !self.game_state.is_player_alive() {
+            return;
+        }
+        match input {
+            ...
+        }
+    }
+}
+{% endpygments %}
+
+Second, update the rendering logic to handle corpse tiles.
+This is a small refactor which moves common colour definitions into its own module.
+
+{% pygments rust %}
+// app.rs
+...
+mod colours {
+    use rgb24::Rgb24;
+    pub const PLAYER: Rgb24 = Rgb24::new_grey(255);
+    pub const ORC: Rgb24 = Rgb24::new(0, 187, 0);
+    pub const TROLL: Rgb24 = Rgb24::new(187, 0, 0);
+}
+
+fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
+    match tile {
+        Tile::Player => ViewCell::new()
+            .with_character('@')
+            .with_foreground(colours::PLAYER),
+        Tile::PlayerCorpse => ViewCell::new()
+            .with_character('%')
+            .with_foreground(colours::PLAYER),
+        Tile::Floor => ViewCell::new()
+            .with_character('.')
+            .with_foreground(Rgb24::new_grey(63))
+            .with_background(Rgb24::new(0, 0, 63)),
+        Tile::Wall => ViewCell::new()
+            .with_character('#')
+            .with_foreground(Rgb24::new(0, 63, 63))
+            .with_background(Rgb24::new(63, 127, 127)),
+        Tile::Npc(NpcType::Orc) => ViewCell::new()
+            .with_character('o')
+            .with_bold(true)
+            .with_foreground(colours::ORC),
+        Tile::Npc(NpcType::Troll) => ViewCell::new()
+            .with_character('T')
+            .with_bold(true)
+            .with_foreground(colours::TROLL),
+        Tile::NpcCorpse(NpcType::Orc) => ViewCell::new()
+            .with_character('%')
+            .with_bold(true)
+            .with_foreground(colours::ORC),
+        Tile::NpcCorpse(NpcType::Troll) => ViewCell::new()
+            .with_character('%')
+            .with_bold(true)
+            .with_foreground(colours::TROLL),
+    }
+}
+
+fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
+    match tile {
+        Tile::Player => ViewCell::new()
+            .with_character('@')
+            .with_foreground(Rgb24::new_grey(255)),
+        Tile::PlayerCorpse => ViewCell::new()
+            .with_character('%')
+            .with_foreground(Rgb24::new_grey(255)),
+        Tile::Floor => ViewCell::new()
+            .with_character('.')
+            .with_foreground(Rgb24::new_grey(63))
+            .with_background(Rgb24::new_grey(0)),
+        Tile::Wall => ViewCell::new()
+            .with_character('#')
+            .with_foreground(Rgb24::new_grey(63))
+            .with_background(Rgb24::new_grey(0)),
+        Tile::Npc(NpcType::Orc) => ViewCell::new()
+            .with_character('o')
+            .with_bold(true)
+            .with_foreground(Rgb24::new_grey(63)),
+        Tile::Npc(NpcType::Troll) => ViewCell::new()
+            .with_character('T')
+            .with_bold(true)
+            .with_foreground(Rgb24::new_grey(63)),
+        Tile::NpcCorpse(NpcType::Orc) => ViewCell::new()
+            .with_character('%')
+            .with_foreground(Rgb24::new_grey(63)),
+        Tile::NpcCorpse(NpcType::Troll) => ViewCell::new()
+            .with_character('%')
+            .with_foreground(Rgb24::new_grey(63)),
+    }
+}
+{% endpygments %}
+
+Update the depth calculation to account for the new corpse layer:
+
+{% pygments rust %}
+impl<'a> View<&'a AppData> for AppView {
+    fn view<F: Frame, C: ColModify>(
+        &mut self,
+        data: &'a AppData,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
+        for entity_to_render in data.game_state.entities_to_render() {
+            let view_cell = ...;
+            let depth = match entity_to_render.location.layer {
+                None => -1,
+                Some(Layer::Floor) => 0,
+                Some(Layer::Feature) => 1,
+                Some(Layer::Corpse) => 2,
+                Some(Layer::Character) => 3,
+            };
+            frame.set_cell_relative(entity_to_render.location.coord, depth, view_cell, context);
+        }
+    }
+}
+{% endpygments %}
+
+And that's it. NPCs and the player can kill one another, and leave behind corpses.
 
 {% image screenshot-end.png %}
 
