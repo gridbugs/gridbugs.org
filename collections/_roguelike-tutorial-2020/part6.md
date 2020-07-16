@@ -486,13 +486,13 @@ impl Agent {
 Start by enumerating all the different actions an NPC can take in `NpcAction`. Define an `Agent` type which will currently be empty.
 
 The method `Agent::act` chooses an action for an NPC to take. Note a second implementation of `CanEnter` here.
-Since we're no actually choosing the direction an NPC will walk (if any), it's now necessary to account for the fact
+Since we're not actually choosing the direction an NPC will walk (if any), it's now necessary to account for the fact
 that NPCs can't move through one another, so we should route the current NPC around the other NPCs.
 Recall that `World::can_npc_enter` only considers a cell to be traversable if it contains neither a wall, nor an NPC.
 
 The call to `behaviour_context.distance_map_search_context.search_first` chooses a direction for the NPC to move.
 It will move in the direction of the first step along a path which will take it to the reachable cell nearest to the
-player within `SEARCH_DISTANCE` of the NPC. The lower `SEARCH_DISTANCE`, the less inclined an NPC will be to walk around
+player, within `SEARCH_DISTANCE` of the NPC. The lower `SEARCH_DISTANCE`, the less inclined an NPC will be to walk around
 other NPCs to reach the player.
 
 Add a `BehaviourContext` to `GameState`, and update `ai_state` to be a `ComponentTable<Agent>` instead of
@@ -611,7 +611,7 @@ impl World {
 }
 {% endpygments %}
 
-No we could go and run the shadowcast filed-of-view algorithm for each NPC, but that would be expensive.
+Now we could go and run the shadowcast filed-of-view algorithm for each NPC, but that would be expensive.
 Instead, we only need to test if the (straight) line segment between each NPC and the player can be traversed
 without visiting a cell which the NPC can't see through.
 
@@ -959,6 +959,11 @@ impl GameState {
     }
 }
 {% endpygments %}
+
+Note that the call to `collect` above will allocate if there are any dead characters
+to remove from `ai_state`. This would be easy to optimize away by adding a field
+to `GameState` which gets populated with all dead entities each turn, but it didn't
+seem worth it.
 
 Expose a method `is_player_alive`:
 {% pygments rust %}
