@@ -28,6 +28,7 @@ In this post:
  - [NPC Line of Sight](#npc-line-of-sight)
  - [NPC Memory](#npc-memory)
  - [Combat](#combat)
+ - [Hide Previously-seen NPCs](#hide-previously-seen-npcs)
 
 ## {% anchor command-line-options-for-debugging | Command-Line Options for Debugging %}
 
@@ -1101,8 +1102,36 @@ impl<'a> View<&'a AppData> for AppView {
 
 And that's it. NPCs and the player can kill one another, and leave behind corpses.
 
+Reference implementation branch: [part-6.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.4)
+
+## {% anchor hide-previously-seen-npcs | Hide Previously-seen NPCs %}
+
+Now that NPCs can move around on their own, it's possible for an NPC which is out of the player's field of view to move.
+At the moment, there's nothing preventing the game from rendering the movements of an NPC which isn't currently visible
+(it will still be greyed-out of course). We _could_ have the game keep track of the most-recently-seen contents of each
+cell, so it could continue to render a moved NPC at its original location. In the interest of simplicity however, let's
+just change rendering code so the only previously-visible things we render are walls and floor:
+
+{% pygments rust %}
+// app.rs
+...
+fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
+    match tile {
+        Tile::Floor => ViewCell::new()
+            .with_character('.')
+            .with_foreground(Rgb24::new_grey(63))
+            .with_background(Rgb24::new_grey(0)),
+        Tile::Wall => ViewCell::new()
+            .with_character('#')
+            .with_foreground(Rgb24::new_grey(63))
+            .with_background(Rgb24::new_grey(0)),
+        _ => ViewCell::new(),
+    }
+}
+{% endpygments %}
+
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-6.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.4)
+Reference implementation branch: [part-6.5](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.5)
 
 {% local roguelike-tutorial-2020-part-7 | Click here for the next part! %}
