@@ -502,9 +502,28 @@ impl View<HitPoints> for HealthView {
 }
 {% endpygments %}
 
+Add a simple helper function for mapping an NPC to a colour in `app.rs`, and make the `colours` mod public:
+{% pygments rust %}
+// app.rs
+...
+pub mod colours {
+    use super::*;
+    ...
+    pub fn npc_colour(npc_type: NpcType) -> Rgb24 {
+        match npc_type {
+            NpcType::Orc => ORC,
+            NpcType::Troll => TROLL,
+        }
+    }
+}
+{% endpygments %}
+
+
 Now define another type `MessageView` for rendering the message log:
 
 {% pygments rust %}
+// ui.rs
+use crate::app::colours::npc_colour;
 ...
 use crate::game::LogMessage;
 ...
@@ -536,12 +555,6 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
         context: ViewContext<C>,
         frame: &mut F,
     ) {
-        fn npc_colour(npc_type: NpcType) -> Rgb24 {
-            match npc_type {
-                NpcType::Orc => colours::ORC,
-                NpcType::Troll => colours::TROLL,
-            }
-        }
         fn format_message(buf: &mut [RichTextPartOwned], message: LogMessage) {
             use std::fmt::Write;
             use LogMessage::*;
@@ -632,18 +645,13 @@ impl<'a> View<UiData<'a>> for UiView {
 }
 {% endpygments %}
 
-Update `app.rs` to leave room below for the message log. Make the `colours` module public so
-`ui.rs` can use it to colour the names of NPCs in the message log. When calling `UiView::view`
+Update `app.rs` to leave room below for the message log. When calling `UiView::view`
 inside `AppView::view`, populate the new `messages` field.
 
 {% pygments rust %}
 // app.rs
 ...
 const UI_NUM_ROWS: u32 = 5;
-...
-pub mod colours {
-    ...
-}
 ...
 impl<'a> View<&'a AppData> for AppView {
     fn view<F: Frame, C: ColModify>(
