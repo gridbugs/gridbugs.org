@@ -84,3 +84,4 @@ exclude:
   - wip_posts/
   - README.md
   - scripts
+  - venv
