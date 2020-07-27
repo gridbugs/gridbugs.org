@@ -523,7 +523,7 @@ Now define another type `MessageView` for rendering the message log:
 
 {% pygments rust %}
 // ui.rs
-use crate::app::colours::npc_colour;
+use crate::app::colours;
 ...
 use crate::game::LogMessage;
 ...
@@ -568,19 +568,19 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
                 PlayerAttacksNpc(npc_type) => {
                     write!(&mut buf[0].text, "You attack the ").unwrap();
                     write!(&mut buf[1].text, "{}", npc_type.name()).unwrap();
-                    buf[1].style.foreground = Some(npc_colour(npc_type));
+                    buf[1].style.foreground = Some(colours::npc_colour(npc_type));
                     write!(&mut buf[2].text, ".").unwrap();
                 }
                 NpcAttacksPlayer(npc_type) => {
                     write!(&mut buf[0].text, "The ").unwrap();
                     write!(&mut buf[1].text, "{}", npc_type.name()).unwrap();
-                    buf[1].style.foreground = Some(npc_colour(npc_type));
+                    buf[1].style.foreground = Some(colours::npc_colour(npc_type));
                     write!(&mut buf[2].text, " attacks you.").unwrap();
                 }
                 PlayerKillsNpc(npc_type) => {
                     write!(&mut buf[0].text, "You kill the ").unwrap();
                     write!(&mut buf[1].text, "{}", npc_type.name()).unwrap();
-                    buf[1].style.foreground = Some(npc_colour(npc_type));
+                    buf[1].style.foreground = Some(colours::npc_colour(npc_type));
                     write!(&mut buf[2].text, ".").unwrap();
                 }
                 NpcKillsPlayer(npc_type) => {
@@ -588,7 +588,7 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
                     buf[0].style.foreground = Some(Rgb24::new(255, 0, 0));
                     write!(&mut buf[1].text, "{}", npc_type.name()).unwrap();
                     buf[1].text.make_ascii_uppercase();
-                    buf[1].style.foreground = Some(npc_colour(npc_type));
+                    buf[1].style.foreground = Some(colours::npc_colour(npc_type));
                     write!(&mut buf[2].text, " KILLS YOU!").unwrap();
                     buf[2].style.foreground = Some(Rgb24::new(255, 0, 0));
                 }
