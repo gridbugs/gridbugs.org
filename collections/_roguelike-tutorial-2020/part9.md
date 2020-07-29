@@ -20,8 +20,76 @@ python tcod tutorial.
 Reference implementation branch for starting point: [part-8-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8-end)
 
 In this post:
+ - [Examine Command](#examine-command)
+ - [Fireball Scroll](#fireball-scroll)
+ - [Launching Fireballs](#launching-fireballs)
+ - [Confusion Scroll](#confusion-scroll)
 
 ## {% anchor examine-command | Examine Command %}
+
+As a first step towards ranged abilities, add an examine command that lets th player
+use the arrow keys and mouse to move a cursor over the game area.
+We'll add a section to the UI for showing the name of the character or item at the
+current cursor position.
+
+We'll also allow the player to use the mouse to examine a cell during normal gameplay.
+
+Add a type enumerating all the different results of examining a cell.
+
+{% pygments rust %}
+// game.rs
+...
+#[derive(Clone, Copy, Debug)]
+pub enum ExamineCell {
+    Npc(NpcType),
+    NpcCorpse(NpcType),
+    Item(ItemType),
+    Player,
+}
+...
+{% endpygments %}
+
+Add a method to `World` for examining a cell.
+
+{% pygments rust %}
+// world.rs
+...
+use crate::game::{ExamineCell, LogMessage};
+...
+impl World {
+...
+    pub fn examine_cell(&self, coord: Coord) -> Option<ExamineCell> {
+        let layers = self.spatial_table.layers_at(coord)?;
+        layers
+            .character
+            .or_else(|| layers.object)
+            .and_then(|entity| {
+                self.components
+                    .tile
+                    .get(entity)
+                    .and_then(|&tile| match tile {
+                        Tile::Npc(npc_type) => Some(ExamineCell::Npc(npc_type)),
+                        Tile::NpcCorpse(npc_type) => Some(ExamineCell::NpcCorpse(npc_type)),
+                        Tile::Item(item_type) => Some(ExamineCell::Item(item_type)),
+                        Tile::Player => Some(ExamineCell::Player),
+                        _ => None,
+                    })
+            })
+    }
+}
+{% endpygments %}
+
+Add a method to `GameState` for examining a cell at a coordinate *if it is currently visible to the player*.
+Also add a method returning the player current coordinate which will come in handy soon.
+
+{% pygments rust %}
+// game.rs
+...
+impl GameState {
+    ...
+}
+{% endpygments %}
+
 
 {% image examine.png %}
 
