@@ -678,3 +678,5 @@ impl<'a> View<&'a AppData> for AppView {
 {% image screenshot-end.png %}
 
 Reference implementation branch: [part-7.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.2)
+
+{% local roguelike-tutorial-2020-part-8 | Click here for the next part! %}
