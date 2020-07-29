@@ -10,7 +10,7 @@ og_image: item-menu.png
 
 In this part we'll introduce items, and add an inventory menu.
 
-By the end of this part, the game will look like this:
+By the end of this part you'll be able to pick up, use, and drop items.
 
 {% image item-menu.png %}
 
