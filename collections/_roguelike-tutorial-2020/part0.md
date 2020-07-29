@@ -108,6 +108,20 @@ index e7a11a9..b7dbe34 100644
 
 Reference implementation branch: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
 
+## Code Snippets
+
+Throughout this tutorial there will be many code snippets!
+In fact all the code that makes up the reference implementation will be present at some point in the tutorial.
+As we progress through building this roguelike, there will be times when we update existing code.
+Whenever code changes, the new version of the code will be shown, with (hopefully!) enough context for the reader
+to understand the old code that it's replacing and update their implementation accordingly.
+
+If it's not clear, consult the reference implementation to see exactly what changes between each section of each part.
+
+There may be points in the middle of sections (between headings) where the code doesn't compile, however at each heading
+in each part, the code will be in a compiling state. Each heading corresponds to a particular `part-x.y` branch
+in the reference implementation repository, and each such branch should always be in a compilable state.
+
 ## Ready to begin?
 
 {% local roguelike-tutorial-2020-part-1-test | Click here for part 1 of the tutorial! %}
