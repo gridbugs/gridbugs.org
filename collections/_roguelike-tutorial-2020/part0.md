@@ -124,4 +124,4 @@ in the reference implementation repository, and each such branch should always b
 
 ## Ready to begin?
 
-{% local roguelike-tutorial-2020-part-1-test | Click here for part 1 of the tutorial! %}
+{% local roguelike-tutorial-2020-part-1 | Click here for part 1 of the tutorial! %}
