@@ -1210,7 +1210,9 @@ Note the 4 associated types of the `EventRoutine` trait:
     This will often be `chargrid::event_routine::common_event::CommonEvent` which is an `enum` of `chargrid::input::Input` and `std::time::Duration-
     to represent user input or an animation frame (to allow realtime animations).
 
-Add a function `game_loop` which just returns an `AppEventRoutine`.
+Add a function `game_loop` which returns an `AppEventRoutine`.
+Note the `return_on_exit` combinator which causes the event return to complete when the application is exited (e.g. by closing its window).
+Its argument is a function that will be called when the application is closed. For now this will do nothing.
 In the next section, we'll replace the body of this function with a composition of several `EventRoutine`s.
 
 {% pygments rust %}
@@ -1218,7 +1220,7 @@ In the next section, we'll replace the body of this function with a composition 
 ...
 fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
 {
-    AppEventroutine
+    AppEventroutine.return_on_exit(|_| ())
 }
 ...
 {% endpygments %}
@@ -1662,7 +1664,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
             GameReturn::UseItem => Ei::C(use_item().map(|_| None)),
             GameReturn::DropItem => Ei::D(drop_item().map(|_| None)),
         })
-    })
+    }).return_on_exit(|_| ())
 }
 ...
 {% endpygments %}
@@ -1776,7 +1778,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
             GameReturn::GameOver => Ei::B(game_over().map(|()| Some(()))),
             ...
         })
-    })
+    }).return_on_exit(|_| ())
 }
 ...
 {% endpygments %}

@@ -407,7 +407,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
             ...
             GameReturn::Examine => Ei::E(TargetEventRoutine { name: "EXAMINE" }.map(|_| None)),
         })
-    })
+    }).return_on_exit(|_| ())
 }
 ...
 {% endpygments %}
