@@ -59,6 +59,15 @@ collections_dir: collections
 collections:
   roguelike-tutorial-2020:
     output: true
+  daily:
+    output: true
+
+future: true
+
+defaults:
+  -
+    values:
+      title: ""
 
 # Build settings
 markdown: kramdown
