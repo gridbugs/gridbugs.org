@@ -22,14 +22,11 @@ figcaption {
 /**
  * Headings
  */
-h1 {
-  font-weight: $base-font-weight;
-}
-h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6 {
   font-weight: $heading-font-weight;
+  font-family: Sans-Serif;
+  margin: 0px;
 }
-
-
 
 /**
  * Links
@@ -149,7 +146,6 @@ table {
     padding: 0px;
     display: flex;
     list-style: none;
-    font-size: 18px;
   }
 
   .padding-left {
