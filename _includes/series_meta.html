@@ -4,5 +4,20 @@
 </time>
  - Part {{ include.post.index }} of
 <a href="{{ site.baseurl }}/{{ include.post.series }}">{{ site.series[include.post.series].name }}</a>
+{% assign last_index = site[include.post.series].size | minus: 2 %}
+{% if include.post.index > 0 or include.post.index < last_index %}
+[
+  {% if include.post.index > 0 %}
+  {% assign prev_index = include.post.index %}
+  <a href="{{ site.baseurl }}{{ site[include.post.series][prev_index].permalink }}">prev</a>
+  {% endif %}
+  {% if include.post.index > 0 and include.post.index < last_index %}
+     |
+  {% endif %}
+  {% if include.post.index < last_index %}
+  {% assign next_index = include.post.index | plus: 2 %}
+  <a href="{{ site.baseurl }}{{ site[include.post.series][next_index].permalink }}">next</a>
+  {% endif %}
+]
+{% endif %}
 </p>
-

@@ -1,0 +1,35 @@
+<p class="post-meta">
+a <a href="{{ site.baseurl }}/daily">daily post</a>
+{% assign last_index = site["daily"].size | minus: 2 %}
+
+{% comment %}
+There doesn't seem to be a way to get the current index of a page in a collection,
+so iterate over the entire collection incrementing a counter until a matching page
+is found, then treat the counter as the index of the current page.
+{% endcomment %}
+
+{% assign current_index_hack = 0 %}
+{% for d in site["daily"] %}
+  {% if d.date == include.post.date %}
+    {% break %}
+  {% endif %}
+  {% assign current_index_hack = current_index_hack | plus: 1 %}
+{% endfor %}
+
+{% if current_index_hack > 0 or current_index_hack < last_index %}
+[
+  {% if current_index_hack > 0 %}
+  {% assign prev_index = current_index_hack | minus: 1 %}
+  <a href="{{ site.baseurl }}{{ site["daily"][prev_index].url }}">prev</a>
+  {% endif %}
+  {% if current_index_hack > 0 and current_index_hack < last_index %}
+     |
+  {% endif %}
+  {% if current_index_hack < last_index %}
+  {% assign next_index = include.post.index | plus: 1 %}
+  <a href="{{ site.baseurl }}{{ site["daily"][next_index].url }}">next</a>
+  {% endif %}
+]
+{% endif %}
+
+</p>
