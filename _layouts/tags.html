@@ -2,11 +2,11 @@
 layout: default
 ---
 
-<ul>
+<ul class="no-bullet">
   {% for category in site.categories %}
   <li>
     <h2><a name="{{category[0]}}">{{category[0]}}</a></h2>
-    <ul>
+    <ul class="no-bullet">
       {% for post in category[1] %}
       <li>
         {{ post.date | date: "%Y-%m-%d" }}

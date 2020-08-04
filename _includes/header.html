@@ -1,7 +1,7 @@
-<header>
-  <a href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
+<header class="page-header page-width">
   <nav>
     <ul>
+      <li class="site-title"><a href="{{ "/" | relative_url }}">{{ site.title | escape }}</a><li>
       {% for page_name in site.header_pages %}
       {% assign page = site.pages | where: "name", page_name | first %}
       <li><a href="{{ page.url | relative_url }}">{{ page.title | escape }}</a></li>

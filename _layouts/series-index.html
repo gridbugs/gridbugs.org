@@ -5,7 +5,7 @@ layout: default
 
 {{ content }}
 
-<ul>
+<ul class="no-bullet">
   {% for page in site[page.series] %}
   {% if page.index %}
   <li><a href="{{ site.baseurl }}{{ page.permalink }}">{{ page.title }}</a></li>

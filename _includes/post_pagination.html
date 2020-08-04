@@ -1,8 +1,8 @@
-<ul>
+<ul class="pagination">
   {% if page.next.url %}
-  <li><a href="{{ page.next.url | prepend:site.baseurl }}">Prev post: {{ page.next.title }}</a></li>
+  <li class="post-pagination"><a href="{{ page.next.url | prepend:site.baseurl }}">Prev post: {{ page.next.title }}</a></li>
   {% endif %}
   {% if page.previous.url %}
-  <li> <a href="{{ page.previous.url | prepend:site.baseurl }}">Next post: {{ page.previous.title }}</a></li>
+  <li class="post-pagination push-right"><a href="{{ page.previous.url | prepend:site.baseurl }}">Next post: {{ page.previous.title }}</a></li>
   {% endif %}
 </ul>

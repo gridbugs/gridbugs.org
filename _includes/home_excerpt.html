@@ -1,7 +1,10 @@
-<h2><a href="{{ include.post.url | relative_url }}">{{ include.post.title | escape }}</a></h2>
+<article>
+  <header>
+    <h2><a href="{{ include.post.url | relative_url }}">{{ include.post.title | escape }}</a></h2>
+    {% include post_meta.html post=include.post %}
+  </header>
 
-{% include post_meta.html post=include.post %}
+  {{ include.post.excerpt }}
 
-{{ include.post.excerpt }}
-
-<a href="{{ include.post.url | relative_url }}">Read more...</a>
+  <a href="{{ include.post.url | relative_url }}">Read more...</a>
+</article>

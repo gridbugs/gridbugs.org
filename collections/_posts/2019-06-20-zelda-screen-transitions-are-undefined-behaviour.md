@@ -15,7 +15,7 @@ og_image: title.png
     image-rendering: pixelated;
 }
 .short-table tr {
-    line-height: 0px;
+    line-height: 4px;
 }
 </style>
 

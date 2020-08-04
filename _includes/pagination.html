@@ -1,18 +1,16 @@
-<div>
-  <ul>
-    {% if paginator.previous_page %}
-    <li><a href="{{ site.baseurl }}{{ paginator.first_page_path }}">first</a></li>
-    <li><a href="{{ site.baseurl }}{{ paginator.previous_page_path }}">prev</a></li>
-    {% else %}
-    <li>first</li>
-    <li>prev</li>
-    {% endif %}
-    {% if paginator.next_page %}
-    <li><a href="{{ site.baseurl }}{{ paginator.next_page_path }}">next</a></li>
-    <li><a href="{{ site.baseurl }}{{ paginator.last_page_path }}">last</a></li>
-    {% else %}
-    <li>next</li>
-    <li>last</li>
-    {% endif %}
-  </ul>
-</div>
+<ul class="pagination">
+  {% if paginator.previous_page %}
+  <li><a href="{{ site.baseurl }}{{ paginator.first_page_path }}">first</a></li>
+  <li class="padding-left"><a href="{{ site.baseurl }}{{ paginator.previous_page_path }}">prev</a></li>
+  {% else %}
+  <li class="disabled">first</li>
+  <li class="padding-left disabled">prev</li>
+  {% endif %}
+  {% if paginator.next_page %}
+  <li class="push-right"><a href="{{ site.baseurl }}{{ paginator.next_page_path }}">next</a></li>
+  <li class="padding-left"><a href="{{ site.baseurl }}{{ paginator.last_page_path }}">last</a></li>
+  {% else %}
+  <li class="push-right disabled">next</li>
+  <li class="padding-left disabled">last</li>
+  {% endif %}
+</ul>
