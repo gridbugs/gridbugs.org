@@ -1,22 +1,12 @@
 ---
 layout: default
 ---
-<article class="post">
+<article>
 
-  <header class="post-header">
-    <h1 class="post-title" itemprop="name headline">{{ site.series[page.series].name }}: {{ page.title | escape }}</h1>
-    <p class="post-meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
-        {% assign date_format = site.minima.date_format | default: "%b %-d, %Y" %}
-        {{ page.date | date: date_format }}
-      </time>
-    </p>
-    <p class="post-meta">
-    Part {{ page.index }} of
-    <a href="{{ site.baseurl }}/{{ page.series }}">{{ site.series[page.series].name }}</a>
-    </p>
+  <header>
+    <h1 itemprop="name headline">{{ site.series[page.series].name }}: {{ page.title | escape }}</h1>
+    {% include series_meta.html post=page %}
   </header>
-
 
   <div class="post-content">
     {{ content }}

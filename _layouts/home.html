@@ -2,18 +2,14 @@
 layout: default
 ---
 
-<div class="home">
+{% include pagination.html %}
 
-  {% include pagination.html %}
+<ul>
+  {% for post in paginator.posts %}
+  <li>
+    {% include home_excerpt.html post=post %}
+  </li>
+  {% endfor %}
+</ul>
 
-  <ul class="post-list">
-    {% for post in paginator.posts %}
-      <li>
-        {% include home_excerpt.html post=post %}
-      </li>
-    {% endfor %}
-  </ul>
-
-  {% include pagination.html %}
-
-</div>
+{% include pagination.html %}

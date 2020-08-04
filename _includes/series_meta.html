@@ -1,0 +1,8 @@
+<p class="post-meta">
+<time datetime="{{ include.post.date | date_to_xmlschema }}" itemprop="datePublished">
+  {{ include.post.date | date: "%Y-%m-%d" }}
+</time>
+ - Part {{ include.post.index }} of
+<a href="{{ site.baseurl }}/{{ include.post.series }}">{{ site.series[include.post.series].name }}</a>
+</p>
+

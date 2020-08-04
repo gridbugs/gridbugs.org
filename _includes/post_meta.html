@@ -1,0 +1,12 @@
+<p class="post-meta">
+<time datetime="{{ include.post.date | date_to_xmlschema }}" itemprop="datePublished">
+  {{ include.post.date | date: "%Y-%m-%d" }}
+</time>
+{% if include.post.categories.size > 0 %}
+  in
+  {% for c in include.post.categories %}
+    <a href="{{ site.baseurl }}/tags#{{ c }}">{{ c }}</a>
+  {% endfor %}
+{% endif %}
+</p>
+
