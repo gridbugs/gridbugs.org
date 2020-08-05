@@ -26,7 +26,7 @@ is found, then treat the counter as the index of the current page.
      |
   {% endif %}
   {% if current_index_hack < last_index %}
-  {% assign next_index = include.post.index | plus: 1 %}
+  {% assign next_index = current_index_hack | plus: 1 %}
   <a href="{{ site.baseurl }}{{ site["daily"][next_index].url }}">next</a>
   {% endif %}
 ]
