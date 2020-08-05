@@ -2,6 +2,7 @@
 
 $border-grey: #CCCCCC;
 $background-grey: #EEEEEE;
+$title-grey: #888888;
 $text-colour: #000000;
 $link-colour: #2A7AE2;
 $link-colour-visited: #1756A9;
@@ -37,8 +38,8 @@ header.page-header {
     list-style: none;
     padding: 0;
     > li {
-      &:not(:first-child) {
-        margin-left: 20px;
+      &:not(:last-child) {
+        margin-right: 20px;
       }
       // Header links are coloured differently from normal links
       > a {
@@ -50,6 +51,23 @@ header.page-header {
     }
     > li.site-title {
       margin-right: auto;
+    }
+    // When the screen is narrow, let the buttons wrap and add some spacing
+    @media(max-width: 700px) {
+      flex-wrap: wrap;
+      > li {
+        > a {
+          display: block;
+          margin: 0 10px 10px 0;
+        }
+      }
+      > li.site-title {
+        margin-right: 0;
+        > a {
+          border: none;
+          color: $title-grey;
+        }
+      }
     }
   }
 }
@@ -71,6 +89,7 @@ article img {
   max-width: 800px;
   margin-right: auto;
   margin-left: auto;
+  padding: 0 20px;
 }
 
 // Add this to a list to remove bullet points and padding
