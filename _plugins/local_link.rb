@@ -8,9 +8,8 @@ module Jekyll
         end
 
         def render(context)
-            site_url = context.registers[:site].config['url']
             base_url = context.registers[:site].baseurl
-            dest_url = "#{site_url}#{base_url}/#{@local_url}"
+            dest_url = "#{base_url}/#{@local_url}"
             "<a href=\"#{dest_url}\">#{@text}</a>"
         end
     end

@@ -9,10 +9,9 @@ module Jekyll
 
         def render(context)
             image_dir = "/images"
-            site_url = context.registers[:site].config['url']
             base_url = context.registers[:site].baseurl
             page_url = context.registers[:page].url
-            src = "#{site_url}#{base_url}#{image_dir}#{page_url}#{@filename}"
+            src = "#{base_url}#{image_dir}#{page_url}#{@filename}"
             alt = File.basename(@filename, File.extname(@filename))
             "<img src=\"#{src}\" alt=\"#{alt}\" #{@attributes}>"
         end
