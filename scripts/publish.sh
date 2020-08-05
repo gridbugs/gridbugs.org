@@ -11,5 +11,5 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cd $DIR
     bundle exec jekyll build --config _config.yml,_config_gridbugs.yml
-    s3cmd $@ sync _site/* s3://gridbugs.org
+    rsync -Pav _site/ gridbugs_nfs:
 fi
