@@ -12,5 +12,5 @@ gem "pygments.rb", "~> 1.2"
 
 require 'rbconfig'
 if RbConfig::CONFIG['target_os'] =~ /(?i-mx:bsd|dragonfly)/
-  gem 'rb-kqueue', '>= 0.2'
+  gem 'rb-kqueue', :git => "https://github.com/stevebob/rb-kqueue.git", :ref => "144ee7bb7963c77fc219ba736df7ee952d50ab19"
 end

@@ -1,3 +1,11 @@
+GIT
+  remote: https://github.com/stevebob/rb-kqueue.git
+  revision: 144ee7bb7963c77fc219ba736df7ee952d50ab19
+  ref: 144ee7bb7963c77fc219ba736df7ee952d50ab19
+  specs:
+    rb-kqueue (0.2.5)
+      ffi (>= 0.5.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -57,8 +65,6 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rb-kqueue (0.2.5)
-      ffi (>= 0.5.0)
     rexml (3.2.4)
     rouge (3.21.0)
     safe_yaml (1.0.5)
@@ -77,7 +83,7 @@ DEPENDENCIES
   jekyll-paginate-v2 (~> 3.0)
   jekyll-seo-tag (~> 2.6)
   pygments.rb (~> 1.2)
-  rb-kqueue (>= 0.2)
+  rb-kqueue!
 
 BUNDLED WITH
    2.1.4
