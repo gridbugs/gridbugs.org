@@ -10,6 +10,6 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cd $DIR
-    bundle exec jekyll build --config _config.yml,_config_gridbugs.yml
+    ${BUNDLE:-bundle} exec jekyll build --config _config.yml,_config_gridbugs.yml
     rsync -Pav _site/ gridbugs_nfs:
 fi
