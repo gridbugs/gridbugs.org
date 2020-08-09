@@ -7,7 +7,8 @@ layout: default
 {{ content }}
 
 <ul class="no-bullet">
-  {% for page in site[page.series] %}
+  {% assign pages = site[page.series] | reverse %}
+  {% for page in pages %}
   {% if page.layout == "daily" %}
   <li>
     <a href="{{ site.baseurl }}{{ page.url }}">
