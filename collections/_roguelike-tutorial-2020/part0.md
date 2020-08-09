@@ -92,7 +92,7 @@ For example to show the change to `src/main.rs` between part 0.0 and 1.0, clone 
 git diff part-0.0 part-1.0 src/main.rs
 ```
 
-{% pygments diff %}
+```diff
 diff --git a/src/main.rs b/src/main.rs
 index e7a11a9..b7dbe34 100644
 --- a/src/main.rs
@@ -104,7 +104,7 @@ index e7a11a9..b7dbe34 100644
 +    const CELL_SIZE_PX: f64 = 16.;
 +    let context = Context::new(ContextDescriptor {
 ...
-{% endpygments %}
+```
 
 Reference implementation branch: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
 

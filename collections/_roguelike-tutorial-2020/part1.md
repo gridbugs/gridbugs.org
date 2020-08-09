@@ -35,17 +35,17 @@ In this post:
 
 Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 chargrid_graphical = "0.2"  # graphical frontend for chargrid applications
 chargrid = "0.1"            # library for implementing chargrid applications
-{% endpygments %}
+```
 
 Now update your main function:
 
-{% pygments rust %}
+```rust
 // src/main.rs
 
 fn main() {
@@ -80,7 +80,7 @@ fn main() {
     let app = App::new();
     context.run_app(app);
 }
-{% endpygments %}
+```
 
 This creates a new graphical context for running chargrid applications.
 Chargrid is designed with the aim of being able to define an application which can run
@@ -101,10 +101,10 @@ about how to render a grid of characters in a window:
 - `underline_top_offset`: how far from the top of each cell should the underline begin as a proportion of cell height
 
 Once the context has been created with `Context::new`, the remaining two lines in `main` at this stage are:
-{% pygments rust %}
+```rust
 let app = App::new();
 context.run_app(app);
-{% endpygments %}
+```
 
 This creates an `App` (defined below) which will contain all the state and
 logic of the application - a roguelike game in this case. As hinted above, our `App` type will implement
@@ -114,7 +114,7 @@ and drawing the grid of characters to the window.
 
 The `App` type:
 
-{% pygments rust %}
+```rust
 struct App {}
 
 impl App {
@@ -122,12 +122,12 @@ impl App {
         Self {}
     }
 }
-{% endpygments %}
+```
 
 Currently the application has no state or logic, so this is just an empty struct for now.
 
 Implement the `chargrid::app::App` trait:
-{% pygments rust %}
+```rust
 impl chargrid::app::App for App {
 
     fn on_input(
@@ -156,7 +156,7 @@ impl chargrid::app::App for App {
         None
     }
 }
-{% endpygments %}
+```
 
 Every chargrid application must implement 2 methods:
 - `on_input` is called each time a keyboard or mouse event occurs, and is passed a normalized representation of the event
@@ -186,16 +186,16 @@ Let's place the player character in the centre of the game area, then render the
 
 Start by adding some more dependencies to help represent locations and colours.
 
-{% pygments toml %}
+```toml
 # Cargo.tom
 ...
 [dependencies]
 ...
 coord_2d = "0.2"        # representation of 2D integer coordinates and sizes
 rgb24 = "0.2"           # representation of 24-bit colour
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // src/main.rs
 
 use coord_2d::{Coord, Size};
@@ -203,7 +203,7 @@ use rgb24::Rgb24;
 
 fn main() {
 ...
-{% endpygments %}
+```
 
 Now we need to add the player's coordinate to the `App` type. We could introduce a new field directly to `App`
 containing the coordinate, but we'll do something a little different. Chargrid applications typically define two
@@ -214,7 +214,7 @@ made up of several discrete visual elements, each representing some abstract dat
 view types in a chargrid app to be composed of simpler data and view types representing discrete application components.
 
 The player's location is part of the application's data:
-{% pygments rust %}
+```rust
 struct AppData {
     player_coord: Coord,
 }
@@ -226,12 +226,12 @@ impl AppData {
         }
     }
 }
-{% endpygments %}
+```
 
 Note that `AppData::new` takes the screen size, so it can initialize the player's location to the middle of the game area.
 
 As is common, the app's view has no state, and is just an empty struct:
-{% pygments rust %}
+```rust
 struct AppView {}
 
 impl AppView {
@@ -239,10 +239,10 @@ impl AppView {
         Self {}
     }
 }
-{% endpygments %}
+```
 
 The `App` type now just combines the data and view:
-{% pygments rust %}
+```rust
 struct App {
     data: AppData,
     view: AppView,
@@ -256,23 +256,23 @@ impl App {
         }
     }
 }
-{% endpygments %}
+```
 
 We added an argument to `App::new`, so update the call site in `main` to pass the screen size:
 
-{% pygments rust %}
+```rust
 fn main() {
     ...
     let screen_size = Size::new(40, 30);
     let app = App::new(screen_size);
     context.run_app(app);
 }
-{% endpygments %}
+```
 
 As mentioned above, the app's view needs to know how to render the app's data. In concrete terms, the type `AppView`
 must implement the trait `chargrid::render::View<&AppData>`.
 
-{% pygments rust %}
+```rust
 impl<'a> chargrid::render::View<&'a AppData> for AppView {
     fn view<F: chargrid::app::Frame, C: chargrid::app::ColModify>(
         &mut self,
@@ -286,7 +286,7 @@ impl<'a> chargrid::render::View<&'a AppData> for AppView {
         frame.set_cell_relative(data.player_coord, 0, view_cell, context);
     }
 }
-{% endpygments %}
+```
 
 <style>
 .small-images img {
@@ -310,7 +310,7 @@ it describes a white '@' sign, which will represent the player in our game.
 
 Now that the view is defined, invoke it in the `on_frame` method to render the game:
 
-{% pygments rust %}
+```rust
 impl chargrid::app::App for App {
     ...
     fn on_frame<F, C>(
@@ -328,7 +328,7 @@ impl chargrid::app::App for App {
         None
     }
 }
-{% endpygments %}
+```
 
 An '@' sign will now be rendered in the centre of the screen:
 
@@ -339,28 +339,28 @@ Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid
 ## {% anchor move-the-player | Move the Player %}
 
 To add the most basic of gameplay, begin by adding one more dependency to let us talk about directions:
-{% pygments toml %}
+```toml
 # Cargo.tom
 ...
 [dependencies]
 ...
 directions = "0.17"           # representation of directions
-{% endpygments %}
+```
 
 This game will only allow movement in cardinal directions (north, south, east, west). Import the corresponding type:
 
-{% pygments rust %}
+```rust
 // src/main.rs
 ...
 use direction::CardinalDirection;
 
 fn main() {
 ...
-{% endpygments %}
+```
 
 Add the screen size to the `AppData` type so we can prevent the player from walking off the screen:
 
-{% pygments rust %}
+```rust
 struct AppData {
     screen_size: Size,
     player_coord: Coord,
@@ -375,11 +375,11 @@ impl AppData {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add a helper method to `AppData` for moving the player in a direction:
 
-{% pygments rust %}
+```rust
 impl AppData {
     ...
     fn maybe_move_player(&mut self, direction: CardinalDirection) {
@@ -389,11 +389,11 @@ impl AppData {
         }
     }
 }
-{% endpygments %}
+```
 
 ...and a method for handling input events which calls `maybe_move_player` with the
 directions corresponding to each arrow key:
-{% pygments rust %}
+```rust
 impl AppData {
     ...
     fn handle_input(&mut self, input: chargrid::input::Input) {
@@ -410,11 +410,11 @@ impl AppData {
         }
     }
 }
-{% endpygments %}
+```
 
 Finally, call `handle_input` from the `on_input` method of `App`'s implementation of `chargrid::app::App`:
 
-{% pygments rust %}
+```rust
 impl chargrid::app::App for App {
     fn on_input(
         &mut self,
@@ -434,7 +434,7 @@ impl chargrid::app::App for App {
     ...
 }
 
-{% endpygments %}
+```
 
 That's it! Run the game, press the arrow keys, and the player will move around.
 

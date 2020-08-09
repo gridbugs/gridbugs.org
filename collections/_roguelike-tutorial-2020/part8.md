@@ -35,7 +35,7 @@ In a previous section we added a layer to the spatial grid for corpses.
 Generalize this into what we'll call "objects", which consist of corpses and items, which will be introduced in this part.
 The implication of this is that corpses and items cannot exist in the same game cell, which will simplify some gameplay logic.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 spatial_table::declare_layers_module! {
@@ -67,9 +67,9 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl<'a> View<&'a GameState> for GameView {
@@ -92,11 +92,11 @@ impl<'a> View<&'a GameState> for GameView {
         }
     }
 }
-{% endpygments %}
+```
 
 Now make it possible to represent items, using health potions as our first item.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -143,11 +143,11 @@ impl World {
     ...
 }
 ...
-{% endpygments %}
+```
 
 Place health potions during terrain generation.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 use crate::world::{ItemType, NpcType};
 ...
@@ -187,9 +187,9 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
         room.place_health_potions(num_health_potions, &mut grid, rng);
     }
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -209,11 +209,11 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add rendering logic for health potions:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub mod colours {
@@ -231,7 +231,7 @@ fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
     }
 }
 ...
-{% endpygments %}
+```
 
 Run the game. There should be health potions on the ground, but you won't be able to pick them up or use them yet.
 
@@ -246,7 +246,7 @@ The inventory has a finite number of slots, and each slot may contain an item.
 We'll just store the entity (remember, just a numeric identifier) of items in
 inventory slots.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Debug)]
@@ -297,11 +297,11 @@ impl Inventory {
     }
 }
 ...
-{% endpygments %}
+```
 
 Introduce an inventory component and give the player a 10-slot inventory.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 entity_table::declare_entity_module! {
@@ -321,12 +321,12 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Make it possible for the player to get the item they are standing on.
 Print inventory-related messages to the game's message log.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -363,9 +363,9 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::world::{HitPoints, ItemType, Location, NpcType, Populate, Tile, World};
@@ -390,9 +390,9 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 impl<'a> View<&'a [LogMessage]> for MessagesView {
@@ -424,9 +424,9 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
     }
 }
 ...
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub mod colours {
@@ -438,11 +438,11 @@ pub mod colours {
     }
 }
 ...
-{% endpygments %}
+```
 
 Finally set up the controls such that pressing 'g' picks up the item under the player.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl AppData {
@@ -461,7 +461,7 @@ impl AppData {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now you can pick items but you can't use them, drop them, or view your inventory.
 
@@ -480,7 +480,7 @@ afterwards.
 
 Also expose some getters and helper functions which will come in handy shortly.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -576,10 +576,10 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 pub enum LogMessage {
@@ -627,9 +627,9 @@ impl GameState {
     }
 }
 ...
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 impl<'a> View<&'a [LogMessage]> for MessagesView {
@@ -665,7 +665,7 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
     }
 }
 ...
-{% endpygments %}
+```
 
 Unlike all the actions players can currently take, using and dropping items won't be done with a single key press.
 Instead, pressing a key will display a _menu_, from which the player can select the item they'd like to use or drop.
@@ -679,7 +679,7 @@ We've already seen some of this in the health bar and message log.
 
 Update the `AppData` type to include a menu:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -729,7 +729,7 @@ impl AppData {
     }
     ...
 }
-{% endpygments %}
+```
 
 The menu types defined in `chargrid` can be `ticked` - fed input events, which updates their internal state,
 and possibly resolves them to a selected value or an explicit cancellation.
@@ -742,7 +742,7 @@ At the moment pressing the escape key quits the entire game, but if the inventor
 the inventory instead. Update `impl ChargridApp for App` to pass escape keys into `AppData::handle_input` and let
 that function decide whether to quit the game.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl ChargridApp for App {
@@ -754,7 +754,7 @@ impl ChargridApp for App {
     }
     ...
 }
-{% endpygments %}
+```
 
 Note that this change requires `AppData::handle_input` to return a `Option<ControlFlow>`. For now it can just return `None` to get
 the code to compile.
@@ -764,7 +764,7 @@ an input event should go to the game state or a menu.
 
 Add a new field to `AppData` for tracking the state of the application.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -794,7 +794,7 @@ impl AppData {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now update `AppData::handle_input` to operate as before if the `app_state` is `Game`, and otherwise tick the menu.
 Also add the 'i' and 'd' controls for opening the use and drop item menus respectively.
@@ -804,7 +804,7 @@ The logic for having the escape key quit the game is now in this function as wel
 Note the code for ticking the menu includes handlers for what happens when a selection is made which call the
 `maybe_player_use_item` and `maybe_player_drop_item` defined earlier.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl AppData {
@@ -866,7 +866,7 @@ impl AppData {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now we need to define how a menu will be _rendered_.
 Chargrid doesn't prescribe how a menu should be rendered, but does provide some helper functions for
@@ -882,7 +882,7 @@ a border and a title, and centres the menu on the screen.
 Finally, we'll use the `ColModify` trait to modify the colour of the game area, dimming it while the menu is visible.
 
 Here's the code for rendering the menu items:
-{% pygments rust %}
+```rust
 // app.rs
 use chargrid::{
     app::{App as ChargridApp, ControlFlow},
@@ -969,7 +969,7 @@ impl<'a> View<&'a AppData> for InventorySlotMenuView {
 }
 
 ...
-{% endpygments %}
+```
 
 Of note here is the `MenuIndexFromScreenCoord` trait which is implemented by `InventorySlotMenuView`.
 In order to support selecting from the menu with the mouse, the menu needs to know its absolute
@@ -977,7 +977,7 @@ position on the screen so it can be compared with the mouse position.
 The `MenuInstanceMouseTracker` is a helper type which simplifies implementing this trait.
 
 Add an `InventorySlotMenuView` to `AppView`.
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct AppView {
@@ -995,13 +995,13 @@ impl AppView {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now update the implementation of `View` for `AppView` to use a decorated version of this new view,
 and dim the game area while the menu is visible. We'll use a type `chargrid::render::ColModifyMap` to
 apply a function to colours selected in the game rendering logic.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -1071,7 +1071,7 @@ impl<'a> View<&'a AppData> for AppView {
     }
 }
 
-{% endpygments %}
+```
 
 It's now possible to view, use, and drop items from your inventory.
 Here's what it looks like when you use a health potion.
@@ -1112,7 +1112,7 @@ This section will show very basic usage of `EventRoutine` - wrapping up all our 
 The next section will pull apart the existing event-driven explicit state machine, and replace parts of it with smaller `EventRoutine`s
 which are composed to form the application.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -1120,13 +1120,13 @@ use chargrid::{
     event_routine::{self, common_event::CommonEvent, EventOrPeek, EventRoutine, Handled},
 };
 ...
-{% endpygments %}
+```
 
 Stop depending on `std::time::Duration` and `chargrid::app::ControlFlow`.
 
 Instead of using `ControlFlow::Exit`, define our own `Exit` unit type.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct Exit;
@@ -1149,14 +1149,14 @@ impl AppData {
         ...
     }
 }
-{% endpygments %}
+```
 
 Remove the `App` type, and replace it with another unit type `AppEventRoutine`, which
 implements `EventRoutine`. This type will wrap all our existing logic in a giant `EventRoutine`.
 We'll totally replace `AppEventRoutine` in the next section with the composition of several simpler
 `EventRoutine`s. It's a temporary measure to make the transition to `EventRoutine`s more gentle.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct AppEventroutine;
@@ -1196,7 +1196,7 @@ impl EventRoutine for AppEventroutine {
         view.view(data, context, frame);
     }
 }
-{% endpygments %}
+```
 
 The logic in `impl EventRoutine for AppEventroutine` is very similar to what used to be in `impl ChargridApp for App`,
 just with a little more boilerplate.
@@ -1215,7 +1215,7 @@ Note the `return_on_exit` combinator which causes the event return to complete w
 Its argument is a function that will be called when the application is closed. For now this will do nothing.
 In the next section, we'll replace the body of this function with a composition of several `EventRoutine`s.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
@@ -1223,11 +1223,11 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
     AppEventroutine.return_on_exit(|_| ())
 }
 ...
-{% endpygments %}
+```
 
 Finally, define a public function `app` which instantiates `AppData` and `AppView`, and calls `game_loop`.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub fn app(
@@ -1239,12 +1239,12 @@ pub fn app(
     let view = AppView::new(screen_size);
     game_loop().app_one_shot_ignore_return(data, view)
 }
-{% endpygments %}
+```
 
 Note the `app_one_shot_ignore_return` method which converts `EventRoutine`s into `ChargridApp`s.
 
 Update `main.rs` to call the new `app` function:
-{% pygments rust %}
+```rust
 // main.rs
 use app::app;
 ...
@@ -1253,7 +1253,7 @@ fn main() {
     let app = app(screen_size, rng_seed, visibility_algorithm);
     context.run_app(app);
 }
-{% endpygments %}
+```
 
 Reference implementation branch: [part-8.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.3)
 
@@ -1263,7 +1263,7 @@ This section is a major refactor of `app.rs` to use `EventRoutine`s.
 
 Grab some more dependencies from `chargrid::event_routine` and `chargrid::menu`.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -1277,10 +1277,10 @@ use chargrid::{
         MenuInstanceChooseOrEscape, MenuInstanceMouseTracker, MenuInstanceRoutine,
     },
 };
-{% endpygments %}
+```
 
 It will turn out convenient to move the ui-rendering logic into a method of `AppView`:
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl AppView {
@@ -1304,7 +1304,7 @@ impl AppView {
     }
 }
 ...
-{% endpygments %}
+```
 
 
 Define a unit type `InventorySlotMenuSelect` and implement the traits `ChooseSelector`, `DataSelector` and `ViewSelector`.
@@ -1312,7 +1312,7 @@ We're going to use `chargrid::menu`'s built-in `EventRoutine` for menus, and it 
 (`EventRoutine`'s associated types - in this case `AppData` and `AppView`), select a field containing the menu to display (`ChooseSelector`),
 the data to use when rendering the menu (`DataSelector`) and the view to use when rendering the menu (`ViewSelector`).
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct InventorySlotMenuSelect;
@@ -1345,13 +1345,13 @@ impl ViewSelector for InventorySlotMenuSelect {
         &mut input.inventory_slot_menu_view
     }
 }
-{% endpygments %}
+```
 
 Now define a decorator for the menu. Previously it was decorated inside `impl<'a> View<&'a AppData> for AppView`,
 but since the menu will now be handled by an `EventRoutine` we need to implement the `chargrid::event_routine::Decorator` trait.
 This code is largely cut'n'pasted from `impl<'a> View<&'a AppData> for AppView`.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct InventorySlotMenuDecorate<'a> {
@@ -1401,7 +1401,7 @@ impl<'a> Decorate for InventorySlotMenuDecorate<'a> {
         event_routine_view.view.render_ui(&data, context, frame);
     }
 }
-{% endpygments %}
+```
 
 Note that the title displayed in the border is now in a field of the `InventorySlotMenuDecorate` type.
 
@@ -1412,7 +1412,7 @@ This works because the `EventRoutineView` type implements `chargrid::render::Vie
 Now define a function which creates the menu event routine. It will take the title of the inventory menu as an argument,
 and run until the user makes a choice or explicitly cancels returning a `Result` of either the user's choice, or `menu::Escape`.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn inventory_slot_menu<'a>(
@@ -1429,7 +1429,7 @@ fn inventory_slot_menu<'a>(
         .decorated(InventorySlotMenuDecorate { title })
 }
 ...
-{% endpygments %}
+```
 
 The `convert_input_to_common_event` converts an `EventRoutine` which expects only `chargrid::input::Input` as its events (the menu event routine)
 into an `EventRoutine` which expects `CommonEvents` which can also include animation frames. These animation frame events will be ignored by the
@@ -1449,7 +1449,7 @@ in which case the program will terminate.
 The game's state is stored in a field of `AppData` (as before),
 so it will persist across invocations of `GameEventRoutine`.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct GameEventRoutine;
@@ -1503,7 +1503,7 @@ impl EventRoutine for GameEventRoutine {
     }
 }
 ...
-{% endpygments %}
+```
 
 In the above code, input events are forwarded to `AppData::handle_input`.
 Previously, this method handled both game inputs and menu inputs.
@@ -1511,7 +1511,7 @@ Now that menus will be handled by an `EventRoutine`, we can simplify `AppData::h
 Remove the `AppState` type and `app_state` field of `AppData`. Instead of setting the `app_state` field to the appropriate menu,
 when the 'i' or 'd' keys are pressed, return a `GameReturn` indicating which menu to switch to.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct AppData {
@@ -1545,13 +1545,13 @@ impl AppData {
         None
     }
 }
-{% endpygments %}
+```
 
 All rendering logic is now contained within `GameEventRoutine` and the menu renderer and decorator.
 Remove `impl<'a> View<&'a AppData> for AppView` (but keep the `AppView` type around as a place to store rendering-related state).
 
 Define a pair of functions for running the `use_item` and `drop_item` menus.
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn use_item() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
@@ -1591,7 +1591,7 @@ fn drop_item() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
         })
     })
 }
-{% endpygments %}
+```
 
 Each of these functions calls `inventory_slot_menu` until either a valid selection or explicit cancellation was made.
 In the case of a valid selection, the appropriate action for each menu is taken (using or dropping).
@@ -1599,7 +1599,7 @@ Note the `make_either!` macro. These function both include logic which executes 
 depending on whether the user made a selection or cancelled the menu.
 
 To pull one out:
-{% pygments rust %}
+```rust
 match result {
     Err(menu::Escape) => Ei::A(Value::new(Some(()))),
     Ok(entry) => Ei::B(SideEffect::new_with_view(
@@ -1612,16 +1612,16 @@ match result {
         },
     )),
 })
-{% endpygments %}
+```
 
 In the first case here, the use hit the escape key to cancel the menu, in which case we run the event routine:
-{% pygments rust %}
+```rust
 Value::new(Some(()))
-{% endpygments %}
+```
 The `Value` `EventRoutine` returns immediately with a specified value. Returning `Some(())` in this case tells the `Loop` that we're inside to stop iterating.
 
 In the second case the user made a selection, so we run the event routine:
-{% pygments rust %}
+```rust
 SideEffect::new_with_view(
     move |data: &mut AppData, _: &_| {
         if data.game_state.maybe_player_use_item(entry.index).is_ok() {
@@ -1631,27 +1631,27 @@ SideEffect::new_with_view(
         }
     },
 )
-{% endpygments %}
+```
 `SideEffect` is an `EventRoutine` which lets you run arbitrary code on its `Data`. It's used here to update the game state by
 attempting to have the player use an item.
 
 The `EventRoutine`s executed in both cases implement the same _trait_, but they are not the same  _type_. Rust requires that
 all branches of a conditional statement have the same _type_.
 The `make_either!(Ei = A | B | ...)` macro creates a type:
-{% pygments rust %}
+```rust
 enum Ei<AType, BType, ...> {
     A(AType),
     B(BType),
     ...
 }
-{% endpygments %}
+```
 
 ...and implements `EventRoutine` for the generated type. This macro is necessary whenever you have a conditional statement
 where each branch is a different `EventRoutine`.
 
 So far we've defined an `EventRoutine` for running the game and displaying inventory menus. Now we just need something to stitch
 it all together. Remove the `AppEventRoutine` type defined in the previous section, and re-implement `game_loop` as:
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
@@ -1667,7 +1667,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
     }).return_on_exit(|_| ())
 }
 ...
-{% endpygments %}
+```
 
 It repeatedly runs the game, handles any interruptions, and then resumes the game unless it has been quit or the game is over.
 
@@ -1683,7 +1683,7 @@ Let's change this to use a timeout, where a death screen is briefly displayed be
 
 Move the code which checks whether the player is dead to the end of `AppData::handle_input` so we can react immediately to the player's demise:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl AppData {
@@ -1699,12 +1699,12 @@ impl AppData {
     }
 }
 ...
-{% endpygments %}
+```
 
 Implement a function returning an `EventRoutine` that displays a death screen for 2 seconds before completing with `()`.
 There's a `Delay` `EventRoutine` already defined in `chargrid` so let's just use that, with a custom decorator that
 replaces `Delay`'s rendering logic (which is to draw nothing) with rendering logic for our death screen.
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -1762,11 +1762,11 @@ fn game_over() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
     Delay::new(Duration::from_millis(2000)).decorated(GameOverDecorate)
 }
 ...
-{% endpygments %}
+```
 
 Finally update `game_loop` to call `game_over` when the game is over:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
@@ -1781,7 +1781,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
     }).return_on_exit(|_| ())
 }
 ...
-{% endpygments %}
+```
 
 Switching to `EventRoutine` was a big change, but imagine how much messing about with state variables and countdown timers it would take
 to implement a death screen with explicit state machines.

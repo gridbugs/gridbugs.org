@@ -42,7 +42,7 @@ A new file `game.rs` will contain all the game-specific logic, mostly agnostic o
 For now this will look a lot like the `AppData` type. Note the `player_coord` method. For now this will just return the value
 in the `player_coord` field but this will change later in this part.
 
-{% pygments rust %}
+```rust
 // game.rs
 
 use coord_2d::{Coord, Size};
@@ -64,7 +64,7 @@ impl GameState {
         self.player_coord
     }
 }
-{% endpygments %}
+```
 
 A new file `app.rs` will contain the definitions of `AppData`, `AppView`, and `App`.
 `AppData` is now a wrapper of the `GameState` type from `game.rs`.
@@ -73,7 +73,7 @@ and calling the appropriate method of `GameState` (currently just `maybe_move_pl
 `GameState` doesn't expose its `player_coord` field, so update the implementation of `chargrid::render::View`
 to call the `player_coord` method instead.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use crate::game::GameState;
@@ -116,7 +116,7 @@ impl<'a> View<&'a AppData> for AppView {
         frame.set_cell_relative(data.game_state.player_coord(), 0, view_cell, context);
     }
 }
-{% endpygments %}
+```
 
 After this change, `main.rs` will contain the `main` function and nothing else.
 Also note the lack of `chargrid::...` qualifiers on types from the `chargrid` library.
@@ -136,31 +136,31 @@ which the entity has. This is based on the idea of "components" from [Entity Com
 From now on the term "component" will refer to a property of a game entity.
 
 Add a dependency to help represent game state as a collection of component tables:
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 entity_table = "0.2"
-{% endpygments %}
+```
 
 Now we need to think about which components we will need. So far, the only entity is the player.
 We can think of the player as having a location and a tile. The `Coord` type is suitable for representing
 a location. As for tiles, let's start with this:
 
-{% pygments rust %}
+```rust
 // game.rs
 
 #[derive(Clone, Copy, Debug)]
 pub enum Tile {
     Player,
 }
-{% endpygments %}
+```
 
 Rather than storing how to draw the player (symbol, colour, etc), store an abstract value in the game state,
 and let the rendering logic decide how to draw the player.
 
 Now to define our components:
-{% pygments rust %}
+```rust
 entity_table::declare_entity_module! {
     components {
         coord: Coord,
@@ -169,23 +169,23 @@ entity_table::declare_entity_module! {
 }
 
 use components::Components;
-{% endpygments %}
+```
 
 This invocation of the `declare_entity_module` macro generates code resembling:
-{% pygments rust %}
+```rust
 mod components {
     pub struct Components {
         pub coord: ComponentTable<Coord>,
         pub tile: ComponentTable<Tile>,
     }
 }
-{% endpygments %}
+```
 
 The `ComponentTable<T>` type is defined in the `entity_table` crate, and associates entity ids with values of type `T`.
 The `Entity` type from `entity_table` is an entity id, and contains no data of its own.
 
 Here's part of the interface exposed by `ComponentTable` relevant to this post. Read more in [`entity_table`'s documentation](https://docs.rs/entity_table/0.2.1/entity_table/struct.ComponentTable.html).
-{% pygments rust %}
+```rust
 impl<T> ComponentTable<T> {
     // set the component value of an entity
     pub fn insert(&mut self, entity: Entity, data: T) -> Option<T> { ... }
@@ -200,21 +200,21 @@ impl<T> ComponentTable<T> {
     pub fn iter(&self) -> impl Iterator<Item = (Entity, T)> { ... }
     ...
 }
-{% endpygments %}
+```
 
 Update the `GameState` type to store a `Components` and the `Entity` representing the player character:
-{% pygments rust %}
+```rust
 pub struct GameState {
     screen_size: Size,
     components: Components,
     player_entity: Entity,
 }
-{% endpygments %}
+```
 
 Add a method to `GameState` for spawning the player character, which adds entries to component tables
 such that the player character is inserted at a specified location. Then add a second method which populates
 the map, which for now will just spawn the player (we'll add more to this method shortly).
-{% pygments rust %}
+```rust
 impl GameState {
     fn spawn_player(&mut self, coord: Coord) {
         self.components.coord.insert(self.player_entity, coord);
@@ -227,7 +227,7 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 The existing methods of `GameState` need to be updated to match its new definition.
 
@@ -236,7 +236,7 @@ their numerical representation is opaque. They must be created with an `EntityAl
 defined in `entity_table` which allows entity ids to be created and destroyed. Update `GameState::new` to create a `Components`,
 and use an `EntityAllocator` to allocate an `Entity` representing the player. Then populate the `GameState` by calling
 the `populate` method we just defined.
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn new(screen_size: Size) -> Self {
@@ -253,13 +253,13 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 The logic for moving the player must be updated to operate on the `coord` component table rather than a single
 `coord` value. It obtains a mutable reference to the player's current position, panicking if the player has no
 current position. This mut ref is used to both check whether the movement is valid, and update the player's
 position.
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn maybe_move_player(&mut self, direction: CardinalDirection) {
@@ -275,11 +275,11 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Finally, the `player_coord` method, which returns the coordinate of the player character, must be updated to
 work with the `coord` component, rather than just returning the value of the `player_coord` field (now removed):
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn player_coord(&self) -> Coord {
@@ -290,7 +290,7 @@ impl GameState {
             .expect("player has no coord component")
     }
 }
-{% endpygments %}
+```
 
 Note that we didn't change the public api of the `GameState` type, so no code outside of this file is affected by
 changing the representation of game state.
@@ -305,21 +305,21 @@ all entities which can be rendered.
 
 Start by providing a way for `GameState` to tell the renderer what needs to be rendered.
 Define a new type in `game.rs`:
-{% pygments rust %}
+```rust
 // game.rs
 ...
 pub struct EntityToRender {
     pub tile: Tile,
     pub coord: Coord,
 }
-{% endpygments %}
+```
 
 This tells the renderer to draw a given tile at a given position on the screen.
 
 Add a method to `GameState` which returns an `Iterator` over `EntityToRender`s for all the entities which
 need to be rendered. For now, let's say that an entity needs to be rendered if it has both a `coord` and a `tiile`
 component.
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn entities_to_render<'a>(&'a self) -> impl 'a + Iterator<Item = EntityToRender> {
@@ -331,10 +331,10 @@ impl GameState {
         })
     }
 }
-{% endpygments %}
+```
 
 Now in `app.rs`, update the `view` method of `AppView` to call `entities_to_render` instead of `player_coord`:
-{% pygments rust %}
+```rust
 // app.rs
 use crate::game::{GameState, Tile};
 ...
@@ -355,7 +355,7 @@ impl<'a> View<&'a AppData> for AppView {
         }
     }
 }
-{% endpygments %}
+```
 
 Note that the `ViewCell` which is rendered is obtained by matching on `entity_to_render.tile`. As we add new `Tile` variants,
 we'll update this match statement to tell the renderer how to draw the new `Tile`s.
@@ -381,12 +381,12 @@ but it also provides the _reverse_ association - a mapping from `Coord` to `Enti
 at a given `Coord`.
 
 Add a dependency on `spatial_table`:
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 spatial_table = "0.2"
-{% endpygments %}
+```
 
 
 Multiple entities may share a single location (e.g. a floor entity and a character entity may
@@ -394,13 +394,13 @@ co-exist in the same cell). To represent this fact, a `SpatialTable` associates 
 where each entity is on a separate "layer". At each coordinate, there are a fixed number of layers, and each layer
 may contain one or zero entities. It might help to visualize a `SpatialTable` as a 2D array of a `Layers` type defined
 as:
-{% pygments rust %}
+```rust
 struct Layers {
     floor: Option<Entity>,
     character: Option<Entity>,
     feature: Option<Entity>,
 }
-{% endpygments %}
+```
 
 In this scenario, every cell of the 2D grid _may_ contain a floor, a character, and a feature (walls, doors, furniture, etc).
 `SpatialTable` doesn't care which entities are stored in a layer. When adding or updating an entity's location, you may also
@@ -408,7 +408,7 @@ set which layer it is on. `SpatialTable` doesn't allow you to update the coordin
 coordinate and layer is already occupied.
 
 `SpatialTable` doesn't assume anything about which layers you will use. Start by defining which layers we will be using for our game:
-{% pygments rust %}
+```rust
 // game.rs
 ...
 spatial_table::declare_layers_module! {
@@ -422,10 +422,10 @@ spatial_table::declare_layers_module! {
 pub use layers::Layer;
 type SpatialTable = spatial_table::SpatialTable<layers::Layers>;
 pub type Location = spatial_table::Location<Layer>;
-{% endpygments %}
+```
 
 The `declare_layers_module` macro produces code resembling:
-{% pygments rust %}
+```rust
 mod layers {
     pub struct Layers {
         pub floor: Option<Entity>,
@@ -444,7 +444,7 @@ mod layers {
         ...
     }
 }
-{% endpygments %}
+```
 
 The `Layers` type represents which entities are on which layer. A `SpatialTable` will contain one `Layers` for each
 cell in its grid.
@@ -454,19 +454,19 @@ at a specified coordinate and layer.
 After the macro invocation, create type aliases to make it convenient to work with `SpatialTable` for our specified set of layers.
 The `Location` type is a `Coord` plus a `Layer`.
 It's defined as:
-{% pygments rust %}
+```rust
 struct Location<L> {
     pub coord: Coord,
     pub layer: Option<L>,
 }
-{% endpygments %}
+```
 
 Note that the `layer` field is an `Option` - an `Entity` doesn't need to be associated with a layer.
 Only entities associated with layers will be returned when querying which entities are at a given coordinate.
 
 Here's the relevant part of the `SpatialTable` interface. Note that it's generic over the type of layers in each cell.
 The full interface is specified in [`spatial_table`'s documentation](https://docs.rs/spatial_table/0.2.0/spatial_table/struct.SpatialTable.html).
-{% pygments rust %}
+```rust
 impl<L: spatial_table::Layers> SpatialTable<L> {
     // Creates a new SpatialTable<L> with given dimensions
     pub fn new(size: Size) -> Self { ... }
@@ -493,20 +493,20 @@ pub enum UpdateError {
     OccupiedBy(Entity),
     DestinationOutOfBounds,
 }
-{% endpygments %}
+```
 
 Remove the `coord` component table. It will be replaced with a `SpatialTable`.
 
-{% pygments rust %}
+```rust
 entity_table::declare_entity_module! {
     components {
         tile: Tile,
     }
 }
-{% endpygments %}
+```
 
 Add a `SpatialTable` to `GameState`.
-{% pygments rust %}
+```rust
 pub struct GameState {
     screen_size: Size,
     components: Components,
@@ -531,11 +531,11 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Update `spawn_player` to add the player `Entity` to the `SpatialTable`.
 
-{% pygments rust %}
+```rust
 impl GameState {
     fn spawn_player(&mut self, coord: Coord) {
         self.spatial_table
@@ -553,10 +553,10 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Update `maybe_move_player` to update the `SpatialTable`.
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn maybe_move_player(&mut self, direction: CardinalDirection) {
@@ -573,14 +573,14 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 And update `entities_to_render` to use the `SpatialTable`.
 Replace the `coord: Coord` field of `EntityToRender` with a `location: Location` field
 so the render knows which layer each entity is on. This will help later on when we need
 to render a scene with multiple entities at a single coordinate and use layers to determine draw order.
 
-{% pygments rust %}
+```rust
 pub struct EntityToRender {
     pub tile: Tile,
     pub location: Location,
@@ -598,10 +598,10 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Finally, update the rendering logic in `app.rs` to understand the new `location` field of `EntityToRender`.
-{% pygments rust %}
+```rust
 // app.rs
 
 impl<'a> View<&'a AppData> for AppView {
@@ -617,7 +617,7 @@ impl<'a> View<&'a AppData> for AppView {
         }
     }
 }
-{% endpygments %}
+```
 
 Reference implementation branch: [part-2.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.3)
 
@@ -626,7 +626,7 @@ Reference implementation branch: [part-2.3](https://github.com/stevebob/chargrid
 Let's add walls and floors, and make it so the player can't walk through walls.
 
 Add `Tile`s for walls and floors:
-{% pygments rust %}
+```rust
 // game.rs
 
 pub enum Tile {
@@ -634,11 +634,11 @@ pub enum Tile {
     Floor,
     Wall,
 }
-{% endpygments %}
+```
 
 So that we can spawn new entities in addition to the player, add the `EntityAllocator` created in `GameState::new`
 to `GameState`:
-{% pygments rust %}
+```rust
 pub struct GameState {
     screen_size: Size,
     entity_allocator: EntityAllocator,
@@ -667,11 +667,11 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add methods for spawning walls and floors, and update `GameState::populate` to place floor tiles everywhere, and
 walls in a few select locations.
-{% pygments rust %}
+```rust
 impl GameState {
     fn spawn_wall(&mut self, coord: Coord) {
         let entity = self.entity_allocator.alloc();
@@ -711,12 +711,12 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 To prevent the player walking through walls, update `GameState::maybe_move_player`. For now, treat all cells with a feature or
 a character as solid. This will change in future parts.
 
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn maybe_move_player(&mut self, direction: CardinalDirection) {
@@ -736,13 +736,13 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Finally, update the rendering logic to render wall and floor tiles. The cell containing the player will also contain a floor.
 We need to make sure that the floor is drawn "below" the player. The `set_cell_relative` method (which draws a cell)
 takes a `depth` argument. Thus far we've been passing 0, but now we'll derive it from the layer.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use crate::game::{GameState, Layer, Tile};
@@ -780,7 +780,7 @@ impl<'a> View<&'a AppData> for AppView {
         }
     }
 }
-{% endpygments %}
+```
 
 Now run the game! It should look like this:
 

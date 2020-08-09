@@ -99,8 +99,6 @@ ul.no-bullet {
 }
 
 // Applied to the div which wraps code snippets.
-// At the moment this site uses a _combination_ of rouge and pygments (rouge has trouble with rust syntax),
-// and this selector happens to match both outputs.
 div.highlight {
   border: 1px solid $border-grey;
   border-radius: 3px;

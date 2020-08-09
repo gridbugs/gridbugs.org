@@ -33,7 +33,7 @@ in general, and in rust in particular it can help keep the borrow-checker off ou
 
 In a new file `src/world.rs`, define a type `World`:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 pub struct World {
@@ -41,13 +41,13 @@ pub struct World {
     pub components: Components,
     pub spatial_table: SpatialTable,
 }
-{% endpygments %}
+```
 
 Move all the types and methods relating to world representation from `src/game.rs` into `src/world.rs`.
 When you're done, `GameState` should be a thin wrapper around the new `World` type (we'll add more to it shortly).
 All that's left of `src/game.rs` will be:
 
-{% pygments rust %}
+```rust
 // game.rs
 use crate::world::{Location, Populate, Tile, World};
 use coord_2d::Size;
@@ -85,7 +85,7 @@ impl GameState {
         })
     }
 }
-{% endpygments %}
+```
 
 Here's how the code should look after this refactor: [part-4.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-4.0)
 
@@ -98,18 +98,18 @@ For a detailed description of this algorithm, see {% local visible-area-detectio
 or [this one on roguebasin](http://www.roguebasin.com/index.php?title=FOV_using_recursive_shadowcasting).
 Grab a crate which contains an implementation of the field-of-view algorithm:
 
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 shadowcast = "0.7"
-{% endpygments %}
+```
 
 The `shadowcast` crate doesn't assume anything about how the world is represented.
 In order to compute the visible area,
 it needs to know some things about the world. In particular, this trait must be implemented:
 
-{% pygments rust %}
+```rust
 pub trait InputGrid {
 
     // type containing the world state
@@ -124,11 +124,11 @@ pub trait InputGrid {
     // query the opacity of the world at a particular coordinate
     fn get_opacity(&self, grid: &Self::Grid, coord: Coord) -> Self::Opacity;
 }
-{% endpygments %}
+```
 
 Let's implement this trait for our game! Make a new file `src/visibility.rs`:
 
-{% pygments rust %}
+```rust
 // visibility.rs
 use crate::world::World;
 use coord_2d::{Coord, Size};
@@ -145,12 +145,12 @@ impl shadowcast::InputGrid for Visibility {
         world.opacity_at(coord)
     }
 }
-{% endpygments %}
+```
 
 The `Visibility` type has no state, and serves only as a named implementation of the `InputGrid` trait.
 Note that the `size` and `opacity_at` methods of `World` don't exist yet. Let's write them now.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -171,7 +171,7 @@ impl World {
         }
     }
 }
-{% endpygments %}
+```
 
 For now, if a cell contains a feature it is fully opaque, and otherwise it is fully transparent.
 
@@ -186,7 +186,7 @@ Each cell of the grid will store the value that the counter had the last time
 that cell was visible. A cell is currently visible if its value is the same as the
 current counter value. A cell was previously visible if its value is above 0 (as the counter is initialized to 1).
 
-{% pygments rust %}
+```rust
 // visibility.rs
 use grid_2d::Grid;
 ...
@@ -231,11 +231,11 @@ pub enum CellVisibility {
     Previously,
     Never,
 }
-{% endpygments %}
+```
 
 Now we need a way to update this grid by visiting all visible cells:
 
-{% pygments rust %}
+```rust
 // visibility.rs
 ...
 
@@ -269,7 +269,7 @@ impl VisibilityGrid {
         );
     }
 }
-{% endpygments %}
+```
 
 Computing visible area involves populating some heap-allocated data structures
 (see the [implementation of shadowcast](https://github.com/stevebob/shadowcast/blob/master/src/shadowcast.rs)
@@ -281,7 +281,7 @@ each time. Its type parameter corresponds to `InputGrid::Opacity`.
 Add a `VisibilityGrid` and `shadowcast::Context<u8>` to `GameState`, and add a method to 'GameState'
 for updating the visible area.
 
-{% pygments rust %}
+```rust
 // game.rs
 use crate::visibility::{CellVisibility, VisibilityGrid};
 ...
@@ -315,7 +315,7 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Note the call to `game_state.update_visibility()` within `GameState::new`. This is so when the game starts,
 the initially-visible area is marked as visible.
@@ -323,7 +323,7 @@ the initially-visible area is marked as visible.
 In order to tell the rendering logic whether a cell is currently, previously, or never visible, update
 `EntityToRender` to contain a `CellVisibility`, and update `entities_to_render` to set the new field:
 
-{% pygments rust %}
+```rust
 pub struct EntityToRender {
     pub tile: Tile,
     pub location: Location,
@@ -347,11 +347,11 @@ impl GameState {
         })
     }
 }
-{% endpygments %}
+```
 
 Update the rendering logic to draw cells differently depending on their visibility.
 
-{% pygments rust %}
+```rust
 // app.rs
 use crate::visibility::CellVisibility;
 ...
@@ -419,11 +419,11 @@ impl<'a> View<&'a AppData> for AppView {
         }
     }
 }
-{% endpygments %}
+```
 
 And finally update `AppData::handle_innput` to call `update_visibility()` after handling an input event:
 
-{% pygments rust %}
+```rust
 impl AppData {
     fn handle_input(&mut self, input: Input) {
         match input {
@@ -433,7 +433,7 @@ impl AppData {
     }
 
 }
-{% endpygments %}
+```
 
 {% image screenshot-end.png %}
 

@@ -39,10 +39,10 @@ Rather than generating the dungeon directly into the `GameState`, it will be mor
 a 2D array of tiles, and then use the result to initialize the `GameState`. Grab a crate to help work with
 2D arrays using the `Coord` and `Size` types we've seen in previous parts:
 
-{% pygments toml %}
+```toml
 # Cargo.toml
 grid_2d = "0.14"
-{% endpygments %}
+```
 
 Start by generating a single room and placing the player inside.
 This starts with a `Grid<Option<TerrainTile>>`, and sets some of the cells to be `Some(...)`
@@ -51,7 +51,7 @@ As the algorithm may not visit every cell of the grid, the final line of `genera
 creates a new grid by unwrapping every cell of the original grid,
 replacing every `None`  with `TerrainTile::Wall`.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 
 use grid_2d::{Coord, Grid, Size};
@@ -71,12 +71,12 @@ pub fn generate_dungeon(size: Size) -> Grid<TerrainTile> {
     *grid.get_checked_mut(Coord::new(3, 3)) = Some(TerrainTile::Player);
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
-{% endpygments %}
+```
 
 Update `GameState::populate` to spawn entities based on the contents of the a `Grid<TerrainTile>` returned
 by `terrain::generate_dungeon`:
 
-{% pygments rust %}
+```rust
 // game.rs
 
 use crate::terrain::{self, TerrainTile};
@@ -103,17 +103,17 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add the `terrain` module to `main.rs`:
 
-{% pygments rust %}
+```rust
 // main.rs
 
 ...
 mod terrain;
 ...
-{% endpygments %}
+```
 
 Run the game and it will generate this:
 
@@ -125,16 +125,16 @@ Reference implementation branch: [part-3.0](https://github.com/stevebob/chargrid
 
 Before proceeding with terrain generation, we need a source of randomness in the terrain generator.
 Add dependencies on `rand` and `rand_isaac`:
-{% pygments toml %}
+```toml
 # Cargo.toml
 rand = "0.7"        # basic functionality for random number generators
 rand_isaac = "0.2"  # a specific random number generator implementation
-{% endpygments %}
+```
 
 Initialize a random number generator and store it in a field of `GameState`.
 Pass a reference to the RNG into `generate_dungeon`.
 
-{% pygments rust %}
+```rust
 // game.rs
 
 use rand::{Rng, SeedableRng};
@@ -157,11 +157,11 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add the corresponding argument to `generate_dungeon`.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 
 use rand::Rng;
@@ -170,7 +170,7 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
     println!("random int: {}", rng.next_u32());
     ...
 }
-{% endpygments %}
+```
 
 Run this and it will print out a random number:
 ```
@@ -184,7 +184,7 @@ Reference implementation branch: [part-3.1](https://github.com/stevebob/chargrid
 Add rooms in random locations by repeatedly creating rooms with random sizes and positions, but only adding them
 to the map if they don't overlap any existing rooms. Here's the code:
 
-{% pygments rust %}
+```rust
 // terrain.rs
 
 ...
@@ -266,7 +266,7 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
 
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
-{% endpygments %}
+```
 
 Here's an example map produced by this algorithm:
 
@@ -280,7 +280,7 @@ To add corridors between rooms, keep track of the centre of every room that gets
 and then after all the rooms are placed, carve out corridors connecting every adjacent pair
 of room centres.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 
 ...
@@ -334,7 +334,7 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
 
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
-{% endpygments %}
+```
 
 After this change, the dungeon generator will produce fully-connected dungeons made up of
 rooms and corridors.

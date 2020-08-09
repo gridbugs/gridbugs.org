@@ -36,7 +36,7 @@ We'll also allow the player to use the mouse to examine a cell during normal gam
 
 Add a type enumerating all the different results of examining a cell.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -47,11 +47,11 @@ pub enum ExamineCell {
     Player,
 }
 ...
-{% endpygments %}
+```
 
 Add a method to `World` for examining a cell.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 use crate::game::{ExamineCell, LogMessage};
@@ -77,12 +77,12 @@ impl World {
             })
     }
 }
-{% endpygments %}
+```
 
 Add a method to `GameState` for examining a cell at a coordinate **if it is currently visible to the player**.
 Also add a method returning the player's current coordinate which will come in handy soon.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -100,14 +100,14 @@ impl GameState {
         }
     }
 }
-{% endpygments %}
+```
 
 Update the UI to have it render the currently-examined cell (if any).
 Also, when the cursor is controlled by the arrow keys, we'll display a string
 to indicate what the cursor is for. Currently it will just be for examining cells,
 but later it will be for aiming spells as well.
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 use crate::game::{ExamineCell, LogMessage};
@@ -173,11 +173,11 @@ impl<'a> View<UiData<'a>> for UiView {
         }
     }
 }
-{% endpygments %}
+```
 
 Add a field to `AppState` containing the current cursor position if any.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct AppData {
@@ -195,12 +195,12 @@ impl AppData {
     }
 }
 ...
-{% endpygments %}
+```
 
 Update `AppView::render_ui` to take the name of the current cursor mode, and have it render the cursor
 and pass the result of examining the cell under the cursor to the UI renderer.
 
-{% pygments rust %}
+```rust
 // app.rs
 use chargrid::{
     render::{blend_mode, ColModify, ColModifyMap, Frame, Style, View, ViewCell, ViewContext},
@@ -242,7 +242,7 @@ impl AppView {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now go update all the places where `AppView::render_ui` gets called and pass `None` as its `name` argument.
 
@@ -250,7 +250,7 @@ Update `AppData::handle_input` so that moving the mouse during normal gameplay s
 and pressing a key clears the cursor. This will let the player use the mouse to examine cells, even when
 not in "examine" mode.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -277,13 +277,13 @@ impl AppData {
         ...
     }
 }
-{% endpygments %}
+```
 
 Add `TargetEventRoutine` - an `EventRoutine` in which the cursor can be controlled using the arrow keys as well
 as the mouse. It has a string field which is the name of the target mode. This is the string that we'll show in
 the bottom-left corner.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 struct TargetEventRoutine {
@@ -364,12 +364,12 @@ impl EventRoutine for TargetEventRoutine {
     }
 }
 ...
-{% endpygments %}
+```
 
 Now update `AppData::handle_input` again so that when the 'x' key is pressed, we run the `TargetEventRoutine`
 so the player can examine cells moving the cursor with the arrow keys.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 enum GameReturn {
@@ -410,7 +410,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
     }).return_on_exit(|_| ())
 }
 ...
-{% endpygments %}
+```
 
 {% image examine.png %}
 
@@ -419,7 +419,7 @@ Reference implementation branch: [part-9.0](https://github.com/stevebob/chargrid
 ## {% anchor place-fireball-scrolls | Place Fireball Scrolls %}
 
 The first ranged item we'll add will be fireball scrolls. Add `FireballScroll` as a new item type.
-{% pygments rust %}
+```rust
 // world.rs
 ...
 pub enum ItemType {
@@ -455,9 +455,9 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub mod colours {
@@ -481,13 +481,13 @@ fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
     }
 }
 ...
-{% endpygments %}
+```
 
 Update the dungeon generator to place fireball scrolls.
 Generalize the logic which places health potions to place all items.
 For now gives fireball scrolls a 100% chance of spawning to make it easier to test.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 ...
 impl Room {
@@ -523,7 +523,7 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
     }
     ...
 }
-{% endpygments %}
+```
 
 At this point you should be able to pick up fireball scrolls. When you use them the game will
 just print the text "todo" to stdout.
@@ -545,7 +545,7 @@ and if the solid object is a character they should take damage.
 When a health potion is used it is used immediately, but when a fireball scroll is used we display a UI.
 Let's codify the different ways in which an item can be used:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy)]
@@ -554,7 +554,7 @@ pub enum ItemUsage {
     Aim,
 }
 ...
-{% endpygments %}
+```
 
 Update item-usage methods to return the `ItemUsage` of the item being used.
 Previously we made the assumption that when an item is used, it is immediately
@@ -562,7 +562,7 @@ removed from the inventory, but this is only true for items whose usage is `Imme
 Update `maybe_use_item` to reflect this while we're at it.
 We'll need to implement `Inventory::get`.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl Inventory {
@@ -620,9 +620,9 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::world::{
@@ -646,13 +646,13 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Update the `use_item()` `EventRoutine` to invoke the target `EventRoutine` when the player uses an item
 whose usage is `Aim`. Note the not-yet-implemented `GameState::maybe_player_use_item_aim` being called here,
 which will actually launch the fireball.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use chargrid::{
@@ -707,11 +707,11 @@ fn use_item() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, 
     })
 }
 ...
-{% endpygments %}
+```
 
 Implement `GameState::maybe_player_use_item_aim`.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -730,7 +730,7 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 And implement `World::maybe_use_item_aim`. This function assumes it's called on a sensible
 item (e.g. you don't try to aim a health potion). The game is implemented such that it should
@@ -738,7 +738,7 @@ be impossible to call this method on an invalid item, so this function panics in
 Should that panic ever execute, a bug has occurred at some point prior, and we shouldn't try
 to continue running the game.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -774,7 +774,7 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Two things in the above code haven't been defined yet:
 - the `LogMessage::PlayerLaunchesProjectile` variant
@@ -782,7 +782,7 @@ Two things in the above code haven't been defined yet:
 
 Add the log message types.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::world::{
@@ -795,11 +795,11 @@ pub enum LogMessage {
     PlayerLaunchesProjectile(ProjectileType),
 }
 ...
-{% endpygments %}
+```
 
 This depends on a new type `ProjectileType`. Add it to `world.rs`.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -815,11 +815,11 @@ impl ProjectileType {
     }
 }
 ...
-{% endpygments %}
+```
 
 Handle the new type of log message.
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 impl<'a> View<&'a [LogMessage]> for MessagesView {
@@ -845,11 +845,11 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
     }
 }
 ...
-{% endpygments %}
+```
 
 This depends on `colour::projectile_colour`. Define it.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use crate::world::{ItemType, ItemUsage, Layer, NpcType, ProjectileType, Tile};
@@ -862,7 +862,7 @@ pub mod colours {
     }
 }
 ...
-{% endpygments %}
+```
 
 Jumping all over the codebase today.
 
@@ -870,7 +870,7 @@ Back in `world.rs`, define the `spawn_projectile` method.
 Add a `projectile` component storing a `ProjectileType`, a `Projectile` tile, and a `projcetile` layer.
 Also add a `trajectory` component for storing the motion path of a projectile.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 use line_2d::CardinalStepIter;
@@ -918,7 +918,7 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Note the `CardinalStepIter` type. This is an iterator over the coordinates along
 a line segment between 2 points, only taking steps in cardinal directions.
@@ -926,7 +926,7 @@ We'll use it to compute the path followed by a projectile.
 
 Handle the new tile type and new layer in `app.rs`:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl<'a> View<&'a GameState> for GameView {
@@ -956,11 +956,11 @@ fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
     }
 }
 ...
-{% endpygments %}
+```
 
 Add a method to `World` for moving all projectiles one step along their motion path.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -1006,12 +1006,12 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 This requires some generalizations of our combat logic,
 in particular adding a `character_damage` method, extracting this logic from `character_bump_attack`.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -1032,12 +1032,12 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 If an NPC is killed by a fireball, a new log message `NpcDies` is generated.
 Add it.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 pub enum LogMessage {
@@ -1045,11 +1045,11 @@ pub enum LogMessage {
     NpcDies(NpcType),
 }
 ...
-{% endpygments %}
+```
 
 And handle it.
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 impl<'a> View<&'a [LogMessage]> for MessagesView {
@@ -1076,17 +1076,17 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
 }
 ...
 
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // world.rs
-{% endpygments %}
+```
 
 Add a method to `World` for testing whether there are any projectiles.
 We're about to add a simple realtime animation system, and we want an easy way to check
 whether any animations are in progress so controls can be ignored while animations are playing.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -1096,11 +1096,11 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Add animation methods to `GameState`, and prevent the player from acting while animations are in progress.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -1137,7 +1137,7 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Now we need to periodically tick animations by calling `GameState::tick_animations`.
 Let's only progress animations during normal gameplay, at a rate of 30 FPS (regardless of the game's actual framerate).
@@ -1146,7 +1146,7 @@ animations very 33ms. Game ticks are sent to `EventRoutine`s in the form of `Com
 where `period` is a `std::time::Duration` containing the amount of time that has passed since the previous frame.
 Ticks are generally synchronized to the display's framerate, but this is not a necessity and you shouldn't rely on it.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 const BETWEEN_ANIMATION_TICKS: Duration = Duration::from_millis(33);
@@ -1201,7 +1201,7 @@ impl EventRoutine for GameEventRoutine {
     }
     ...
 }
-{% endpygments %}
+```
 
 And that should do it.
 Try picking up a fireball scroll and using it via the inventory menu.
@@ -1224,7 +1224,7 @@ Reference implementation branch: [part-9.2](https://github.com/stevebob/chargrid
 
 Add a `ConfusionScroll` item, and `Confusion` projectile.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 pub enum ProjectileType {
@@ -1253,11 +1253,11 @@ impl ItemType {
     }
 }
 ...
-{% endpygments %}
+```
 
 Add rendering logic for the new item and projectile.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub mod colours {
@@ -1293,12 +1293,12 @@ fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
             .with_foreground(colours::CONFUSION_SCROLL),
     }
 }
-{% endpygments %}
+```
 
 Place confusion scrolls during dungeon generation. Also rebalance the probabilities of items
 such that health potions may appear again.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 ...
 impl Room {
@@ -1319,13 +1319,13 @@ impl Room {
         }
     }
 }
-{% endpygments %}
+```
 
 When a character becomes confused, they will move randomly for 5 turns. To keep track of the number of turns
 until a confused character recovers, add a `confusion_countdown` component. Entities which have this component
 will be considered to be confused, and it will also track the time until recovery.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 entity_table::declare_entity_module! {
@@ -1335,12 +1335,12 @@ entity_table::declare_entity_module! {
     }
 }
 ..
-{% endpygments %}
+```
 
 Set the `UsageType` for confusion scrolls, spawn a projectile when a confusion scroll is used, and set what happens
 when a confusion spell hits an NPC.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -1409,12 +1409,12 @@ impl World {
         }
     }
 }
-{% endpygments %}
+```
 
 Add and handle log messages for becoming confused and recovering.
 
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 pub enum LogMessage {
@@ -1423,9 +1423,9 @@ pub enum LogMessage {
     NpcIsNoLongerConfused(NpcType),
 }
 ...
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 impl<'a> View<&'a [LogMessage]> for MessagesView {
@@ -1456,22 +1456,22 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
         ...
     }
 }
-{% endpygments %}
+```
 
 Now let's update movement logic such that confused characters move in random directions.
 To use the `Rng` trait to select a random direction, we need to enable the optional `rand`
 feature of the `direction` crate.
 
-{% pygments toml %}
+```toml
 # Cargo.toml
 [dependencies]
 ...
 direction = { version = "0.17", features = ["rand"] }
-{% endpygments %}
+```
 
 In `game.rs`, start passing a rng to `World::maybe_move_character`.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -1504,13 +1504,13 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 And update `World::maybe_move_character` to take an rng as an argument and use it
 to move characters randomly when they are confused, also decreasing, and eventually removing,
 their `confusion_countdown` component.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -1548,7 +1548,7 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 It's now possible to launch confusion spells in the same way as you launch fireballs.
 NPCs hit with confusion spells move randomly for their next 5 turns.

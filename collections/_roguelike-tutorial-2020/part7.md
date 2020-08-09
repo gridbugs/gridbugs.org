@@ -34,7 +34,7 @@ independent modules which can be composed into complex UI's.
 Thus far the only thing we've needed to draw has been the game, but in this part we'll
 add a UI as well, so start by moving the game-drawing logic into a new type:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 #[derive(Default)]
@@ -91,11 +91,11 @@ impl<'a> View<&'a AppData> for AppView {
         self.game_view.view(&data.game_state, context, frame);
     }
 }
-{% endpygments %}
+```
 
 In a new file `ui.rs`, implement a simple UI consisting of just the player's health bar:
 
-{% pygments rust %}
+```rust
 // ui.rs
 
 use crate::world::HitPoints;
@@ -133,7 +133,7 @@ impl View<UiData> for UiView {
             .view(&self.buf, context, frame);
     }
 }
-{% endpygments %}
+```
 
 Similarly to `GameView` and `AppView`, the new `UiView` type implements `chargrid::View`
 for a specific type of data, in this case `UiData` which currently consists of just a `HitPoints`.
@@ -145,18 +145,18 @@ The `buf: String` field in `UiView` is to prevent needing to allocate a `String`
 implementations of `chargrid::View` for rendering text.
 
 Update `main.rs` to include the `ui` module:
-{% pygments rust %}
+```rust
 // main.rs
 ...
 mod ui;
 ...
-{% endpygments %}
+```
 
 Update `app.rs` to draw the UI.
 The `UI_NUM_ROWS` constant configures how much of the screen to take up with the UI.
 This reduces the size of the game area.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use crate::ui::{UiData, UiView};
@@ -223,11 +223,11 @@ impl App {
     }
 }
 ...
-{% endpygments %}
+```
 
 Update `game.rs` to expose a `player_hit_points` method:
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::world::{HitPoints, Location, Populate, Tile, World};
@@ -240,7 +240,7 @@ impl Game {
             .expect("player has no hit points")
     }
 }
-{% endpygments %}
+```
 
 {% image health.png %}
 
@@ -250,7 +250,7 @@ Reference implementation branch: [part-7.0](https://github.com/stevebob/chargrid
 
 Now we'll colour the background of the health bar so it's filled based on the amount of health the player has.
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 use chargrid::{
@@ -313,7 +313,7 @@ impl View<UiData> for UiView {
         }
     }
 }
-{% endpygments %}
+```
 
 This shows an example of decorators. The `chargrid::decorator` module contains a collection
 of implementations `chargrid::View` which wrap _other_ implementations of `chargrid::View`
@@ -331,7 +331,7 @@ Reference implementation branch: [part-7.1](https://github.com/stevebob/chargrid
 
 Add a type representing the different types of messages that can appear in the log:
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::world::{HitPoints, Location, NpcType, Populate, Tile, World};
@@ -344,12 +344,12 @@ pub enum LogMessage {
     PlayerKillsNpc(NpcType),
     NpcKillsPlayer(NpcType),
 }
-{% endpygments %}
+```
 
 Add a message log to `GameState`, add an accessor method, and pass the message log to `maybe_move_character`.
 At the moment all events worthy of the message log are triggered by `maybe_move_character`.
 
-{% pygments rust %}
+```rust
 ..
 pub struct GameState {
     ...
@@ -394,11 +394,11 @@ impl GameState {
         &self.message_log
     }
 }
-{% endpygments %}
+```
 
 Update `maybe_move_character` to add to the message log:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 use crate::game::LogMessage;
@@ -474,12 +474,12 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Now let's draw the message log.
 Start by moving the rendering of the player's health bar into a new type `HealthView`:
 
-{% pygments rust %}
+```rust
 // ui.rs
 ...
 #[derive(Default)]
@@ -500,10 +500,10 @@ impl View<HitPoints> for HealthView {
         ...
     }
 }
-{% endpygments %}
+```
 
 Add a simple helper function for mapping an NPC to a colour in `app.rs`, and make the `colours` mod public:
-{% pygments rust %}
+```rust
 // app.rs
 ...
 pub mod colours {
@@ -516,12 +516,12 @@ pub mod colours {
         }
     }
 }
-{% endpygments %}
+```
 
 
 Now define another type `MessageView` for rendering the message log:
 
-{% pygments rust %}
+```rust
 // ui.rs
 use crate::app::colours;
 ...
@@ -607,7 +607,7 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
         }
     }
 }
-{% endpygments %}
+```
 
 Similar to the `buf` field of `HealthView`, the `buf` field of `MessageView`
 exists to prevent the need to allocate on each frame.
@@ -617,7 +617,7 @@ to apply to it. The `RichTextViewSingleLine` type, also from `chargrid::text`, i
 where the names of NPCs are colour coded to match their tiles.
 
 The `UiView` type is now a combination of `HealthView` and `MessageView`:
-{% pygments rust %}
+```rust
 pub struct UiData<'a> {
     pub player_hit_points: HitPoints,
     pub messages: &'a [LogMessage],
@@ -643,12 +643,12 @@ impl<'a> View<UiData<'a>> for UiView {
             .view(data.messages, context.add_offset(message_log_offset), frame);
     }
 }
-{% endpygments %}
+```
 
 Update `app.rs` to leave room below for the message log. When calling `UiView::view`
 inside `AppView::view`, populate the new `messages` field.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 const UI_NUM_ROWS: u32 = 5;
@@ -673,7 +673,7 @@ impl<'a> View<&'a AppData> for AppView {
         );
     }
 }
-{% endpygments %}
+```
 
 {% image screenshot-end.png %}
 

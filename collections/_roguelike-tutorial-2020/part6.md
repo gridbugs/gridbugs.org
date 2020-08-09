@@ -36,7 +36,7 @@ Before adding AI to the game, let's make it easier to test.
 Once NPCs can move on their own, it will be useful to have a way to let NPCs take their turns
 without needing to move the player. To this end, we'll add a "wait" command, triggered by the space bar:
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -45,9 +45,9 @@ impl GameState {
         self.ai_turn();
     }
 }
-{% endpygments %}
+```
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 impl AppData {
@@ -64,7 +64,7 @@ impl AppData {
         ...
     }
 }
-{% endpygments %}
+```
 
 The dungeon is procedurally generated. If we spot some unexpected behaviour which is dependent on a particular level
 layout, it would be useful if we could rerun the game with the same level.
@@ -101,7 +101,7 @@ Here's the code for adding both the RNG seed argument, and omniscient mode.
 Add a `VisibilityAlgorithm` type, and an argument to `VisibilityGrid::update` for choosing which algorithm to use.
 In the `Omniscient` case, just mark every cell as visible.
 
-{% pygments rust %}
+```rust
 // visibility.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -143,13 +143,13 @@ impl VisibilityGrid {
         }
     }
 }
-{% endpygments %}
+```
 
 Two changes in `game.rs`. Pass the visibility algorithm through to `self.visibility_grid.update`,
 and take an `rng_seed` in the constructor, which is used to initialize the `Isaac64Rng` instead
 of initializing it with `Isaac64Rng::from_entropy`.
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use crate::visibility::{CellVisibility, VisibilityAlgorithm, VisibilityGrid};
@@ -182,11 +182,11 @@ impl GameState {
         );
     }
 }
-{% endpygments %}
+```
 
 In `app.rs`, just pass the new arguments down to `GameState`'s methods, and store the visibility algorithm in a field of `AppData`:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 use crate::visibility::{CellVisibility, VisibilityAlgorithm};
@@ -222,21 +222,21 @@ impl App {
     }
 }
 ...
-{% endpygments %}
+```
 
 In order to parse command-line arguments, these examples will use a library called [simon](https://crates.io/crates/simon).
 Feel free to use whatever argument-parsing library you're most comfortable with.
 
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 simon = "0.4"
-{% endpygments %}
+```
 
 Update `main.rs` to parse command line arguments and pass the visibility algorithm and RNG seed to `App::new`:
 
-{% pygments rust %}
+```rust
 // main.rs
 ...
 use simon::Arg;
@@ -277,7 +277,7 @@ fn main() {
     let app = App::new(screen_size, rng_seed, visibility_algorithm);
     ...
 }
-{% endpygments %}
+```
 
 If you used the `simon` library for argument parsing, the `with_help_default()` method called above allows you to pass a `--help`
 argument to see usage instructions:
@@ -301,7 +301,7 @@ Reference implementation branch: [part-6.0](https://github.com/stevebob/chargrid
 Let's add some rudimentary AI to NPCs. In order for pathfinding to work, we'll need a way of finding out which areas
 of the map can be traversed by an NPC. Add the following to `world.rs`:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -327,14 +327,14 @@ impl World {
     }
 
 }
-{% endpygments %}
+```
 
 NPCs can enter a cell if it doesn't contain a feature or another NPC. It will also turn out convenient to be able to
 check whether an NPC can enter a cell, _ignoring_ the rule about NPCs not being able to walk on top of each other.
 
 To help with pathfinding, expose one more method in `World` that returns the coordinate of an entity:
 
-{% pygments rust %}
+```rust
 // world.rs
 impl World {
     ...
@@ -342,17 +342,17 @@ impl World {
         self.spatial_table.coord_of(entity)
     }
 }
-{% endpygments %}
+```
 
 While you're here, remove the `npc_type` method from `World`. We won't be needing it anymore.
 
 To do the heavy lifting of pathfinding, we'll use a library:
-{% pygments toml %}
+```toml
 # Cargo.toml
 ...
 [dependencies]
 grid_search_cardinal = "0.2"
-{% endpygments %}
+```
 
 The general idea for pathfinding is the following: Each time the player moves, populate a grid (called a "distance map") with the distance from
 each NPC-traversable cell to the player. On an NPC's turn, it will consider its local region of this grid, and move in the direction
@@ -371,7 +371,7 @@ away from the player. The first step along this path will _increase_ Z's distanc
 I've written more on the topic of pathfinding on a grid in {% local pathfinding-on-a-grid | a previous post %}.
 
 Make a new file called `behaviour.rs`:
-{% pygments rust %}
+```rust
 // behaviour.rs
 use crate::world::World;
 use coord_2d::{Coord, Size};
@@ -419,7 +419,7 @@ impl BehaviourContext {
         );
     }
 }
-{% endpygments %}
+```
 
 The `BehaviourContext` type will contain all the re-usable state required for pathfinding.
 The field `distance_map_to_player` is the grid which will contain the distance from each cell to the player.
@@ -440,7 +440,7 @@ map. NPCs more than 20 cells from the player won't be able to approach the playe
 
 Now add the following to `behaviour.rs`:
 
-{% pygments rust %}
+```rust
 // behaviour.rs
 ...
 pub enum NpcAction {
@@ -482,7 +482,7 @@ impl Agent {
         }
     }
 }
-{% endpygments %}
+```
 
 Start by enumerating all the different actions an NPC can take in `NpcAction`. Define an `Agent` type which will currently be empty.
 
@@ -499,7 +499,7 @@ other NPCs to reach the player.
 Add a `BehaviourContext` to `GameState`, and update `ai_state` to be a `ComponentTable<Agent>` instead of
 a `ComponentTable<()>`.
 
-{% pygments rust %}
+```rust
 // game.rs
 use crate::behaviour::{Agent, BehaviourContext, NpcAction};
 ...
@@ -525,11 +525,11 @@ impl GameState {
     }
     ...
 }
-{% endpygments %}
+```
 
 Update `GameState::ai_turn` to call `Agent::act` so NPCs actually move on their turns:
 
-{% pygments rust %}
+```rust
 ...
 impl GameState {
     ...
@@ -545,10 +545,10 @@ impl GameState {
         }
     }
 }
-{% endpygments %}
+```
 
 And update `world.rs` to return a `ComponentTable<Agent>` in its `Populate` struct:
-{% pygments rust %}
+```rust
 // world
 use crate::behaviour::Agent;
 ...
@@ -576,14 +576,14 @@ impl GameState {
         }
     }
 }
-{% endpygments %}
+```
 
 Don't forget to add `mod behaviour;` to `main.rs`:
-{% pygments rust %}
+```rust
 ...
 mod behaviour;
 ...
-{% endpygments %}
+```
 
 Run this with `--debug-omniscient` and observe pathfinding in action.
 Since there's still no combat system, expect to find yourself trapped in a corner
@@ -598,7 +598,7 @@ Reference implementation branch: [part-6.1](https://github.com/stevebob/chargrid
 To make the game more realistic, we'll require that NPCs must be able to see the player in order to move towards them.
 Start by adding a method to `World` for testing whether an NPC can see through the cell at a given coordinate.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -610,22 +610,22 @@ impl World {
             .unwrap_or(false)
     }
 }
-{% endpygments %}
+```
 
 Now we could go and run the shadowcast filed-of-view algorithm for each NPC, but that would be expensive.
 Instead, we only need to test if the (straight) line segment between each NPC and the player can be traversed
 without visiting a cell which the NPC can't see through.
 
 To help talk about lines rasterized onto grids, grab a library:
-{% pygments toml %}
+```toml
 # Cargo.toml
 [dependencies]
 line_2d = "0.4"
-{% endpygments %}
+```
 
 Add a function for testing NPC line of sight to `behaviour.rs`:
 
-{% pygments rust %}
+```rust
 // behaviour.rs
 ...
 use line_2d::LineSegment;
@@ -649,12 +649,12 @@ fn npc_has_line_of_sight(src: Coord, dst: Coord, world: &World) -> bool {
     }
     true
 }
-{% endpygments %}
+```
 
 Add a `player: Entity` argument to `Agent::act`, and then call our new function to test whether the NPC can
 see the player. For now, just have the NPC wait on their turn if they can't see the player.
 
-{% pygments rust %}
+```rust
 ...
 impl Agent {
     ...
@@ -672,11 +672,11 @@ impl Agent {
         ...
     }
 }
-{% endpygments %}
+```
 
 Update the call of `Agent::act` in `game.rs` to pass the player:
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl Game {
@@ -698,7 +698,7 @@ impl Game {
         }
     }
 }
-{% endpygments %}
+```
 
 Run the game with omniscience and confirm that as soon as there stops being line of sight between
 you and an NPC following you, the NPC freezes.
@@ -716,7 +716,7 @@ to the location where they last saw the player, but that's out of the scope of t
 The only state each NPC needs in order to follow the player for a number of turns after losing sight,
 is a single counter storing the number of turns since the NPC saw the player:
 
-{% pygments rust %}
+```rust
 // behaviour.rs
 ...
 pub struct Agent {
@@ -731,12 +731,12 @@ impl Agent {
     }
     ...
 }
-{% endpygments %}
+```
 
 Update the counter on each NPC's turn, and use the value in the counter to determine whether
 the NPC moves on their turn.
 
-{% pygments rust %}
+```rust
 ...
 impl Agent {
     ...
@@ -760,7 +760,7 @@ impl Agent {
         ...
     }
 }
-{% endpygments %}
+```
 
 Reference implementation branch: [part-6.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.3)
 
@@ -769,7 +769,7 @@ Reference implementation branch: [part-6.3](https://github.com/stevebob/chargrid
 To implement combat, start by defining a `HitPoints` component, and adding
 hit points to the player and NPC entities.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -813,13 +813,13 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 For now we'll just support bump combat. That is, when a character would move,
 if the destination of the move is occupied by an enemy of the moving character,
 instead of moving, an attack occurs.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -856,7 +856,7 @@ impl World {
         }
     }
 }
-{% endpygments %}
+```
 
 For now, all attacks deal a single point of damage.
 The code above contains a call to `self.character_die(victim)`,
@@ -865,7 +865,7 @@ it is replaced by a corpse.
 
 Define tile types for corpses, and add a layer to the spatial table for storing corpse location.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy, Debug)]
@@ -881,11 +881,11 @@ spatial_table::declare_layers_module! {
         corpse: Corpse,
     }
 }
-{% endpygments %}
+```
 
 Now we can implement the `character_die` method:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -920,11 +920,11 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Expose a method of `World` called `is_living_character` which lets us check whether an
 entity refers to a living character:
-{% pygments rust %}
+```rust
 // world.rs
 ...
 impl World {
@@ -934,11 +934,11 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 In `game.rs`, before all the NPCs take their turn, remove dead NPCs from `ai_state`:
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -959,7 +959,7 @@ impl GameState {
         }
     }
 }
-{% endpygments %}
+```
 
 Note that the call to `collect` above will allocate if there are any dead characters
 to remove from `ai_state`. This would be easy to optimize away by adding a field
@@ -967,19 +967,19 @@ to `GameState` which gets populated with all dead entities each turn, but it did
 seem worth it.
 
 Expose a method `is_player_alive`:
-{% pygments rust %}
+```rust
 impl GameState {
     ...
     pub fn is_player_alive(&self) -> bool {
         self.world.is_living_character(self.player_entity)
     }
 }
-{% endpygments %}
+```
 
 Now in `app.rs` there are two things that need to change.
 
 First, prevent the player from moving if they are dead:
-{% pygments rust %}
+```rust
 // app.rs
 impl AppData {
     fn handle_input(&mut self, input: Input) {
@@ -991,12 +991,12 @@ impl AppData {
         }
     }
 }
-{% endpygments %}
+```
 
 Second, update the rendering logic to handle corpse tiles.
 This is a small refactor which moves common colour definitions into its own module.
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 mod colours {
@@ -1073,11 +1073,11 @@ fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
             .with_foreground(Rgb24::new_grey(63)),
     }
 }
-{% endpygments %}
+```
 
 Update the depth calculation to account for the new corpse layer:
 
-{% pygments rust %}
+```rust
 impl<'a> View<&'a AppData> for AppView {
     fn view<F: Frame, C: ColModify>(
         &mut self,
@@ -1098,7 +1098,7 @@ impl<'a> View<&'a AppData> for AppView {
         }
     }
 }
-{% endpygments %}
+```
 
 And that's it. NPCs and the player can kill one another, and leave behind corpses.
 
@@ -1112,7 +1112,7 @@ At the moment, there's nothing preventing the game from rendering the movements 
 cell, so it could continue to render a moved NPC at its original location. In the interest of simplicity however, let's
 just change rendering code so the only previously-visible things we render are walls and floor:
 
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
@@ -1128,7 +1128,7 @@ fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
         _ => ViewCell::new(),
     }
 }
-{% endpygments %}
+```
 
 {% image screenshot-end.png %}
 

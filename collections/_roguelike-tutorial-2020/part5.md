@@ -32,7 +32,7 @@ In this post:
 Start by making it possible to represent the presence of NPCs in the game state.
 Add an enum type with variants for each npc type.
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -49,10 +49,10 @@ impl NpcType {
         }
     }
 }
-{% endpygments %}
+```
 
 Add a variant to `Tile` so we can render NPCs.
-{% pygments rust %}
+```rust
 #[derive(Clone, Copy, Debug)]
 pub enum Tile {
     Player,
@@ -60,20 +60,20 @@ pub enum Tile {
     Wall,
     Npc(NpcType),
 }
-{% endpygments %}
+```
 
 Add a component so game entities can be marked as NPCs, and track which type of NPC an entity is:
-{% pygments rust %}
+```rust
 entity_table::declare_entity_module! {
     components {
         tile: Tile,
         npc_type: NpcType,
     }
 }
-{% endpygments %}
+```
 
 Add a method to `World` for spawning a new NPC.
-{% pygments rust %}
+```rust
 impl World {
     ...
     fn spawn_npc(&mut self, coord: Coord, npc_type: NpcType) -> Entity {
@@ -93,10 +93,10 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 In `terrain.rs` add a `TerrainTile` variant so we can add NPCs during dungeon generation.
-{% pygments rust %}
+```rust
 // terrain.rs
 use crate::world::NpcType;
 ...
@@ -106,10 +106,10 @@ pub enum TerrainTile {
     Wall,
     Npc(NpcType),
 }
-{% endpygments %}
+```
 
 And back in `world.rs`, handle the `TerrainTile::Npc` case inside `World::populate`.
-{% pygments rust %}
+```rust
 // world.rs
 impl World {
     pub fn populate<R: Rng>(&mut self, rng: &mut R) -> Populate {
@@ -128,10 +128,10 @@ impl World {
     }
 
 }
-{% endpygments %}
+```
 
 In the rendering logic inside `app.rs`, handle the case for `Tile::Npc`:
-{% pygments rust %}
+```rust
 // app.rs
 ...
 fn currently_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
@@ -161,7 +161,7 @@ fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
             .with_foreground(Rgb24::new_grey(63)),
     }
 }
-{% endpygments %}
+```
 
 The game engine can now represent NPCs, but we aren't adding any NPCs to the generated dungeon yet.
 
@@ -173,16 +173,16 @@ Start by adding a function that populates a room with NPCs.
 Each time an NPC is placed, there'll be an 80% chance of placing an orc, and a 20% chance of placing a troll.
 We'll need some more traits from the `rand` library to be in scope.
 
-{% pygments rust %}
+```rust
 // terrain.rs
 use rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
-{% endpygments %}
+```
 
 Now for the method that populates a room with NPCs.
 It's expected that this method is called _after_ the player character has been added.
 It first enumerates all the coordinates of cells in the room which contain floor tiles,
 then randomly selects `n` of them to replace with NPC tiles.
-{% pygments rust %}
+```rust
 impl Room {
     ...
     // Place `n` randomly chosen NPCs at random positions within the room
@@ -201,12 +201,12 @@ impl Room {
         }
     }
 }
-{% endpygments %}
+```
 
 Now update `generate_dungeon` to call `place_npcs` on each room.
 Use an array to control the probability distribution of NPCs per room.
 
-{% pygments rust %}
+```rust
 pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
     let mut grid = Grid::new_copy(size, None);
     let mut room_centres = Vec::new();
@@ -247,7 +247,7 @@ pub fn generate_dungeon<R: Rng>(size: Size, rng: &mut R) -> Grid<TerrainTile> {
 
     grid.map(|t| t.unwrap_or(TerrainTile::Wall))
 }
-{% endpygments %}
+```
 
 Run this, and you'll find yourself in a populated dungeon!
 
@@ -262,7 +262,7 @@ each time the player bumps into an NPC, and placeholder logic for NPC AI.
 
 Update `World::maybe_move_character` to print a message when the player bumps into a character.
 
-{% pygments rust %}
+```rust
 // world.rs
 impl World {
     ...
@@ -287,7 +287,7 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 Run the game and walk into an orc. The game will print "You harmlessly bump into the orc."
 For now this will just go to the program's standard output (the terminal).
@@ -296,7 +296,7 @@ In a later part we'll add a message log to the game's UI.
 Now to set the scene for AI. Add a `ComponentTable` directly to `GameState` for mapping each NPC's
 entity to its AI state (currently the AI state will just be a `()`).
 
-{% pygments rust %}
+```rust
 // game.rs
 ...
 use entity_table::ComponentTable;
@@ -308,7 +308,7 @@ pub struct GameState {
     visibility_grid: VisibilityGrid,
     ai_state: ComponentTable<()>,
 }
-{% endpygments %}
+```
 
 Why add `ai_state` to `GameState` and not to the `Components` struct in `world.rs`?
 When the NPCs take their turn, we'll iterate over the AI state of each entity,
@@ -321,7 +321,7 @@ action an NPC will take.
 To initialise `ai_state`, have the `World::populate` method create a `ComponentTable<()>`
 with an entry for each NPC it creates:
 
-{% pygments rust %}
+```rust
 // world.rs
 ...
 use entity_table::{ComponentTable, Entity, EntityAllocator};
@@ -354,11 +354,11 @@ impl World {
     }
     ...
 }
-{% endpygments %}
+```
 
 When constructing a new `GameState`, initialize the `ai_state` field with the corresponding
 field of `Populate`.
-{% pygments rust %}
+```rust
 // game.rs
 ...
 impl GameState {
@@ -379,13 +379,13 @@ impl GameState {
         ...
     }
 }
-{% endpygments %}
+```
 
 Now add a new method to `GameState` called `ai_turn` which iterates over all the entries
 in `ai_state` and prints a message. Later on we'll replace this with having the AI
 choose an action for the NPC to take.
 
-{% pygments rust %}
+```rust
 ...
 impl GameState {
     ...
@@ -402,7 +402,7 @@ impl GameState {
         }
     }
 }
-{% endpygments %}
+```
 
 Now that the basic framework for AI is set up, it will be easier to add AI in a future part.
 
