@@ -1556,3 +1556,5 @@ NPCs hit with confusion spells move randomly for their next 5 turns.
 {% image confusion.png %}
 
 Reference implementation branch: [part-9.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9.3)
+
+{% local roguelike-tutorial-2020-part-10 | Click here for the next part! %}

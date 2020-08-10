@@ -81,7 +81,6 @@ a.anchor {
 // Prevent images in articles appearing wider than the article body.
 article img {
   max-width: 100%;
-  padding: 10px 0;
 }
 
 // Applied to top-level elements to constrain their width, and center them in the page
@@ -105,6 +104,7 @@ div.highlight {
   background-color: $background-grey;
   padding: 8px 12px;
   overflow-x: auto;
+  margin: 10px 0;
 
   pre {
     margin: 0;
