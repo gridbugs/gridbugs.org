@@ -662,3 +662,5 @@ impl AppData {
 ```
 
 Reference implementation branch: [part-10.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10.3)
+
+{% local roguelike-tutorial-2020-part-11 | Click here for the next part! %}
