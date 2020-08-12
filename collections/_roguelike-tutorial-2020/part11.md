@@ -179,15 +179,27 @@ Comments inline.
 impl GameState {
     ...
     fn player_descend(&mut self) {
-        let player_data = self.world.remove_entity_data(self.player_entity); // remove and return the player's data
-        self.world.clear();                                                  // remove and discard all entities from the world
+
+        // remove and return the player's data
+        let player_data = self.world.remove_entity_data(self.player_entity);
+
+        // remove and discard all entities from the world
+        self.world.clear();
+
+        // generate a fresh level
         let Populate {
             player_entity,
             ai_state,
-        } = self.world.populate(&mut self.rng);                              // generate a fresh level
-        self.world.update_entity_data(player_entity, player_data);           // insert the old player data into the new level
-        self.player_entity = player_entity;                                  // the player's entity may have changed
-        self.ai_state = ai_state;                                            // replace ai state to match the new level
+        } = self.world.populate(&mut self.rng);
+
+        // insert the old player data into the new level
+        self.world.update_entity_data(player_entity, player_data);
+
+        // the player's entity may have changed
+        self.player_entity = player_entity;
+
+        // replace ai state to match the new level
+        self.ai_state = ai_state;
     }
     ...
 }
