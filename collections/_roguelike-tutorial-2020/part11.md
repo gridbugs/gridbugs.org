@@ -1346,3 +1346,5 @@ Now when the player hits '>' while standing on the stairs, they see a menu like 
 If they make a selection, the relevant stat will increase, and they'll descend to the next dungeon level.
 
 Reference implementation branch: [part-11.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.4)
+
+{% local roguelike-tutorial-2020-part-12 | Click here for the next part! %}

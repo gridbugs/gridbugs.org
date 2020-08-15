@@ -40,7 +40,7 @@ Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 ...
 [dependencies]
 chargrid_graphical = "0.2"  # graphical frontend for chargrid applications
-chargrid = "0.1"            # library for implementing chargrid applications
+chargrid = "0.3"            # library for implementing chargrid applications
 ```
 
 Now update your main function:
