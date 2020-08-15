@@ -790,7 +790,7 @@ impl<'a> View<&'a [LogMessage]> for MessagesView {
                     write!(&mut buf[0].text, "You dodge the ").unwrap();
                     write!(&mut buf[1].text, "{}'s", npc_type.name()).unwrap();
                     buf[1].style.foreground = Some(colours::npc_colour(npc_type));
-                    write!(&mut buf[2].text, "attack.").unwrap();
+                    write!(&mut buf[2].text, " attack.").unwrap();
                 }
                 NpcDodges(npc_type) => {
                     write!(&mut buf[0].text, "The ").unwrap();
