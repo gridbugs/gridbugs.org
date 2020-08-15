@@ -181,10 +181,13 @@ impl GameState {
     fn player_descend(&mut self) {
 
         // remove and return the player's data
-        let player_data = self.world.remove_entity_data(self.player_entity);
+        let player_data = self.world.remove_character(self.player_entity);
 
         // remove and discard all entities from the world
         self.world.clear();
+
+        // forget the visible areas of the map
+        self.visibility_grid.clear();
 
         // generate a fresh level
         let Populate {
@@ -193,7 +196,7 @@ impl GameState {
         } = self.world.populate(&mut self.rng);
 
         // insert the old player data into the new level
-        self.world.update_entity_data(player_entity, player_data);
+        self.world.replace_character(player_entity, player_data);
 
         // the player's entity may have changed
         self.player_entity = player_entity;
@@ -204,12 +207,17 @@ impl GameState {
     ...
 }
 ```
-This code depends on several not-yet-implemented methods of `World`. Let's implement them now.
+This code depends on several not-yet-implemented methods of `World` and `VisibilityGrid`. Let's implement them now.
 
 ```rust
 // world.rs
 ...
 pub use components::EntityData;
+...
+pub struct CharacterData {
+    entity_data: EntityData,
+    inventory_entity_data: Vec<Option<EntityData>>,
+}
 ...
 impl World {
     ...
@@ -219,14 +227,59 @@ impl World {
         self.spatial_table.clear();
     }
 
-    pub fn remove_entity_data(&mut self, entity: Entity) -> EntityData {
+    fn remove_entity_data(&mut self, entity: Entity) -> EntityData {
         self.entity_allocator.free(entity);
         self.spatial_table.remove(entity);
         self.components.remove_entity_data(entity)
     }
 
-    pub fn update_entity_data(&mut self, entity: Entity, data: EntityData) {
-        self.components.update_entity_data(entity, data);
+    pub fn remove_character(&mut self, entity: Entity) -> CharacterData {
+        let mut entity_data = self.remove_entity_data(entity);
+        // Remove the inventory from the character. An inventory contains entities referring data
+        // in the current world. These data will also be removed here, and combined with the
+        // `EntityData` of the character to form a `CharacterData`. When the `CharacterData` is
+        // re-inserted into the world, the inventory item data will be inserted first, at which
+        // point each item will be assigned a fresh entity. The character will get a brand new
+        // inventory containing the new entities.
+        let inventory_entity_data = entity_data
+            .inventory
+            .take()
+            .expect("character missing inventory")
+            .slots()
+            .iter()
+            .map(|maybe_slot| maybe_slot.map(|entity| self.remove_entity_data(entity)))
+            .collect::<Vec<_>>();
+        CharacterData {
+            entity_data,
+            inventory_entity_data,
+        }
+    }
+
+    pub fn replace_character(
+        &mut self,
+        entity: Entity,
+        CharacterData {
+            mut entity_data,
+            inventory_entity_data,
+        }: CharacterData,
+    ) {
+        // Before inserting the character's data, create new entities to contain each item in the
+        // character's inventory.
+        let inventory_slots = inventory_entity_data
+            .into_iter()
+            .map(|maybe_entity_data| {
+                maybe_entity_data.map(|entity_data| {
+                    let entity = self.entity_allocator.alloc();
+                    self.components.update_entity_data(entity, entity_data);
+                    entity
+                })
+            })
+            .collect::<Vec<_>>();
+        // Make a new inventory containing the newly created entities, and add it to the character.
+        entity_data.inventory = Some(Inventory {
+            slots: inventory_slots,
+        });
+        self.components.update_entity_data(entity, entity_data);
     }
 
     pub fn coord_contains_stairs(&self, coord: Coord) -> bool {
@@ -236,6 +289,23 @@ impl World {
             .map(|floor_entity| self.components.stairs.contains(floor_entity))
             .unwrap_or(false)
     }
+}
+```
+Most of the complexity above is because the items in the player's inventory need to transition between
+dungeon levels along with the player.
+
+```rust
+// visibility.rs
+...
+impl VisibilityGrid {
+    ...
+    pub fn clear(&mut self) {
+        self.count = 1;
+        for cell in self.grid.iter_mut() {
+            *cell = Default::default();
+        }
+    }
+    ...
 }
 ```
 You can now move onto a staircase, and press '>', and you'll find yourself in a brand-new level.
@@ -328,9 +398,11 @@ impl GameState {
         initial_visibility_algorithm: VisibilityAlgorithm,
     ) -> Self {
         ...
+        let dungeon_level = 1;
+        ...
         let mut game_state = Self {
             ...
-            dungeon_level: 1,
+            dungeon_level,
         };
         ...
     }
@@ -948,16 +1020,17 @@ impl GameState {
     pub fn player_level_up_and_descend(&mut self, level_up: LevelUp) {
         assert!(self.is_player_on_stairs());
         self.world.level_up_character(self.player_entity, level_up);
-        let player_data = self.world.remove_entity_data(self.player_entity);
+        let player_data = self.world.remove_character(self.player_entity);
         self.world.clear();
+        self.visibility_grid.clear();
+        self.dungeon_level += 1;
         let Populate {
             player_entity,
             ai_state,
         } = self.world.populate(&mut self.rng);
-        self.world.update_entity_data(player_entity, player_data);
+        self.world.replace_character(player_entity, player_data);
         self.player_entity = player_entity;
         self.ai_state = ai_state;
-        self.dungeon_level += 1;
     }
     pub fn is_player_on_stairs(&self) -> bool {
         self.world.coord_contains_stairs(self.player_coord())
@@ -1201,6 +1274,9 @@ impl AppView {
 
 Update `AppData::handle_input` such that when '>' is pressed, rather than immediately descending,
 return a new `GameReturn` representing the fact that a level-up menu should be run.
+Also add a helper function for applying the `LevelUp` and descending the player.
+Run the visibility system after descending so that the next time the game state is rendered
+there are visible cells from the new level.
 
 ```rust
 // app.rs
@@ -1230,7 +1306,11 @@ impl AppData {
         }
         ...
     }
-    ...
+
+    fn player_level_up_and_descend(&mut self, level_up: LevelUp) {
+        self.game_state.player_level_up_and_descend(level_up);
+        self.game_state.update_visibility(self.visibility_algorithm);
+    }
 }
 ```
 
@@ -1248,7 +1328,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
                 SideEffect::new_with_view(move |data: &mut AppData, _: &_| {
                     match maybe_level_up {
                         Err(menu::Escape) => (),
-                        Ok(level_up) => data.game_state.player_level_up_and_descend(level_up),
+                        Ok(level_up) => data.player_level_up_and_descend(level_up),
                     }
                     None
                 })
