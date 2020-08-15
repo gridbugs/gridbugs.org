@@ -23,7 +23,7 @@ This will make it easier to increase the chance of spawning more dangerous NPCs 
 the player descends. It will also make it easier to balance the game later, as the logic for placing NPCs and items
 will be separate from the specification of how likely each NPC and item is to spawn.
 
-Add this function to `terrain.rs`. It takes a probability distribution, as a slice of pairs of values and numbers,
+Add this function to `terrain.rs`. It takes a probability distribution represented by a slice of pairs of values and numbers,
 where the relative size of numbers determines the chance that a value is chosen.
 ```rust
 // terrain.rs

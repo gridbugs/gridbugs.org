@@ -5,12 +5,12 @@ index: 13
 date: 2020-08-15 19:40:00 +1000
 title: "Part 13 - Equipment"
 permalink: /roguelike-tutorial-2020-part-13/
-og_image: inventory.png
+og_image: screenshot.png
 ---
 
 This is the final part of the tutorial, in which we'll add equipment.
 
-{% image inventory.png %}
+{% image screenshot.png %}
 
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-13/) of the
 python tcod tutorial.
@@ -146,9 +146,7 @@ pub mod colours {
     ...
     pub fn item_colour(item_type: ItemType) -> Rgb24 {
         match item_type {
-            ItemType::HealthPotion => HEALTH_POTION,
-            ItemType::FireballScroll => FIREBALL_SCROLL,
-            ItemType::ConfusionScroll => CONFUSION_SCROLL,
+            ...
             ItemType::Sword => SWORD,
             ItemType::Staff => STAFF,
             ItemType::Armour => ARMOUR,
