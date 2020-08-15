@@ -1,14 +1,19 @@
 ---
 layout: default
 ---
-<h1 itemprop="name headline">{{ page.title | escape }}</h1>
+<article>
+  <header>
+    <h1 itemprop="name headline">{{ page.title | escape }}</h1>
+  </header>
 
-<ul class="no-bullet">
-  {% for page in site[page.series] %}
-  {% if page.index %}
-  <li><a href="{{ site.baseurl }}{{ page.permalink }}">{{ page.title }}</a></li>
-  {% endif %}
-  {% endfor %}
-</ul>
+  <ul class="no-bullet">
+    {% for page in site[page.series] %}
+    {% if page.index %}
+    <li><a href="{{ site.baseurl }}{{ page.permalink }}">{{ page.title }}</a></li>
+    {% endif %}
+    {% endfor %}
+  </ul>
 
-{{ content }}
+  {{ content }}
+
+</article>
