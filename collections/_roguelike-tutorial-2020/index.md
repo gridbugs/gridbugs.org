@@ -11,5 +11,6 @@ og_image: screenshot.png
 In this tutorial series we'll implement a roguelike from scratch in rust
 using the [chargrid](https://crates.io/crates/chargrid) library for
 rendering and input handling. All the code is available on github: [chargrid-roguelike-tutorial-2020](https://github.com/stevebob/chargrid-roguelike-tutorial-2020).
+If you spot a bug in the tutorial, raise an issue or submit a pull request.
 
 {% image screenshot.png %}
