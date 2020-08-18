@@ -344,7 +344,7 @@ To add the most basic of gameplay, begin by adding one more dependency to let us
 ...
 [dependencies]
 ...
-directions = "0.17"           # representation of directions
+direction = "0.17"           # representation of directions
 ```
 
 This game will only allow movement in cardinal directions (north, south, east, west). Import the corresponding type:
