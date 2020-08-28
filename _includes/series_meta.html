@@ -10,13 +10,15 @@
   {% if include.post.index > 0 %}
   {% assign prev_index = include.post.index %}
   <a href="{{ site.baseurl }}{{ site[include.post.series][prev_index].permalink }}">prev</a>
+  {% else %}
+  prev
   {% endif %}
-  {% if include.post.index > 0 and include.post.index < last_index %}
-     |
-  {% endif %}
+   |
   {% if include.post.index < last_index %}
   {% assign next_index = include.post.index | plus: 2 %}
   <a href="{{ site.baseurl }}{{ site[include.post.series][next_index].permalink }}">next</a>
+  {% else %}
+  next
   {% endif %}
 ]
 {% endif %}

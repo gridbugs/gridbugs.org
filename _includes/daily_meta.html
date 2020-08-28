@@ -21,13 +21,15 @@ is found, then treat the counter as the index of the current page.
   {% if current_index_hack > 0 %}
   {% assign prev_index = current_index_hack | minus: 1 %}
   <a href="{{ site.baseurl }}{{ site["daily"][prev_index].url }}">prev</a>
+  {% else %}
+  prev
   {% endif %}
-  {% if current_index_hack > 0 and current_index_hack < last_index %}
-     |
-  {% endif %}
+  |
   {% if current_index_hack < last_index %}
   {% assign next_index = current_index_hack | plus: 1 %}
   <a href="{{ site.baseurl }}{{ site["daily"][next_index].url }}">next</a>
+  {% else %}
+  next
   {% endif %}
 ]
 {% endif %}
