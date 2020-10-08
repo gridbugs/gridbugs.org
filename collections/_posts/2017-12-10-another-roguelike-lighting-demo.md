@@ -17,12 +17,7 @@ tried.
 {% image screenshot.png %}
 <!--more-->
 
-## Download
-Want to try it out for yourself?
-- [Source on github](https://github.com/stevebob/lighting-experiment)
-- [Linux 64 bit](https://files.gridbugs.org/lighting-experiment-linux-x86_64.zip)
-- [macOS 64 bit](https://files.gridbugs.org/lighting-experiment-macos-x86_64.dmg)
-- [Windows 64 bit](https://files.gridbugs.org/lighting-experiment-windows-x86_64.zip)
+View the [source on github](https://github.com/stevebob/lighting-experiment).
 
 ## Graphics Hardware
 

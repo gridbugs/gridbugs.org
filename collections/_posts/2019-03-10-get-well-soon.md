@@ -13,21 +13,11 @@ reach the bottom of the dungeon and reclaim what you have lost.
 
 It is my entry in the 7 Day Roguelike game jam for 2019.
 
+Play or download Get Well Soon on [its itch.io page](https://gridbugs.itch.io/get-well-soon).
+
+View the [source code on github](https://github.com/stevebob/gws/tree/7drl).
+
 {% image screenshot.png %}
-
-Download links are below.
-The "Linux" and "MacOS (binaries)" packages contain the graphical version of the game,
-and a version which runs in a unix terminal.
-
-The "Windows" and "MacOS (app)" packages just include the graphical version.
-
-- [itch.io](https://gridbugs.itch.io/get-well-soon)
-- [Windows](https://files.gridbugs.org/get-well-soon-windows-x86_64-7drl.zip)
-- [Linux](https://files.gridbugs.org/get-well-soon-linux-x86_64-7drl.zip)
-- [MacOS (app)](https://files.gridbugs.org/GetWellSoon-7drl.dmg)
-- [MacOS (binaries)](https://files.gridbugs.org/get-well-soon-macos-x86_64-7drl.zip)
-- [Play in Browser](https://games.gridbugs.org/get-well-soon/7drl/)
-- [Source Code](https://github.com/stevebob/gws/tree/7drl)
 
 <!--more-->
 
