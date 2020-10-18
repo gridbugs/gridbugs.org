@@ -5,7 +5,11 @@ title_date: true
 <article>
   <header>
     <h1 itemprop="name headline">
-      {{ page.date | date: "%Y-%m-%d" }}{% if page.title != "" %}: {{ page.title | escape }}{% endif %}
+      {% if page.title == "" %}
+        {{ page.date | date: "%Y-%m-%d" }}
+      {% else %}
+        {{ page.title | escape }}
+      {% endif %}
     </h1>
     {% include daily_meta.html post=page %}
   </header>

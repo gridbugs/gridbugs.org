@@ -1,5 +1,9 @@
 <p class="post-meta">
-<a href="{{ site.baseurl }}/daily">daily post</a>
+<time datetime="{{ include.post.date | date_to_xmlschema }}" itemprop="datePublished">
+  {{ include.post.date | date: "%Y-%m-%d" }}
+</time>
+in
+<a href="{{ site.baseurl }}/daily">daily posts</a>
 {% assign last_index = site["daily"].size | minus: 2 %}
 
 {% comment %}

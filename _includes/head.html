@@ -10,7 +10,11 @@
   {% endif %}
   <title>
     {% if layout.title_date %}
-    {{ page.date | date: "%Y-%m-%d" }}{% if page.title and page.title != "" %}: {{ page.title | escape }}{% endif %}
+      {% if page.title == "" %}
+        {{ page.date | date: "%Y-%m-%d" }}
+      {% else %}
+        {{ page.title | escape }}
+      {% endif %}
     {% elsif page.title and page.title != "" %}
       {{ page.title | escape }}
     {% else %}
