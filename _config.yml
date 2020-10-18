@@ -41,6 +41,7 @@ collections:
     output: true
   daily:
     output: true
+    permalink: /:collection/:name/:title/
 
 future: true
 
