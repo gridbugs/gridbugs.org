@@ -1,8 +1,10 @@
 ---
-layout: daily
-date: 2020-12-18
+layout: post
 title: NTFS on FreeBSD
-slug: ntfs-on-freebsd
+date: 2020-12-18
+categories: unix
+permalink: /ntfs-on-freebsd/
+excerpt_separator: <!--more-->
 ---
 
 Here's a guide for myself on how to format and mount an NTFS partition on FreeBSD.
@@ -27,6 +29,8 @@ Providers:
    fwsectors: 63
    fwheads: 255
 ```
+
+<!--more-->
 
 This guide will create a single giant NTFS partition taking up the entirety of da1.
 
