@@ -3,7 +3,7 @@ layout: post
 title: Boss fights in traditional roguelikes
 date: 2020-10-24
 categories: roguelikes
-permalink: boss-fights-in-traditional-roguelikes
+permalink: /boss-fights-in-traditional-roguelikes/
 excerpt_separator: <!--more-->
 ---
 
