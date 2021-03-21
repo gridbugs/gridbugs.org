@@ -5,6 +5,7 @@ date: 2021-03-21
 categories: emulation
 permalink: /reverse-engineering-nes-tetris-to-add-hard-drop/
 excerpt_separator: <!--more-->
+og_image: screenshot1.png
 ---
 
 <style>
