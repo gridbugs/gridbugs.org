@@ -149,121 +149,270 @@ is a general term for devices reading and writing main memory directly.) Writing
 hardware on the NES to copy sprite metadata out of the specified region of main memory, and into specialised Object Attribute Memory
 which will be consulted during rendering to draw the sprites.
 
-The OAMDMA register is mapped into the CPU's address space at address 0x4014.
+The OAMDMA register is mapped into the CPU's address space at address `0x4014`.
 Searching the disassembled program for this address reveals:
 ```
 0xAB63  Lda(Immediate) 0x02       # load accumulator with 2
 0xAB65  Sta(Absolute) 0x4014      # write accumulator to 0x4014
 ```
-This writes the value 2 to OAMDMA causing the memory from 0x0200 to 0x02FF to be copied to OAM.
-Searching the code for 0x0200, and a particular function appears obviously relevant:
-```
-0x8A0A  Lda(ZeroPage) 0x40           #
-0x8A0C  Asl(Accumulator)             #
-0x8A0D  Asl(Accumulator)             #
-0x8A0E  Asl(Accumulator)             #
-0x8A0F  Adc(Immediate) 0x60          #
-0x8A11  Sta(ZeroPage) 0x00AA         #   *(0x00AA) = (*(0x0040) x 8) + 0x60
-...
-0x8A2D  Lda(ZeroPage) 0x41           #
-0x8A2F  Rol(Accumulator)             #
-0x8A30  Rol(Accumulator)             #
-0x8A31  Rol(Accumulator)             #
-0x8A32  Adc(Immediate) 0x2F          #
-0x8A34  Sta(ZeroPage) 0xAB           #   *(0x00AB) = (*(0x0041) x 8) + 0x2F
-...
-0x8A36  Lda(ZeroPage) 0x42           #
-0x8A38  Sta(ZeroPage) 0xAC           #
-0x8A3A  Clc(Implied)                 #
-0x8A3B  Lda(ZeroPage) 0xAC           #
-0x8A3D  Rol(Accumulator)             #
-0x8A3E  Rol(Accumulator)             #
-0x8A3F  Sta(ZeroPage) 0xA8           #
-0x8A41  Rol(Accumulator)             #
-0x8A42  Adc(ZeroPage) 0xA8           #
-0x8A44  Tax(Implied)                 #  IndexRegister_X = *(0x0042) x 12
-...
-0x8A4B  Lda(AbsoluteXIndexed) 0x8A9C #
-0x8A4E  Asl(Accumulator)             #
-0x8A4F  Asl(Accumulator)             #
-0x8A50  Asl(Accumulator)             #
-0x8A51  Clc(Implied)                 #
-0x8A52  Adc(ZeroPage) 0xAB           #
-0x8A54  Sta(AbsoluteYIndexed) 0x0200 #  *(0x0200 + IndexRegister_Y) =
-                                     #    (*(0x8A9C + IndexRegister_X) x 8) + *(0x00AB)
-...
-                                     #  // several increments to IndexRegister_X
-                                     #  //   and IndexRegister_Y
-...
-0x8A87  Lda(AbsoluteXIndexed) 0x8A9C #
-0x8A8A  Asl(Accumulator)             #
-0x8A8B  Asl(Accumulator)             #
-0x8A8C  Asl(Accumulator)             #
-0x8A8D  Clc(Implied)                 #
-0x8A8E  Adc(ZeroPage) 0xAA           #
-0x8A90  Sta(AbsoluteYIndexed) 0x0200 # *(0x0200 + IndexRegister_Y) =
-                                     #    (*(0x8A9C + IndexRegister_X) x 8) + *(0x00AA)
+This writes the value 2 to OAMDMA causing the memory from `0x0200` to `0x02FF` to be copied to OAM.
+Searching the code for 0x0200, and one function in particular jumps out as being responsible
+for populating the OAM DMA buffer. This function is at `0x8A0A` and can tell us a great deal
+about how Tetris works.
+
+It starts by reading values from addresses `0x0040` and `0x0041`, multiplying each by 8, and adding them to some offsets.
+On the NES, each tile is 8x8 pixels, so this appears to be translating from a tile coordinate into a pixel coordinate,
+where the offsets are the components of the pixel coordinate of the top left corner of the board.
+A few minutes poking around in mesen confirms this - `0x40` is the x coordinate, and `0x41` is the y coordinate.
+
+The function then reads from `0x42`. This location always contains a value between 0 and 12 which appears to encode the
+shape of the current piece, as well as its rotation. For shapes with rotational symmetry (such as the "S" piece), the
+multiple identical rotations get a single value in `0x42`. I'll refer to this value as the "shape index".
+
+Each piece in Tetris is made up of 4 tiles, and one sprite is rendered for each tile.
+The coordinate in `0x40` and `0x41` is the position of the piece, but in order to render the
+sprites we must find out the position of each tile. To this end, this function consults a table in ROM
+at address `0x8A9C` which I'll refer to as the "shape table". Each of the 13 pieces (including unique rotations)
+has a 12-byte entry in the shape table. The entry for a piece stores 3 bytes for each of the 4 tiles:
+ - the y offset of the tile (relative to `0x41`)
+ - the index of the sprite to use when rendering the tile
+ - the x offset of the tile (relative to `0x40`)
+
+This function computes the location and sprite index of each tile of the current piece, and populates the
+OAM DMA buffer with this information. To render the ghost piece, I need a similar function, except it renders
+each tile with the ghost tile rather than the tile from the shape table, and it renders the piece at a vertical
+offset so that the piece appears at the location where it would land after a hard drop.
+It would be non-trivial to modify this function in-place to be general over the ghost piece and regular piece,
+so instead I copy/pasted the code and changed it to do what I need.
+
+I started by using mesen's memory viewer to locate a seemingly unused region of ROM.
+I don't know why it's striped with `0x00` and `0xFF`! Also I don't know how to change mesen's font to be monospace!
+
+{% image mesen1.png %}
+
+I claimed 512 bytes of memory starting at address `0xD6D0`. The first code I added to this region was
+a function that simply calls the existing OAM DMA buffer update function:
+
+```rust
+b.label("oam-dma-buffer-update");
+
+// Call original function
+b.inst(Jsr(Absolute), 0x8A0A);
+
+// Return
+b.inst(Rts, ());
 ```
 
-Here's how the above code might look translated into c.
-This is here purely to help communicate why the above code looks relevant.
-At no point during this project did I write a line of c.
-The names are my own. There's some more details that
-I omitted above in the interest of brevity.
 
-```c
-byte* current_piece_tile_x = (byte*)0x0040;
-byte* current_piece_tile_y = (byte*)0x0041;
+My patching tool replaces all calls to the original function (`0x8A0A`) with calls to this new one.
 
-#define TILE_SIZE_IN_PIXELS 8
-#define BOARD_LEFT_IN_PIXELS 0x60
-#define BOARD_TOP_IN_PIXELS 0x2F
+Next I took the disassembled code from the original OAM DMA buffer update function and hand-translated
+it into my rust domain-specific language for NES assembly.
 
-byte* current_piece_pixel_x = (byte*)0x00AA;
-byte* current_piece_pixel_y = (byte*)0x00AB;
+This:
+```
+0x8A0A  Lda(ZeroPage) 0x40
+0x8A0C  Asl(Accumulator)
+0x8A0D  Asl(Accumulator)
+0x8A0E  Asl(Accumulator)
+0x8A0F  Adc(Immediate) 0x60
+0x8A11  Sta(ZeroPage) 0xAA
+...
+```
+...becomes:
+```rust
+b.label("render-ghost-piece"); // function label so it can be called by name later
 
-// This holds a number from 0 to 12 which uniquiely identifies the current piece's shape
-// and rotation. Rotational symetry is accounted for. E.g. the L piece has 4 different
-// possible values, the S piece has 2, and the O piece has 1.
-byte* current_piece_shape_index = (byte*)0x0042;
+b.inst(Lda(ZeroPage), 0x40);
+b.inst(Asl(Accumulator), ());
+b.inst(Asl(Accumulator), ());
+b.inst(Asl(Accumulator), ());
+b.inst(Adc(Immediate), 0x60);
+b.inst(Sta(ZeroPage), 0xAA);
+...
+```
 
-byte* shape_table = (byte*)0x8A9C;
+I modified my copy of the OAM DMA buffer update to use the ghost tile instead of the tile
+read from the shape buffer. To test this change, I updated `oam-dma-buffer-update` to call
+this function instead of the original:
 
-#define SHAPE_TABLE_ENTRY_NUM_TILES 4      // each piece is made up of 4 tiles
-#define SHAPE_TABLE_ENTRY_TILE_BYTES 3     // each tile in the shape takes up 3 bytes
-#define SHAPE_TABLE_ENTRY_OFFSET_Y 0       // the first byte of the tile is its y offset
-#define SHAPE_TABLE_ENTRY_SPRITE_INDEX 1   // the second is its sprite index
-#define SHAPE_TABLE_ENTRY_OFFSET_X 2       // the third is its x offset
-#define SHAPE_TABLE_ENTRY_BYTES (SHAPE_TABLE_ENTRY_NUM_TILES * SHAPE_TABLE_ENTRY_TILE_BYTES) // 12
+```rust
+b.label("oam-dma-buffer-update");
 
-byte* oam_buffer = (byte*)0x0200;
+// Call new function
+b.inst(Jsr(Absolute), "render-ghost-piece");
 
-#define OAM_ENTRY_NUM_BYTES 4
-#define OAM_ENTRY_PIXEL_COORD_Y 0
-#define OAM_ENTRY_SPRITE_INDEX 1
-#define OAM_ENTRY_ATTRIBUTES 2
-#define OAM_ENTRY_PIXEL_COORD_X 3
+// Return
+b.inst(Rts, ());
+```
 
-void update_oam_buffer() {
+<div class="nes-screenshot">
+{% image ghost-piece-test1.webp %}
+</div>
 
-    *current_piece_pixel_x = (*current_piece_tile_x * TILE_SIZE_IN_PIXELS) + BOARD_LEFT_IN_PIXELS;
-    *current_piece_pixel_y = (*current_piece_tile_y * TILE_SIZE_IN_PIXELS) + BOARD_TOP_IN_PIXELS;
+Next I made my ghost piece rendering function take an argument specifying the vertical distance
+below the current piece at which it should render the ghost piece. Eventually this will be
+computed based on how many times the piece could move downwards before colliding, but first
+I tried calling it with a constant (6).
 
-    int shape_table_index_base = *current_piece_shape_index * SHAPE_TABLE_ENTRY_BYTES;
+```rust
+b.label("oam-dma-buffer-update");
 
-    for (int i = 0; i < SHAPE_TABLE_ENTRY_NUM_TILES; i++) {
-        int shape_table_tile_index = shape_table_index_base + (i * SHAPE_TABLE_ENTRY_TILE_BYTES);
-        int tile_offset_y = shape_table[shape_table_tile_index + SHAPE_TABLE_ENTRY_OFFSET_Y];
-        int sprite_index = shape_table[shape_table_tile_index + SHAPE_TABLE_ENTRY_SPRITE_INDEX];
-        int tile_offset_x = shape_table[shape_table_tile_index + SHAPE_TABLE_ENTRY_OFFSET_X];
+// Call original function first
+b.inst(Jsr(Absolute), 0x8A0A);
 
-        oam_buffer[OAM_ENTRY_PIXEL_COORD_Y] =
-          *current_piece_pixel_y + (tile_offset_y * TILE_SIZE_IN_PIXELS);
-        oam_buffer[OAM_ENTRY_SPRITE_INDEX] = sprite_index;
-        oam_buffer[OAM_ENTRY_ATTRIBUTES] = 2; // select palette 2
-        oam_buffer[OAM_ENTRY_PIXEL_COORD_X] =
-          *current_piece_pixel_x + (tile_offset_x * TILE_SIZE_IN_PIXELS);
-    }
+// Render the ghost piece, passing the vertical offset argument in address `0x0028`.
+b.inst(Lda(Immediate), 6);
+b.inst(Sta(ZeroPage), 0x28);
+b.inst(Jsr(Absolute), "render-ghost-piece");
+
+// Return
+b.inst(Rts, ());
+```
+
+<div class="nes-screenshot">
+{% image ghost-piece-test2.webp %}
+</div>
+
+Now to compute the true vertical offset from the current piece to the place it would land after
+dropping. By watching memory with mesen, I observed that nothing seemed to be using memory from `0x0020` to `0x0028`.
+The first 256 bytes of memory is referred to as the "zero page" and affords faster access than the rest of memory.
+I wanted 8 zero page bytes to store the X,Y coordinates of each tile of the current piece during collision detection,
+and one additional byte to store temporary values during computation.
+
+Start by initializing the values at `0x20` to `0x27` to the X,Y coordinates of each tile of the current piece:
+```rust
+b.label("compute-hard-drop-distance"); // function label so it can be called by name later
+
+const SHAPE_TABLE: Address = 0x8A9C;
+const ZP_PIECE_COORD_X: u8 = 0x40;
+const ZP_PIECE_COORD_Y: u8 = 0x41;
+const ZP_PIECE_SHAPE: u8 = 0x42;
+
+// Multiply the shape by 12 to make an offset into the shape table,
+// storing the result in IndexRegisterX.
+b.inst(Lda(ZeroPage), ZP_PIECE_SHAPE);  // read shape index into accumulator
+b.inst(Clc, ());               // clear carry flag to prepare for arithmetic
+b.inst(Rol(Accumulator), ());  // rotate left: index * 2
+b.inst(Rol(Accumulator), ());  // rotate left: index * 4
+b.inst(Sta(ZeroPage), 0x20);   // store index * 4 at 0x0020
+b.inst(Rol(Accumulator), ());  // rotate left: index * 8
+b.inst(Adc(ZeroPage), 0x20);   // add to 0x0020: index * 12
+b.inst(Tax, ());               // transfer accumulator to IndexRegisterX
+
+// Store absolute X,Y coords of each tile by reading relative coordinates from shape table
+// and adding the piece offset, storing the result in zero page 0x20..=0x27.
+for i in 0..4 { // this is a rust loop - the assembly generated inside will be generated 4 times
+    b.inst(Lda(AbsoluteXIndexed), Addr(SHAPE_TABLE)); // read Y offset from shape table
+    b.inst(Clc, ());                                  // clear carry flag to prepare for addition
+    b.inst(Adc(ZeroPage), ZP_PIECE_COORD_Y);          // add to Y coordinate of piece
+    b.inst(Sta(ZeroPage), 0x21 + (i * 2));            // store the result in zero page
+    b.inst(Inx, ());                                  // increment IndexRegisterX to sprite index
+    b.inst(Inx, ());                                  // increment IndexRegisterX to X offset
+    b.inst(Lda(AbsoluteXIndexed), Addr(SHAPE_TABLE)); // read X offset from shape table
+    b.inst(Clc, ());                                  // clear carry flag to prepare for addition
+    b.inst(Adc(ZeroPage), ZP_PIECE_COORD_X);          // add to X coordinate of piece
+    b.inst(Sta(ZeroPage), 0x20 + (i * 2));            // store the result in zero page
+    b.inst(Inx, ());                                  // increment IndexRegisterX to next tile
 }
-
 ```
+
+Now for the actual collision detection!
+Repeatedly increment the Y component of each tile coordinate in the `0x20` to `0x27` addresses
+until one of the tiles either collides with a locked-in tile, or goes off the bottom of the
+board.
+By examining memory with mesen, I learnt that the board state is stored as a row-major array
+of sprite indices beginning at `0x0400`, and that `0xEF` is the index of the "empty space" tile.
+The strategy will be to use the coordinate of each tile to construct an index into this
+array, and stop if anything other than `0xEF` is found.
+
+A possible point of confusion in the code below is that it implements a loop in assembly,
+but there is also a rust for-loop that generates assembly. These two loops are unrelated.
+The code in the rust loop is emitted 4 times, and the result makes up the body of the
+assembly loop.
+
+```rust
+const BOARD_TILES: Address = 0x0400;
+const EMPTY_TILE: u8 = 0xEF;
+const BOARD_HEIGHT: u8 = 20;
+
+b.inst(Ldx(Immediate), 0);   // Load 0 into IndexRegisterX - this will be our loop counter
+
+b.label("start-ghost-depth-loop"); // This is a label - a target for branch instructions
+
+for i in 0..4 { // the assembly in this rust loop will be emitted 4 times
+
+    // Increment the Y component of the coordinate
+    b.inst(Inc(ZeroPage), 0x21 + (i * 2));
+
+    // Break out of the loop if the tile is off the bottom of the board
+    b.inst(Lda(ZeroPage), 0x21 + (i * 2));
+    b.inst(Cmp(Immediate), BOARD_HEIGHT);
+    b.inst(Bpl, LabelRelativeOffset("end-ghost-depth-loop"));
+
+    // Multiply the Y component of the coordinate by 10 (the number of columns)
+    b.inst(Asl(Accumulator), ());
+    b.inst(Sta(ZeroPage), 0x28); // store Y * 2
+    b.inst(Asl(Accumulator), ());
+    b.inst(Asl(Accumulator), ()); // accumulator now contains Y * 8
+    b.inst(Clc, ());
+    b.inst(Adc(ZeroPage), 0x28); // accumulator now contains Y * 10
+
+    // Now add the X component to get the row-major index of the cell
+    b.inst(Adc(ZeroPage), 0x20 + (i * 2));
+
+    // Load the tile at that coordinate
+    b.inst(Tay, ());
+    b.inst(Lda(AbsoluteYIndexed), BOARD_TILES);
+
+    // Test whether the tile is empty, breaking out of the loop if it is not
+    b.inst(Cmp(Immediate), EMPTY_TILE);
+    b.inst(Bne, LabelRelativeOffset("end-ghost-depth-loop"));
+}
+// Increment counter and loop
+b.inst(Inx, ());
+b.inst(Jmp(Absolute), "start-ghost-depth-loop");
+
+b.label("end-ghost-depth-loop");
+```
+
+This results with `IndexRegisterX` containing the number of times the loop iterated, which is
+also the vertical distance from the current piece to where it will end up after dropping.
+For the convenience of callers, this function will return this result via the accumulator register:
+
+```rust
+// Return depth via accumulator
+b.inst(Txa, ());  // transfer IndexRegisterX to accumulator
+b.inst(Rts, ());  // return
+```
+
+The full body of the replacement OAM DMA buffer update function is now:
+
+```rust
+b.label("oam-dma-buffer-update");
+
+// Call original function first
+b.inst(Jsr(Absolute), 0x8A0A);
+
+// Compute distance from current piece to drop destination, placing result in accumulator
+b.inst(Jsr(Absolute), "compute-hard-drop-distance");
+
+// Check if the distance is 0, and skip rendering the ghost piece in this case
+b.inst(Beq, LabelRelativeOffset("after-render-ghost-piece"));
+
+// Render the ghost piece, passing the vertical offset argument in address `0x0028`.
+b.inst(Sta(ZeroPage), 0x28);
+b.inst(Jsr(Absolute), "render-ghost-piece");
+
+b.label("after-render-ghost-piece");
+
+// Return
+b.inst(Rts, ());
+```
+
+The result:
+<div class="nes-screenshot">
+{% image ghost-piece-test3.webp %}
+</div>
+
+## Adding the Hard Drop Control
