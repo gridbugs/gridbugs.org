@@ -52,7 +52,7 @@ For soft drop, pressing a button will instantly move the current piece down one 
 the button will cause it to drop faster than it otherwise would.
 
 <div class="nes-screenshot">
-{% image soft-drop-animation.webp %}
+{% image soft-drop-animation.gif %}
 </div>
 
 Hard drop instantly drops the current piece and locks it into place.
@@ -61,7 +61,7 @@ to visually tell whether the piece is lined up with where they want it to land, 
 hard drop usually display a ghost piece showing where the current piece will end up.
 
 <div class="nes-screenshot">
-{% image hard-drop-animation.webp %}
+{% image hard-drop-animation.gif %}
 </div>
 
 Prior to my changes, NES Tetris only supported soft drop.
@@ -72,6 +72,8 @@ I made a [rust program](https://crates.io/crates/nes-tetris-hard-drop-patcher) w
 format. If its input was NES Tetris (usually in a file named something like "Tetris (U) [!].nes"), it will produce as output, a new NES ROM file which
 is NES Tetris, patched to have hard drop.
 
+The input file should have a sha1 hash of `a99f922e9da20b2a27e4398348505d2e9d15271b`.
+
 ```
 $ cargo install nes-tetris-hard-drop-patcher   # install my tool
 $ nes-tetris-hard-drop-patcher < 'Tetris (U) [!].nes' > tetris-hd.nes   # patch a NES Tetris ROM
@@ -80,6 +82,13 @@ $ fceux tetris-hd.nes   # run the result in an emulator
 
 This tool relies on the user to obtain an NES Tetris ROM file. It doesn't have Tetris built-in.
 The resulting ROM file is compatible with all NES emulators - it's not specific to fceux.
+
+## Patch
+
+After sharing this post online some folks pointed out that there is a standard format for ROM patches (IPS)
+that is widely supported by emulators.
+Get the NES Tetris hard drop patch
+{% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips | here %}.
 
 ## Tooling
 
@@ -119,15 +128,15 @@ The NES has two different types of graphics:
 Most games use a combination of both, and Tetris is no exception.
 
 <div class="nes-screenshot-half">
-{% image demo-full.webp %}
+{% image demo-full.gif %}
 </div>
 
 Tetris uses sprites to draw the current piece and the next piece, and background graphics for everything else.
 The images below isolate the two types of graphics in the scene above, with the background on the left and sprites on the right.
 
 <div class="nes-screenshot-half">
-{% image demo-background.webp %}
-{% image demo-sprites.webp %}
+{% image demo-background.gif %}
+{% image demo-sprites.gif %}
 </div>
 
 The game clearly has logic already for drawing the current piece using sprites, so
@@ -248,7 +257,7 @@ b.inst(Rts, ());
 ```
 
 <div class="nes-screenshot">
-{% image ghost-piece-test1.webp %}
+{% image ghost-piece-test1.gif %}
 </div>
 
 Next I made my ghost-piece-rendering function take an argument specifying the vertical distance
@@ -272,7 +281,7 @@ b.inst(Rts, ());
 ```
 
 <div class="nes-screenshot">
-{% image ghost-piece-test2.webp %}
+{% image ghost-piece-test2.gif %}
 </div>
 
 Now to compute the true vertical offset from the current piece to the place it would land after
@@ -413,7 +422,7 @@ b.inst(Rts, ());
 
 The result:
 <div class="nes-screenshot">
-{% image ghost-piece-test3.webp %}
+{% image ghost-piece-test3.gif %}
 </div>
 
 ## Adding the Hard Drop Control
@@ -521,7 +530,7 @@ b.inst(Rts, ());
 Here's the code in action, with me pressing "up" multiple times:
 
 <div class="nes-screenshot">
-{% image hard-drop-test1.webp %}
+{% image hard-drop-test1.gif %}
 </div>
 
 Next, replace the testing constant 7 with the actual position that the
@@ -561,7 +570,7 @@ b.inst(Rts, ());
 ```
 
 <div class="nes-screenshot">
-{% image hard-drop-test2.webp %}
+{% image hard-drop-test2.gif %}
 </div>
 
 That's looking pretty good!
@@ -576,7 +585,7 @@ To learn more, I had my emulator log all instructions and ran the game for 13 ti
 I chose 13 because it seemed unlikely to appear by accident.
 
 <div class="nes-screenshot">
-{% image 13.webp %}
+{% image 13.gif %}
 </div>
 
 During this run, the timer would have expired 13 times. Somewhere in the instruction log there is a
@@ -653,7 +662,7 @@ b.inst(Rts, ());
 ```
 
 <div class="nes-screenshot">
-{% image hard-drop-test3.webp %}
+{% image hard-drop-test3.gif %}
 </div>
 
 Looking better, but there's still a long delay if you hard drop the first piece during the first tick.
@@ -704,9 +713,12 @@ b.inst(Rts, ());
 ```
 
 <div class="nes-screenshot">
-{% image hard-drop-test4.webp %}
+{% image hard-drop-test4.gif %}
 </div>
 
 That appears to be working!
 
 The source code for the patching tool is available on [github](https://github.com/stevebob/mos6502/tree/master/tetris-hard-drop-patcher).
+
+Download the IPS patch that applies the change described in this post
+{% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips | here %}.
