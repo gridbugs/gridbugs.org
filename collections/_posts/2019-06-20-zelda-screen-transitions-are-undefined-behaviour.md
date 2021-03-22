@@ -20,7 +20,7 @@ og_image: title.png
 </style>
 
 The vertical scrolling effect in the original "The Legend of Zelda" relies on
-manipulating the NES graphics hardware in a manor likely that was unintended by its
+manipulating the NES graphics hardware in a manner that was likely unintended by its
 designers.
 
 <div class="nes-screenshot">
