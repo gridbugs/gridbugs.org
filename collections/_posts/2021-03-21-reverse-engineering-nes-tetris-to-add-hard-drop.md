@@ -724,4 +724,4 @@ Download the IPS patch that applies the change described in this post
 {% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips | here %}.
 
 A second patch that adds hard drop but doesn't show the ghost piece is available
-{% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips | here %}.
+{% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop-no-ghost.ips | here %}.
