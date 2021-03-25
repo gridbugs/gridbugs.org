@@ -175,14 +175,14 @@ On the NES, each tile is 8x8 pixels, so this appears to be translating from a ti
 where the offsets are the components of the pixel coordinate of the top left corner of the board.
 A few minutes poking around in mesen confirms this - `0x40` is the x coordinate, and `0x41` is the Y coordinate of the current piece.
 
-The function then reads from `0x42`. This location always contains a value between 0 and 12 which appears to encode the
+The function then reads from `0x42`. This location always contains a value between 0 and 18 which appears to encode the
 shape of the current piece, as well as its rotation. For shapes with rotational symmetry (such as the "S" piece), the
 multiple identical rotations get a single value in `0x42`. I'll refer to this value as the "shape index".
 
 Each piece in Tetris is made up of 4 tiles, and one sprite is rendered for each tile.
 The coordinate in `0x40` and `0x41` is the position of the piece, but in order to render the
 sprites we must find out the position of each tile. To this end, this function consults a table in ROM
-at address `0x8A9C` which I'll refer to as the "shape table". Each of the 13 pieces (including unique rotations)
+at address `0x8A9C` which I'll refer to as the "shape table". Each of the 19 pieces (including unique rotations)
 has a 12-byte entry in the shape table. The shape table entry for a piece stores 3 bytes for each of the 4 tiles:
  - the y offset of the tile (relative to `0x41`)
  - the index of the sprite to use when rendering the tile
