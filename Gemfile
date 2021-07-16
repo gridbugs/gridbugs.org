@@ -8,4 +8,4 @@ gem "jekyll-seo-tag", "~> 2.6"
 
 gem "jekyll-paginate-v2", "~> 3.0"
 
-gem 'rb-kqueue', :git => "https://github.com/stevebob/rb-kqueue.git", :ref => "144ee7bb7963c77fc219ba736df7ee952d50ab19"
+gem "webrick", "~> 1.7"
