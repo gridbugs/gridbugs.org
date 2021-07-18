@@ -80,6 +80,40 @@ Your source tree should now look like this:
     │   └── PxPlus_IBM_CGA.ttf
     └── main.rs
 ```
+
+## Get Dependencies
+
+### Linker
+
+You'll need a linker in order to build the code. Some Linux distributions provide a meta package of
+common build tools which will contain a linker.
+
+#### Ubuntu
+```
+# apt install build-essential
+```
+
+#### Arch Linux
+```
+# pacman -S base-devel
+```
+
+Worst case, installing `gcc` or `clang` will ensure you have a linker installed as well.
+
+### libx11 (Linux only)
+
+The code in this tutorial has a compile-time dependency on libx11.
+
+#### Ubuntu
+```
+# apt install libx11-dev
+```
+
+#### Arch Linux
+```
+# pacman -S libx11
+```
+
 ## Reference Implementation
 
 If you get stuck, or something in these tutorials doesn't make sense, take a look at the git repo at
