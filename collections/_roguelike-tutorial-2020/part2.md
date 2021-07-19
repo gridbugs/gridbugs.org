@@ -385,7 +385,7 @@ Add a dependency on `spatial_table`:
 # Cargo.toml
 ...
 [dependencies]
-spatial_table = "0.2"
+spatial_table = "0.3"
 ```
 
 

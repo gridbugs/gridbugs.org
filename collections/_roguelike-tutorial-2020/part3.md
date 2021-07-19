@@ -41,7 +41,7 @@ a 2D array of tiles, and then use the result to initialize the `GameState`. Grab
 
 ```toml
 # Cargo.toml
-grid_2d = "0.14"
+grid_2d = "0.15"
 ```
 
 Start by generating a single room and placing the player inside.
@@ -127,8 +127,8 @@ Before proceeding with terrain generation, we need a source of randomness in the
 Add dependencies on `rand` and `rand_isaac`:
 ```toml
 # Cargo.toml
-rand = "0.7"        # basic functionality for random number generators
-rand_isaac = "0.2"  # a specific random number generator implementation
+rand = "0.8"        # basic functionality for random number generators
+rand_isaac = "0.3"  # a specific random number generator implementation
 ```
 
 Initialize a random number generator and store it in a field of `GameState`.
@@ -198,12 +198,12 @@ struct Room {
 impl Room {
     // Returns a randomly sized room at a random position within `bounds`
     fn choose<R: Rng>(bounds: Size, rng: &mut R) -> Self {
-        let width = rng.gen_range(5, 11);
-        let height = rng.gen_range(5, 9);
+        let width = rng.gen_range(5..11);
+        let height = rng.gen_range(5..9);
         let size = Size::new(width, height);
         let top_left_bounds = bounds - size;
-        let left = rng.gen_range(0, top_left_bounds.width());
-        let top = rng.gen_range(0, top_left_bounds.height());
+        let left = rng.gen_range(0..top_left_bounds.width());
+        let top = rng.gen_range(0..top_left_bounds.height());
         let top_left = Coord::new(left as i32, top as i32);
         Self { top_left, size }
     }

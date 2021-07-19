@@ -102,7 +102,7 @@ Grab a crate which contains an implementation of the field-of-view algorithm:
 # Cargo.toml
 ...
 [dependencies]
-shadowcast = "0.7"
+shadowcast = "0.8"
 ```
 
 The `shadowcast` crate doesn't assume anything about how the world is represented.

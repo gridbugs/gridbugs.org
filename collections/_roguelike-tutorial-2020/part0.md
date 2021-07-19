@@ -128,15 +128,15 @@ git diff part-0.0 part-1.0 src/main.rs
 
 ```diff
 diff --git a/src/main.rs b/src/main.rs
-index e7a11a9..b7dbe34 100644
+index e7a11a9..b19bcfb 100644
 --- a/src/main.rs
 +++ b/src/main.rs
-@@ -1,3 +1,64 @@
+@@ -1,3 +1,60 @@
  fn main() {
 -    println!("Hello, world!");
-+    use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
-+    const CELL_SIZE_PX: f64 = 16.;
-+    let context = Context::new(ContextDescriptor {
++    use chargrid_graphical::{Config, Context, Dimensions, FontBytes};
++    const CELL_SIZE_PX: f64 = 24.;
++    let context = Context::new(Config {
 ...
 ```
 

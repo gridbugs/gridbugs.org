@@ -39,8 +39,8 @@ Start by adding dependencies on `chargrid` and `chargrid_graphical`:
 # Cargo.toml
 ...
 [dependencies]
-chargrid_graphical = "0.2"  # graphical frontend for chargrid applications
-chargrid = "0.3"            # library for implementing chargrid applications
+chargrid_graphical = "0.7"  # graphical frontend for chargrid applications
+chargrid = "0.4"            # library for implementing chargrid applications
 ```
 
 Now update your main function:
@@ -49,37 +49,34 @@ Now update your main function:
 // src/main.rs
 
 fn main() {
-    use chargrid_graphical::{Context, ContextDescriptor, Dimensions, FontBytes};
+    use chargrid_graphical::{Config, Context, Dimensions, FontBytes};
     const CELL_SIZE_PX: f64 = 24.;
-    let context = Context::new(ContextDescriptor {
+    let context = Context::new(Config {
         font_bytes: FontBytes {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin.ttf").to_vec(),
             bold: include_bytes!("./fonts/PxPlus_IBM_CGA.ttf").to_vec(),
         },
         title: "Chargrid Tutorial".to_string(),
-        window_dimensions: Dimensions {
+        window_dimensions_px: Dimensions {
             width: 960.,
             height: 720.,
         },
-        cell_dimensions: Dimensions {
+        cell_dimensions_px: Dimensions {
             width: CELL_SIZE_PX,
             height: CELL_SIZE_PX,
         },
-        font_dimensions: Dimensions {
+        font_scale: Dimensions {
             width: CELL_SIZE_PX,
             height: CELL_SIZE_PX,
         },
-        font_source_dimensions: Dimensions {
-            width: CELL_SIZE_PX as f32,
-            height: CELL_SIZE_PX as f32,
-        },
-        underline_width: 0.1,
-        underline_top_offset: 0.8,
-    })
-    .expect("Failed to initialize graphical context");
+        underline_width_cell_ratio: 0.1,
+        underline_top_offset_cell_ratio: 0.8,
+        resizable: false,
+    });
     let app = App::new();
     context.run_app(app);
 }
+
 ```
 
 This creates a new graphical context for running chargrid applications.
@@ -191,8 +188,8 @@ Start by adding some more dependencies to help represent locations and colours.
 ...
 [dependencies]
 ...
-coord_2d = "0.2"        # representation of 2D integer coordinates and sizes
-rgb24 = "0.2"           # representation of 24-bit colour
+coord_2d = "0.3"        # representation of 2D integer coordinates and sizes
+rgb24 = "0.3"           # representation of 24-bit colour
 ```
 
 ```rust
@@ -344,7 +341,7 @@ To add the most basic of gameplay, begin by adding one more dependency to let us
 ...
 [dependencies]
 ...
-direction = "0.17"           # representation of directions
+direction = "0.18"           # representation of directions
 ```
 
 This game will only allow movement in cardinal directions (north, south, east, west). Import the corresponding type:

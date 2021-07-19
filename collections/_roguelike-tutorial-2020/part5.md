@@ -192,7 +192,7 @@ impl Room {
             .filter(|&coord| grid.get_checked(coord).unwrap() == TerrainTile::Floor)
             .choose_multiple(rng, n)
         {
-            let npc_type = if rng.gen_range(0, 100) < 80 {
+            let npc_type = if rng.gen_range(0..100) < 80 {
                 NpcType::Orc
             } else {
                 NpcType::Troll
