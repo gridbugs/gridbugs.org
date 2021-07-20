@@ -224,14 +224,13 @@ impl App {
 ...
 ```
 
-In order to parse command-line arguments, these examples will use a library called [simon](https://crates.io/crates/simon).
-Feel free to use whatever argument-parsing library you're most comfortable with.
+These examples will use the crate [meap](https://crates.io/crates/meap) to parse arguments.
 
 ```toml
 # Cargo.toml
 ...
 [dependencies]
-simon = "0.4"
+meap = "0.4"
 ```
 
 Update `main.rs` to parse command line arguments and pass the visibility algorithm and RNG seed to `App::new`:
@@ -239,7 +238,7 @@ Update `main.rs` to parse command line arguments and pass the visibility algorit
 ```rust
 // main.rs
 ...
-use simon::Arg;
+use meap;
 
 ...
 
@@ -249,17 +248,13 @@ struct Args {
 }
 
 impl Args {
-    fn parser() -> impl Arg<Item = Self> {
-        simon::args_map! {
+    fn parser() -> impl meap::Parser<Item = Self> {
+        meap::let_map! {
             let {
-                rng_seed = simon::opt("r", "rng-seed", "seed for random number generator", "INT")
-                    .with_default_lazy(|| rand::thread_rng().gen());
-                visibility_algorithm = simon::flag("", "debug-omniscient", "enable omniscience")
-                    .map(|omniscient| if omniscient {
-                        VisibilityAlgorithm::Omniscient
-                    } else {
-                        VisibilityAlgorithm::Shadowcast
-                    });
+                rng_seed = opt_opt::<u64, _>("INT", 'r').name("rng-seed").desc("seed for random number generator")
+                    .with_default_lazy("randomly chosen seed", || rand::thread_rng().gen());
+                visibility_algorithm = flag("debug-omniscient").some_if(VisibilityAlgorithm::Omniscient)
+                    .with_default_general(VisibilityAlgorithm::Shadowcast);
             } in {
                 Self { rng_seed, visibility_algorithm }
             }
@@ -268,6 +263,7 @@ impl Args {
 }
 
 fn main() {
+    use meap::Parser;
     let Args {
         rng_seed,
         visibility_algorithm,
@@ -283,15 +279,13 @@ If you used the `simon` library for argument parsing, the `with_help_default()` 
 argument to see usage instructions:
 
 ```
- $ cargo run -- --help
-Usage: target/debug/chargrid-roguelike-tutorial-2020 [options]
+$ cargo run -- --help
+Usage: target/debug/chargrid-roguelike-tutorial-2020 [OPTIONS]
 
 Options:
-    -r, --rng-seed INT  seed for random number generator
-        --debug-omniscient
-                        enable omniscience
-    -h, --help          print this help menu
-
+    [-r, --rng-seed INT]     seed for random number generator (Default: randomly chosen seed)
+    [--debug-omniscient]
+    [-h, --help]             print help message
 ```
 
 Reference implementation branch: [part-6.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.0)
@@ -351,7 +345,7 @@ To do the heavy lifting of pathfinding, we'll use a library:
 # Cargo.toml
 ...
 [dependencies]
-grid_search_cardinal = "0.2"
+grid_search_cardinal = "0.3"
 ```
 
 The general idea for pathfinding is the following: Each time the player moves, populate a grid (called a "distance map") with the distance from
@@ -620,7 +614,7 @@ To help talk about lines rasterized onto grids, grab a library:
 ```toml
 # Cargo.toml
 [dependencies]
-line_2d = "0.4"
+line_2d = "0.5"
 ```
 
 Add a function for testing NPC line of sight to `behaviour.rs`:

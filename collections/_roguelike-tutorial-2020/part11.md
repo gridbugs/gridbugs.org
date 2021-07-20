@@ -663,8 +663,8 @@ impl World {
         let &attacker_base_damage = self.components.base_damage.get(attacker).unwrap();
         let &attacker_strength = self.components.strength.get(attacker).unwrap();
         let &victim_dexterity = self.components.dexterity.get(victim).unwrap();
-        let gross_damage = attacker_base_damage + rng.gen_range(0, attacker_strength + 1);
-        let damage_reduction = rng.gen_range(0, victim_dexterity + 1);
+        let gross_damage = attacker_base_damage + rng.gen_range(0..(attacker_strength + 1));
+        let damage_reduction = rng.gen_range(0..(victim_dexterity + 1));
         let net_damage = gross_damage.saturating_sub(damage_reduction) as u32;
         if net_damage == 0 {
             BumpAttackOutcome::Dodge

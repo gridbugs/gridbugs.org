@@ -33,7 +33,7 @@ fn choose_from_probability_distribution<'a, T, R: Rng>(
     rng: &mut R,
 ) -> &'a T {
     let sum = probability_distribution.iter().map(|(_, p)| p).sum::<u32>();
-    let mut choice = rng.gen_range(0, sum);
+    let mut choice = rng.gen_range(0..sum);
     for (value, probability) in probability_distribution.iter() {
         if let Some(remaining_choice) = choice.checked_sub(*probability) {
             choice = remaining_choice;

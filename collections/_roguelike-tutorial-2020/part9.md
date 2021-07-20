@@ -499,7 +499,7 @@ impl Room {
             .filter(|&coord| grid.get_checked(coord).unwrap() == TerrainTile::Floor)
             .choose_multiple(rng, n)
         {
-            let item = match rng.gen_range(0, 100) {
+            let item = match rng.gen_range(0..100) {
                 0..=100 => ItemType::FireballScroll,
                 _ => ItemType::HealthPotion,
             };
@@ -1310,7 +1310,7 @@ impl Room {
             .filter(|&coord| grid.get_checked(coord).unwrap() == TerrainTile::Floor)
             .choose_multiple(rng, n)
         {
-            let item = match rng.gen_range(0, 100) {
+            let item = match rng.gen_range(0..100) {
                 0..=29 => ItemType::FireballScroll,
                 30..=49 => ItemType::ConfusionScroll,
                 _ => ItemType::HealthPotion,
@@ -1466,7 +1466,7 @@ feature of the `direction` crate.
 # Cargo.toml
 [dependencies]
 ...
-direction = { version = "0.17", features = ["rand"] }
+direction = { version = "0.18", features = ["rand"] }
 ```
 
 In `game.rs`, start passing a rng to `World::maybe_move_character`.

@@ -39,20 +39,20 @@ Update the `[dependencies]` section of `Cargo.toml` to look like this:
 # Cargo.toml
 ...
 [dependencies]
-chargrid_graphical = "0.2"
-chargrid = { version = "0.3", features = ["serialize"] }
-coord_2d = { version = "0.2", features = ["serialize"] }
-grid_2d = { version = "0.14", features = ["serialize"] }
-rgb24 = { version = "0.2", features = ["serialize"] }
-direction = { version = "0.17", features = ["rand", "serialize"] }
+chargrid_graphical = "0.7"
+chargrid = { version = "0.4", features = ["serialize"] }
+coord_2d = { version = "0.3", features = ["serialize"] }
+grid_2d = { version = "0.15", features = ["serialize"] }
+rgb24 = { version = "0.3", features = ["serialize"] }
+direction = { version = "0.18", features = ["rand", "serialize"] }
 entity_table = { version = "0.2", features = ["serialize"] }
-spatial_table = { version = "0.2", features = ["serialize"] }
-rand = "0.7"
-rand_isaac = { version = "0.2", features = ["serde1"] }
-shadowcast = { version = "0.7", features = ["serialize"] }
-simon = "0.4"
-grid_search_cardinal = { version = "0.2", features = ["serialize"] }
-line_2d = { version = "0.4", features = ["serialize"] }
+spatial_table = { version = "0.3", features = ["serialize"] }
+rand = "0.8"
+rand_isaac = { version = "0.3", features = ["serde1"] }
+shadowcast = { version = "0.8", features = ["serialize"] }
+meap = "0.4"
+grid_search_cardinal = { version = "0.3", features = ["serialize"] }
+line_2d = { version = "0.5", features = ["serialize"] }
 serde = { version = "1.0", features = ["serde_derive"] }
 ```
 Note the addition of the `serde` crate.

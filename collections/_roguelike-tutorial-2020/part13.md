@@ -487,9 +487,9 @@ impl World {
         let &victim_dexterity = self.components.dexterity.get(victim).unwrap();
         let victim_defense_modifier = self.defense_modifier(victim);
         let gross_damage = attacker_base_damage
-            + rng.gen_range(0, attacker_strength + 1)
+            + rng.gen_range(0..(attacker_strength + 1))
             + attacker_damage_modifier;
-        let damage_reduction = rng.gen_range(0, victim_dexterity + 1) + victim_defense_modifier;
+        let damage_reduction = rng.gen_range(0..(victim_dexterity + 1)) + victim_defense_modifier;
         let net_damage = gross_damage.saturating_sub(damage_reduction).max(0) as u32;
         ...
     }
