@@ -15,7 +15,7 @@ This is the final part of the tutorial, in which we'll add equipment.
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-13/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-12-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-12-end)
+Reference implementation branch for starting point: [part-12-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-12-end)
 
 In this post:
  - [Equipment Entities](#equipment-entities)
@@ -187,7 +187,7 @@ the inventory. Attempting to use a piece of equipment will panic at the moment (
 
 {% image items.png %}
 
-Reference implementation branch: [part-13.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-13.0)
+Reference implementation branch: [part-13.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.0)
 
 ## {% anchor equipable-equipment | Equipable Equipment %}
 
@@ -388,7 +388,7 @@ will appear next to items in the inventory menu.
 
 {% image inventory.png %}
 
-Reference implementation branch: [part-13.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-13.1)
+Reference implementation branch: [part-13.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.1)
 
 ## {% anchor modifying-stats-with-equipment | Modifying Stats with Equipment %}
 
@@ -543,7 +543,7 @@ impl World {
 }
 ```
 
-Reference implementation branch: [part-13.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-13.2)
+Reference implementation branch: [part-13.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.2)
 
 ## {% anchor balance-item-distribution | Balance Item Distribution %}
 
@@ -590,7 +590,7 @@ fn make_item_probability_distribution(level: u32) -> Vec<(ItemType, u32)> {
 
 These numbers were chosen fairly arbitrarily. Tune these based on the result of play-testing.
 
-Reference implementation branch: [part-13.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-13.3)
+Reference implementation branch: [part-13.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.3)
 
 ## {% anchor log-message-for-equipment | Log Message for Equipment %}
 
@@ -676,4 +676,4 @@ That concludes the tutorial series. There's still a lot more work to do before t
 It has no ending, and is very light on content and mechanics. Hopefully by now you have enough of a handle on
 `chargrid` that you can extend the project we made here into the roguelike of your dreams.
 
-Reference implementation branch: [part-13.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-13.4)
+Reference implementation branch: [part-13.4](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.4)

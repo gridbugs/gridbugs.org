@@ -11,6 +11,6 @@ Apocalypse Post is a procedurally-generated, turn-based tactical shooter set in 
 I made this game for the 2017 7 Day Roguelike game jam.
 
  - [Download](https://gridbugs.itch.io/apocalypse-post)
- - [Source](https://github.com/stevebob/apocalypse-post)
+ - [Source](https://github.com/gridbugs/apocalypse-post)
 
 {% image screenshot.png %}

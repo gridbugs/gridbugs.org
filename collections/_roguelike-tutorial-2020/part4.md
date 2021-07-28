@@ -19,7 +19,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-4/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-3-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3-end)
+Reference implementation branch for starting point: [part-3-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3-end)
 
 In this post:
 - [Separate World Representation from Game State](#separate-world-representation-from-game-state)
@@ -87,9 +87,9 @@ impl GameState {
 }
 ```
 
-Here's how the code should look after this refactor: [part-4.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-4.0)
+Here's how the code should look after this refactor: [part-4.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4.0)
 
-In particular, note the new file [src/world.rs](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/blob/part-4.0/src/world.rs).
+In particular, note the new file [src/world.rs](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/blob/part-4.0/src/world.rs).
 
 ## {% anchor add-field-of-view | Add Field of View %}
 
@@ -272,7 +272,7 @@ impl VisibilityGrid {
 ```
 
 Computing visible area involves populating some heap-allocated data structures
-(see the [implementation of shadowcast](https://github.com/stevebob/shadowcast/blob/master/src/shadowcast.rs)
+(see the [implementation of shadowcast](https://github.com/gridbugs/shadowcast/blob/master/src/shadowcast.rs)
 for details).
 To prevent needing to allocate and free these structures each time the visible area is updated,
 all these data structures are contained in a `shadowcast::Context`, allowing the memory to be re-used
@@ -437,6 +437,6 @@ impl AppData {
 
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-4.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-4.1)
+Reference implementation branch: [part-4.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4.1)
 
 {% local roguelike-tutorial-2020-part-5 | Click here for the next part! %}

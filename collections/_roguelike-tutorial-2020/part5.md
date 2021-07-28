@@ -20,7 +20,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-5/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-4-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-4-end)
+Reference implementation branch for starting point: [part-4-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4-end)
 
 In this post:
 - [Add NPCs to Game State](#add-npcs-to-game-state)
@@ -165,7 +165,7 @@ fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
 
 The game engine can now represent NPCs, but we aren't adding any NPCs to the generated dungeon yet.
 
-Reference implementation branch: [part-5.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-5.0)
+Reference implementation branch: [part-5.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.0)
 
 ## {% anchor place-npcs-in-rooms | Place NPCs in Rooms %}
 
@@ -253,7 +253,7 @@ Run this, and you'll find yourself in a populated dungeon!
 
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-5.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-5.1)
+Reference implementation branch: [part-5.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.1)
 
 ## {% anchor basic-npc-interaction | Basic NPC Interaction %}
 
@@ -406,6 +406,6 @@ impl GameState {
 
 Now that the basic framework for AI is set up, it will be easier to add AI in a future part.
 
-Reference implementation branch: [part-5.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-5.2)
+Reference implementation branch: [part-5.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.2)
 
 {% local roguelike-tutorial-2020-part-6 | Click here for the next part! %}

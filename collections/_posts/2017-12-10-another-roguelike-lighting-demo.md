@@ -17,7 +17,7 @@ tried.
 {% image screenshot.png %}
 <!--more-->
 
-View the [source on github](https://github.com/stevebob/lighting-experiment).
+View the [source on github](https://github.com/gridbugs/lighting-experiment).
 
 ## Graphics Hardware
 

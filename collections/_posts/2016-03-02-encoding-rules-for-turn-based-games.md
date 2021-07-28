@@ -281,4 +281,4 @@ These abstractions are expressive enough to encode complex game rules, and can
 be implemented efficiently.
 
 An implementation of all the abstractions described in this post can be found in
-the [source code of Glacial](https://github.com/stevebob/glacial).
+the [source code of Glacial](https://github.com/gridbugs/glacial).

@@ -23,7 +23,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-1/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-0-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0-end)
+Reference implementation branch for starting point: [part-0-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-0-end)
 
 In this post:
 
@@ -175,7 +175,7 @@ This is now a complete chargrid application! Run it with `cargo run` and it will
 
 {% image screenshot-blank.png %}
 
-Reference implementation branch: [part-1.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.0)
+Reference implementation branch: [part-1.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.0)
 
 ## {% anchor draw-the-player | Draw the Player %}
 
@@ -331,7 +331,7 @@ An '@' sign will now be rendered in the centre of the screen:
 
 {% image screenshot.png %}
 
-Reference implementation branch: [part-1.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.1)
+Reference implementation branch: [part-1.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.1)
 
 ## {% anchor move-the-player | Move the Player %}
 
@@ -435,6 +435,6 @@ impl chargrid::app::App for App {
 
 That's it! Run the game, press the arrow keys, and the player will move around.
 
-Reference implementation branch: [part-1.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1.2)
+Reference implementation branch: [part-1.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.2)
 
 {% local roguelike-tutorial-2020-part-2 | Click here for the next part! %}

@@ -15,7 +15,7 @@ It is my entry in the 7 Day Roguelike game jam for 2018.
 
 Play or download Meters Below the Ground in [its itch.io page](https://gridbugs.itch.io/meters-below-the-ground).
 
-View the [source code on github](https://github.com/stevebob/meters-below-the-ground).
+View the [source code on github](https://github.com/gridbugs/meters-below-the-ground).
 
 {% image screenshot.png %}
 

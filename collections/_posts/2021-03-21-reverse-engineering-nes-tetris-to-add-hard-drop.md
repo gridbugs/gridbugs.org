@@ -92,7 +92,7 @@ Get the NES Tetris hard drop patch
 
 ## Tooling
 
-A couple of years ago I made a [NES Emulator](https://github.com/stevebob/mos6502).
+A couple of years ago I made a [NES Emulator](https://github.com/gridbugs/mos6502).
 It turns out to be a useful reverse-engineering tool, as it's easy to instrument the emulator
 to conduct experiments on the program it's running. In particular, the ability to log every
 instruction, interleaved with interesting events such as video memory updates, came in very handy.
@@ -718,7 +718,7 @@ b.inst(Rts, ());
 
 That appears to be working!
 
-The source code for the patching tool is available on [github](https://github.com/stevebob/mos6502/tree/master/tetris-hard-drop-patcher).
+The source code for the patching tool is available on [github](https://github.com/gridbugs/mos6502/tree/master/tetris-hard-drop-patcher).
 
 Download the IPS patch that applies the change described in this post
 {% file reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips | here %}.

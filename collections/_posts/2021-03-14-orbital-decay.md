@@ -78,4 +78,4 @@ all accompanied by an audio cue.
 {% image screenshot6.png %}
 
 Once again the game can be played and downloaded on [itch](https://gridbugs.itch.io/orbital-decay).
-Its source code (beware - game jam quality code!) is available on [github](https://github.com/stevebob/orbital-decay/tree/7drl).
+Its source code (beware - game jam quality code!) is available on [github](https://github.com/gridbugs/orbital-decay/tree/7drl).

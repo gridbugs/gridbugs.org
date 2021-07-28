@@ -8,7 +8,7 @@ excerpt_separator: <!--more-->
 ---
 
 Of all the programs I've written, perhaps the one that has most directly benefited me is
-[this little bash script in my dotfiles repo](https://github.com/stevebob/dotfiles/blob/master/bin/dmenu_histogram)
+[this little bash script in my dotfiles repo](https://github.com/gridbugs/dotfiles/blob/master/bin/dmenu_histogram)
 which runs the application launcher [dmenu](https://tools.suckless.org/dmenu/) showing the most-frequently-used
 programs first.
 

@@ -19,7 +19,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-7/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-6-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6-end)
+Reference implementation branch for starting point: [part-6-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6-end)
 
 In this post:
  - [Basic Health Bar](#basic-health-bar)
@@ -244,7 +244,7 @@ impl Game {
 
 {% image health.png %}
 
-Reference implementation branch: [part-7.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.0)
+Reference implementation branch: [part-7.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.0)
 
 ## {% anchor pretty-health-bar | Pretty Health Bar %}
 
@@ -325,7 +325,7 @@ Together these are used to centre the text in the health bar.
 
 {% image health-pretty.png %}
 
-Reference implementation branch: [part-7.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.1)
+Reference implementation branch: [part-7.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.1)
 
 ## {% anchor message-log | Message Log %}
 
@@ -677,6 +677,6 @@ impl<'a> View<&'a AppData> for AppView {
 
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-7.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7.2)
+Reference implementation branch: [part-7.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.2)
 
 {% local roguelike-tutorial-2020-part-8 | Click here for the next part! %}

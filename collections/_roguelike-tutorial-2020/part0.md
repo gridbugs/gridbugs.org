@@ -12,7 +12,7 @@ This is the first of a series of posts where I follow the
 [python tcod roguelike tutorial](http://rogueliketutorials.com/)
 but instead of programming in python using the
 [tcod](https://github.com/libtcod/libtcod) library, I'll be programming
-in rust using the [chargrid](https://github.com/stevebob/chargrid)
+in rust using the [chargrid](https://github.com/gridbugs/chargrid)
 library, which I've been developing for about 3 years.
 
 This is part of an event where the [roguelikedev subreddit does the complete
@@ -117,7 +117,7 @@ The code in this tutorial has a compile-time dependency on libx11.
 ## Reference Implementation
 
 If you get stuck, or something in these tutorials doesn't make sense, take a look at the git repo at
-[https://github.com/stevebob/chargrid-roguelike-tutorial-2020](https://github.com/stevebob/chargrid-roguelike-tutorial-2020).
+[https://github.com/gridbugs/chargrid-roguelike-tutorial-2020](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020).
 For each part and subsection of this tutorial, there is a corresponding branch showing the state of the repo
 at that stage of the tutorial. This makes it easy to show the changes introduced in each part of the tutorial.
 
@@ -140,7 +140,7 @@ index e7a11a9..b19bcfb 100644
 ...
 ```
 
-Reference implementation branch: [part-0.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-0.0)
+Reference implementation branch: [part-0.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-0.0)
 
 ## Code Snippets
 

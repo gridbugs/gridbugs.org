@@ -1400,7 +1400,7 @@ fn wfc_core(
 ### My Rust Libraries
 
 Shameless plug!
-My rust libraries which implement this algorithm are here: [github.com/stevebob/wfc](https://github.com/stevebob/wfc)
+My rust libraries which implement this algorithm are here: [github.com/gridbugs/wfc](https://github.com/gridbugs/wfc)
 
 There are 2 crates:
 

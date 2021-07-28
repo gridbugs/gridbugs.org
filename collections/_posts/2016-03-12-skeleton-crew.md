@@ -14,6 +14,6 @@ to be depressurized, and their contents sucked into space, including you!
 
 Play or download Skeleton Crew on [its itch.io page](https://gridbugs.itch.io/skeleton-crew).
 
-View the [source code on github](https://github.com/stevebob/skeleton-crew).
+View the [source code on github](https://github.com/gridbugs/skeleton-crew).
 
 {% image screenshot.png %}

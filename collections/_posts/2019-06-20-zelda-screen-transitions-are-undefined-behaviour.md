@@ -748,7 +748,7 @@ at the end of the animation instead.
 - The [NesDev Wiki](https://wiki.nesdev.com/) is an invaluable resource for learning about NES hardware.
   Specifically relevant to this post are the pages about [PPU Scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)
   and [PPU Registers](https://wiki.nesdev.com/w/index.php/PPU_registers).
-- My still very much incomplete NES emulator is [here](https://github.com/stevebob/mos6502).
+- My still very much incomplete NES emulator is [here](https://github.com/gridbugs/mos6502).
 
 
 ## Notes

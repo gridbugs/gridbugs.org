@@ -24,7 +24,7 @@ I implemented recursive shadowcast for an
 {% local another-roguelike-lighting-demo | old project %},
 and extracted it into a library for easy inclusion in other projects.
 While adding shadowcast I found a bug in
-[prototty](https://github.com/stevebob/prototty) - my terminal rendering 
+[prototty](https://github.com/gridbugs/prototty) - my terminal rendering 
 library - where foreground-only updates to a cell prevent future background 
 updates of a lower depth, which manifested as the floor occasionally 
 disappearing from underneath the player. I released a new version of prototty 

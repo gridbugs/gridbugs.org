@@ -16,7 +16,7 @@ player character as they descend the stairs.
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-11/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-10-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10-end)
+Reference implementation branch for starting point: [part-10-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10-end)
 
 In this post:
  - [Placing Stairs](#placing-stairs)
@@ -123,7 +123,7 @@ Levels now contain stairs!
 
 {% image stairs.png %}
 
-Reference implementation branch: [part-11.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.0)
+Reference implementation branch: [part-11.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.0)
 
 ## {% anchor descending-stairs | Descending Stairs %}
 
@@ -310,7 +310,7 @@ impl VisibilityGrid {
 ```
 You can now move onto a staircase, and press '>', and you'll find yourself in a brand-new level.
 
-Reference implementation branch: [part-11.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.1)
+Reference implementation branch: [part-11.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.1)
 
 ## {% anchor add-combat-stats | Add Combat Stats %}
 
@@ -637,7 +637,7 @@ as you descend deeper into the dungeon.
 
 {% image stats.png %}
 
-Reference implementation branch: [part-11.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.2)
+Reference implementation branch: [part-11.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.2)
 
 ## {% anchor use-combat-stats | Use Combat Stats %}
 
@@ -938,7 +938,7 @@ impl World {
 
 Now the higher your intelligence, the more powerful the effects of your spells.
 
-Reference implementation branch: [part-11.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.3)
+Reference implementation branch: [part-11.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.3)
 
 ## {% anchor upgrade-when-descending-stairs | Upgrade when Descending Stairs %}
 
@@ -1345,6 +1345,6 @@ Now when the player hits '>' while standing on the stairs, they see a menu like 
 
 If they make a selection, the relevant stat will increase, and they'll descend to the next dungeon level.
 
-Reference implementation branch: [part-11.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11.4)
+Reference implementation branch: [part-11.4](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.4)
 
 {% local roguelike-tutorial-2020-part-12 | Click here for the next part! %}

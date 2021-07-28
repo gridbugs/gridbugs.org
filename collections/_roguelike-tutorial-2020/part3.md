@@ -24,7 +24,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-3/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-2-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2-end)
+Reference implementation branch for starting point: [part-2-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2-end)
 
 In this post:
 
@@ -119,7 +119,7 @@ Run the game and it will generate this:
 
 {% image screenshot-start.png %}
 
-Reference implementation branch: [part-3.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3.0)
+Reference implementation branch: [part-3.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.0)
 
 ## {% anchor random-number-generator | Random Number Generator %}
 
@@ -177,7 +177,7 @@ Run this and it will print out a random number:
 random int: 387460914
 ```
 
-Reference implementation branch: [part-3.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3.1)
+Reference implementation branch: [part-3.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.1)
 
 ## {% anchor rooms | Rooms %}
 
@@ -272,7 +272,7 @@ Here's an example map produced by this algorithm:
 
 {% image screenshot-rooms.png %}
 
-Reference implementation branch: [part-3.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3.2)
+Reference implementation branch: [part-3.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.2)
 
 ## {% anchor corridors | Corridors %}
 
@@ -341,6 +341,6 @@ rooms and corridors.
 
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-3.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-3.3)
+Reference implementation branch: [part-3.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.3)
 
 {% local roguelike-tutorial-2020-part-4 | Click here for the next part! %}

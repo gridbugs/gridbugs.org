@@ -20,7 +20,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-6/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-5-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-5-end)
+Reference implementation branch for starting point: [part-5-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5-end)
 
 In this post:
  - [Command-Line Options for Debugging](#command-line-options-for-debugging)
@@ -288,7 +288,7 @@ Options:
     [-h, --help]             print help message
 ```
 
-Reference implementation branch: [part-6.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.0)
+Reference implementation branch: [part-6.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.0)
 
 ## {% anchor npc-pathfinding | NPC Pathfinding %}
 
@@ -585,7 +585,7 @@ surrounded by NPCs!
 
 {% image surrounded.png %}
 
-Reference implementation branch: [part-6.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.1)
+Reference implementation branch: [part-6.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.1)
 
 ## {% anchor npc-line-of-sight | NPC Line of Sight %}
 
@@ -697,7 +697,7 @@ impl Game {
 Run the game with omniscience and confirm that as soon as there stops being line of sight between
 you and an NPC following you, the NPC freezes.
 
-Reference implementation branch: [part-6.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.2)
+Reference implementation branch: [part-6.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.2)
 
 ## {% anchor npc-memory | NPC Memory %}
 
@@ -756,7 +756,7 @@ impl Agent {
 }
 ```
 
-Reference implementation branch: [part-6.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.3)
+Reference implementation branch: [part-6.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.3)
 
 ## {% anchor combat | Combat %}
 
@@ -1096,7 +1096,7 @@ impl<'a> View<&'a AppData> for AppView {
 
 And that's it. NPCs and the player can kill one another, and leave behind corpses.
 
-Reference implementation branch: [part-6.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.4)
+Reference implementation branch: [part-6.4](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.4)
 
 ## {% anchor hide-previously-seen-npcs | Hide Previously-seen NPCs %}
 
@@ -1126,6 +1126,6 @@ fn previously_visible_view_cell_of_tile(tile: Tile) -> ViewCell {
 
 {% image screenshot-end.png %}
 
-Reference implementation branch: [part-6.5](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-6.5)
+Reference implementation branch: [part-6.5](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.5)
 
 {% local roguelike-tutorial-2020-part-7 | Click here for the next part! %}

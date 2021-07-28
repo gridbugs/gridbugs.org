@@ -16,7 +16,7 @@ more difficult the deeper you descend into the dungeon.
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-12/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-11-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-11-end)
+Reference implementation branch for starting point: [part-11-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11-end)
 
 We'll start by replacing the logic for choosing which NPC and item to spawn with a generic probability distribution.
 This will make it easier to increase the chance of spawning more dangerous NPCs and more powerful items, the deeper
@@ -206,6 +206,6 @@ impl GameState {
 Now play the game a bunch and tweak the probabilities of NPCs and items until it's fun.
 There's one more part after this one, in which we'll add equipment.
 
-Reference implementation branch: [part-12.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-12.0)
+Reference implementation branch: [part-12.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-12.0)
 
 {% local roguelike-tutorial-2020-part-13 | Click here for the next part! %}

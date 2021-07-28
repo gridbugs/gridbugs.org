@@ -18,6 +18,6 @@ square of the straight-line distance from the eye to the wall in the direction o
 
 <!--more-->
 
-Code: [https://github.com/stevebob/small-wolf](https://github.com/stevebob/small-wolf)
+Code: [https://github.com/gridbugs/small-wolf](https://github.com/gridbugs/small-wolf)
 
 Demo: [https://stevebob.github.io/small-wolf](https://stevebob.github.io/small-wolf)

@@ -23,7 +23,7 @@ By the end of this part, the game will look like this:
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-2/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-1-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-1-end)
+Reference implementation branch for starting point: [part-1-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1-end)
 
 In this post:
 
@@ -122,7 +122,7 @@ After this change, `main.rs` will contain the `main` function and nothing else.
 Also note the lack of `chargrid::...` qualifiers on types from the `chargrid` library.
 All the types from `chargrid` are now explicitly imported at the top of each file.
 
-Here's how the code should look after the refactor: [part-2.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.0)
+Here's how the code should look after the refactor: [part-2.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.0)
 
 ## {% anchor generic-entities | Generic Entities %}
 
@@ -295,7 +295,7 @@ impl GameState {
 Note that we didn't change the public api of the `GameState` type, so no code outside of this file is affected by
 changing the representation of game state.
 
-Reference implementation branch: [part-2.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.1)
+Reference implementation branch: [part-2.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.1)
 
 ## {% anchor general-rendering | General Rendering %}
 
@@ -362,7 +362,7 @@ we'll update this match statement to tell the renderer how to draw the new `Tile
 
 Now remove the `player_coord` method from `GameState` as it's no longer needed.
 
-Reference implementation branch: [part-2.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.2)
+Reference implementation branch: [part-2.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.2)
 
 ## {% anchor spatial-table | Spatial Table %}
 
@@ -619,7 +619,7 @@ impl<'a> View<&'a AppData> for AppView {
 }
 ```
 
-Reference implementation branch: [part-2.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.3)
+Reference implementation branch: [part-2.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.3)
 
 ## {% anchor walls-and-floors | Walls and Floors %}
 
@@ -788,6 +788,6 @@ Now run the game! It should look like this:
 
 Try to move the player character through the walls (`#`)!
 
-Reference implementation branch: [part-2.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-2.4)
+Reference implementation branch: [part-2.4](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.4)
 
 {% local roguelike-tutorial-2020-part-3 | Click here for the next part! %}

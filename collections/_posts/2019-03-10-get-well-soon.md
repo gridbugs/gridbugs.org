@@ -15,7 +15,7 @@ It is my entry in the 7 Day Roguelike game jam for 2019.
 
 Play or download Get Well Soon on [its itch.io page](https://gridbugs.itch.io/get-well-soon).
 
-View the [source code on github](https://github.com/stevebob/gws/tree/7drl).
+View the [source code on github](https://github.com/gridbugs/gws/tree/7drl).
 
 {% image screenshot.png %}
 

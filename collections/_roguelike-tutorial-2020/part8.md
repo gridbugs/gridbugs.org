@@ -19,7 +19,7 @@ By the end of this part you'll be able to pick up, use, and drop items.
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-8/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-7-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-7-end)
+Reference implementation branch for starting point: [part-7-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7-end)
 
 In this post:
  - [Placing Health Potions](#placing-health-potions)
@@ -237,7 +237,7 @@ Run the game. There should be health potions on the ground, but you won't be abl
 
 {% image health-potions.png %}
 
-Reference implementation branch: [part-8.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.0)
+Reference implementation branch: [part-8.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.0)
 
 ## {% anchor adding-items-to-inventory | Adding Items to Inventory %}
 
@@ -467,7 +467,7 @@ Now you can pick items but you can't use them, drop them, or view your inventory
 
 {% image get-health-potion.png %}
 
-Reference implementation branch: [part-8.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.1)
+Reference implementation branch: [part-8.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.1)
 
 ## {% anchor using-and-dropping-items | Using and Dropping Items %}
 
@@ -1078,7 +1078,7 @@ Here's what it looks like when you use a health potion.
 
 {% image use-health-potion.png %}
 
-Reference implementation branch: [part-8.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.2)
+Reference implementation branch: [part-8.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.2)
 
 ## {% anchor event-routine-intro | Event Routine Intro %}
 
@@ -1255,7 +1255,7 @@ fn main() {
 }
 ```
 
-Reference implementation branch: [part-8.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.3)
+Reference implementation branch: [part-8.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.3)
 
 ## {% anchor state-machine-management-with-event-routines | State Machine Management with Event Routines  %}
 
@@ -1671,7 +1671,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
 
 It repeatedly runs the game, handles any interruptions, and then resumes the game unless it has been quit or the game is over.
 
-Reference implementation branch: [part-8.4](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.4)
+Reference implementation branch: [part-8.4](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.4)
 
 ## {% anchor death-screen | Death Screen %}
 
@@ -1788,6 +1788,6 @@ to implement a death screen with explicit state machines.
 
 {% image death-screen.png %}
 
-Reference implementation branch: [part-8.5](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8.5)
+Reference implementation branch: [part-8.5](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.5)
 
 {% local roguelike-tutorial-2020-part-9 | Click here for the next part! %}

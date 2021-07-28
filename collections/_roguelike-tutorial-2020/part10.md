@@ -15,7 +15,7 @@ In this part we'll make it possible to save and load games, and add a main menu.
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-10/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-9-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9-end)
+Reference implementation branch for starting point: [part-9-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9-end)
 
 In this post:
  - [Serializing Game State](#serializing-game-state)
@@ -83,7 +83,7 @@ where `<type>` is a type defined in the game's code.
 
 For each type that produces this error, derive the `Serialize` and `Deserialize` traits.
 
-Reference implementation branch: [part-10.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10.0)
+Reference implementation branch: [part-10.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.0)
 
 ## {% anchor main-menu | Main Menu %}
 
@@ -436,7 +436,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
 
 {% image menu1.png %}
 
-Reference implementation branch: [part-10.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10.1)
+Reference implementation branch: [part-10.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.1)
 
 ## {% anchor saving | Saving %}
 
@@ -605,7 +605,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
 ...
 ```
 
-Reference implementation branch: [part-10.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10.2)
+Reference implementation branch: [part-10.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.2)
 
 ## {% anchor loading | Loading %}
 
@@ -661,6 +661,6 @@ impl AppData {
 ...
 ```
 
-Reference implementation branch: [part-10.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-10.3)
+Reference implementation branch: [part-10.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.3)
 
 {% local roguelike-tutorial-2020-part-11 | Click here for the next part! %}

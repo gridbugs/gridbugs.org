@@ -14,7 +14,7 @@ work on other projects.
  - [Run in browser](https://games.gridbugs.org/roguelike-lighting-demo)
    - Use arrow or vi keys to move. Press "f" followed by a direction key to fire a
      burst of plasma.
- - [Source code on github](https://github.com/stevebob/roguelike-lighting-demo)
+ - [Source code on github](https://github.com/gridbugs/roguelike-lighting-demo)
 
 {% image screenshot0.png %}
 <!--more-->

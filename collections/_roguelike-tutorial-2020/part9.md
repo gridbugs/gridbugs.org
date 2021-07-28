@@ -17,7 +17,7 @@ By the end of this part it will be possible to launch fireballs and confusion sp
 This part is loosely based on [this part](http://rogueliketutorials.com/tutorials/tcod/part-9/) of the
 python tcod tutorial.
 
-Reference implementation branch for starting point: [part-8-end](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-8-end)
+Reference implementation branch for starting point: [part-8-end](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8-end)
 
 In this post:
  - [Examine Command](#examine-command)
@@ -414,7 +414,7 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
 
 {% image examine.png %}
 
-Reference implementation branch: [part-9.0](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9.0)
+Reference implementation branch: [part-9.0](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.0)
 
 ## {% anchor place-fireball-scrolls | Place Fireball Scrolls %}
 
@@ -530,7 +530,7 @@ just print the text "todo" to stdout.
 
 {% image fireball-scroll.png %}
 
-Reference implementation branch: [part-9.1](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9.1)
+Reference implementation branch: [part-9.1](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.1)
 
 ## {% anchor launching-fireballs | Launching Fireballs %}
 
@@ -1218,7 +1218,7 @@ When it hits them, they'll take damage and possibly die.
 
 {% image hit.png %}
 
-Reference implementation branch: [part-9.2](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9.2)
+Reference implementation branch: [part-9.2](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.2)
 
 ## {% anchor confusion-scroll | Confusion Scroll %}
 
@@ -1555,6 +1555,6 @@ NPCs hit with confusion spells move randomly for their next 5 turns.
 
 {% image confusion.png %}
 
-Reference implementation branch: [part-9.3](https://github.com/stevebob/chargrid-roguelike-tutorial-2020/tree/part-9.3)
+Reference implementation branch: [part-9.3](https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.3)
 
 {% local roguelike-tutorial-2020-part-10 | Click here for the next part! %}
