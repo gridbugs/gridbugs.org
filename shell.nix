@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
-  pkgs.mkShell {
-    nativeBuildInputs = [
-      pkgs.buildPackages.ruby_3_0
-      pkgs.buildPackages.openssl
-    ];
-  }
+
+pkgs.mkShell {
+  packages = with pkgs; [
+    ruby_3_0
+  ];
+}
