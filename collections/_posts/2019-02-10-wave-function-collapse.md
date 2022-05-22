@@ -1437,11 +1437,11 @@ on a specified image file. I used it for all the examples in this post.
 
 ### Model Synthesis
 
-In 2007, Paul Merrel published an algorithm called "Model Synthesis" which uses
+In 2007, Paul Merrell published an algorithm called "Model Synthesis" which uses
 a constraint solver to generate textures from examples. The Wave Function Collapse
 algorithm is heavily based on this work.
 
-For more info, see [the description on Paul Merrel's website](https://paulmerrell.org/model-synthesis/),
+For more info, see [the description on Paul Merrell's website](https://paulmerrell.org/model-synthesis/),
 [the source code for their implementation of Model Synthesis](https://github.com/merrell42/model-synthesis),
 and a [thread on twitter comparing Model Synthesis to WFC](https://twitter.com/exppad/status/1421058939274371079).
 
