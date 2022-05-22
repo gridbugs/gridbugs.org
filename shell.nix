@@ -2,6 +2,6 @@
 
 pkgs.mkShell {
   packages = with pkgs; [
-    ruby_3_0
+    ruby_3_1
   ];
 }

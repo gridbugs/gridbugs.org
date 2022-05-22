@@ -9,6 +9,14 @@ excerpt_separator: <!--more-->
 
 {% image flower-banner-scaled.png %}
 
+<div style="color:gray;font-style:italic">
+
+(Edit 2022-05-03: I found out that the Wave Function Collapse algorithm was heavily inspired by
+an existing algorithm called "Model Synthesis". I've added a <a href="#model-synthesis">section</a> to
+further reading with links to the author's website for more information.)
+
+</div>
+
 Wave Function Collapse is a procedural generation algorithm which produces
 images by arranging a collection of tiles according to rules about which tiles
 may be adjacent to each other tile, and relatively how frequently each tile should appear.
@@ -1426,6 +1434,16 @@ $ cargo run --manifest-path wfc-image/Cargo.toml --example=animate -- \
 
 The `simple` example is also quite useful. It just generates images files based
 on a specified image file. I used it for all the examples in this post.
+
+### Model Synthesis
+
+In 2007, Paul Merrel published an algorithm called "Model Synthesis" which uses
+a constraint solver to generate textures from examples. The Wave Function Collapse
+algorithm is heavily based on this work.
+
+For more info, see [the description on Paul Merrel's website](https://paulmerrell.org/model-synthesis/),
+[the source code for their implementation of Model Synthesis](https://github.com/merrell42/model-synthesis),
+and a [thread on twitter comparing Model Synthesis to WFC](https://twitter.com/exppad/status/1421058939274371079).
 
 ### WaveFunctionCollaspe Repo
 
