@@ -701,7 +701,7 @@ function in my trace and it definitely was working as intended.
 ### The PPU: More than just rendering!
 
 The diff revealed something interesting going on in the code from earlier which
-I dismissed as related. to rendering.
+I dismissed as related to rendering.
 Before diving back in, here's all you need to know about the NES Picture
 Processing Unit.
 
