@@ -3,7 +3,7 @@ layout: post
 title: "I found a photo of you in my google drive"
 date: 2022-08-09
 categories: poetry
-permalink: /i-found-a-photo-of-you-in-my-google-drive
+permalink: /i-found-a-photo-of-you-in-my-google-drive/
 excerpt_separator: <!--more-->
 ---
 
