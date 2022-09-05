@@ -14,6 +14,8 @@ header_pages:
 series:
   roguelike-tutorial-2020:
     name: "Roguelike Tutorial 2020"
+  roguelike-tutorial-2022:
+    name: "Roguelike Tutorial 2022"
 
 pagination:
   enabled: true
@@ -38,6 +40,8 @@ collections_dir: collections
 
 collections:
   roguelike-tutorial-2020:
+    output: true
+  roguelike-tutorial-2022:
     output: true
   daily:
     output: true
