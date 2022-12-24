@@ -29,7 +29,7 @@ apt install build-essential libxcursor1 libxrandr2 libxi6 libx11-xcb1 vulkan-too
 ```
 #### Archlinux
 ```
-pacmah -S base-devel libx11 libxcursor libxrandr libxi vulkan-tools
+pacman -S base-devel libx11 libxcursor libxrandr libxi vulkan-tools
 ```
 #### NixOS
 Use the

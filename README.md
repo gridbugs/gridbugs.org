@@ -26,3 +26,9 @@ bundle install
 # run server
 bundle exec jekyll serve
 ```
+
+## Updating gemset.nix
+```
+nix-shell -p bundix
+bundix -l
+```
