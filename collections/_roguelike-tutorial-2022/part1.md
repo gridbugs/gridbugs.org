@@ -534,3 +534,5 @@ cargo run -- --terminal
 
 The terminal mode of the game will continue to work as we add more features
 without us needing to do any additional work.
+
+{% local roguelike-tutorial-2022-part-2 | Click here for the next part! %}
