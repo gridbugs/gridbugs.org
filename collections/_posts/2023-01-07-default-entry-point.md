@@ -9,7 +9,7 @@ excerpt_separator: <!--more-->
 
 For most of my life I took for granted that programs begin executing at an
 address denoted by the symbol `_start` (a single underscore, followed by the
-world "start"). Turns out it's not so simple.
+word "start"). Turns out it's not so simple.
 
 Take this x86 assembly program that prints "Hello, World!" on Linux:
 ```
