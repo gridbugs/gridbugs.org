@@ -35,6 +35,12 @@ Here's what a float can represent:
 The second point is the most important for understanding floating points. __Each
 successive pair of powers of 2 has 2^23 - 1 floating point values evenly spread
 out between them.__
+There are 2^23 - 1 floats between 0.125 and 0.25, between 1 and 2, between 1024
+and 2048, and between 8,388,608 (2^23) and 16,777,216 (2^24). As the numeric
+range between consecutive powers of 2 increases, the number of floats between
+them stays the same at 2^23 - 1; the floats just get more spread out.
+This is the reason that values with lower
+magnitudes can be more precisely represented with floating points.
 
 Some implications of this:
  - in between 1 and 2, consecutive float values are 2^-23 apart from one
