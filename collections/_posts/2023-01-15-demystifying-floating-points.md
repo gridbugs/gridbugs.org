@@ -60,7 +60,7 @@ Some implications of this:
 
 Here's how floats are encoded:
 
-{% image bits.svg %}
+{% image bits.svg alt="diagram: [ Sign (1 bit) | Exponent (8 bits) | Fraction (23 bits) ]" %}
 
 <!--more-->
 
