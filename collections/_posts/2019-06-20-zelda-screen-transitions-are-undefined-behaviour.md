@@ -2,7 +2,7 @@
 layout: post
 title: "Zelda Screen Transitions are Undefined Behaviour"
 date: 2019-06-20 21:30 +1000
-categories: emulation
+categories: nes
 permalink: /zelda-screen-transitions-are-undefined-behaviour/
 excerpt_separator: <!--more-->
 og_image: title.png

@@ -2,7 +2,7 @@
 layout: post
 title: "Playing sound on the NES by directly setting its DMC output"
 date: 2023-01-21
-categories: emulation audio
+categories: nes audio
 permalink: /playing-sound-on-the-nes-by-directly-setting-its-dmc-output/
 excerpt_separator: <!--more-->
 ---
@@ -103,7 +103,7 @@ The remainder of this post will describe some experiments I did to better
 understand how to play sound on the NES by directly writing the digital value
 sent from the DMC to the mixer (which includes a DAC).
 
-## Playing a Sine Wave
+## Play a Sine Wave
 
 Let's get the NES to play a sine wave at 440Hz which is the frequency of the
 note A above middle C. This program will work by repeatedly setting the DMC's "direct
@@ -131,8 +131,127 @@ This gives us a sampling rate of 1,790,000 / 6 ≈ 298,333.33 samples per second
 This is a far higher sampling rate than is necessary to accurately produce a
 440Hz sine wave. As the sampling rate goes up, so too does the number of samples
 over a fixed period. This could cause us problems as memory is limited in the
-NES. We need to store enough samples to cover one oscillation of the 440Hz sine
-wave. If the sine wave repeats 440 times per second and we're sampling it
-298,333.33 times per second, then a single iteration of the sine wave is 
+NES.
 
+To play a continuous sine wave we can get away with playing a single oscillation
+of the signal in a loop.
+Therefore we need to store enough samples to cover one oscillation of the 440Hz sine
+wave.
 
+{% image sine-440hz.png alt="Diagram showing a single oscillation of a 440Hz
+wave, with periodic vertical lines indicating that it has been discretized." %}
+
+If the sine wave repeats 440 times per second and we're sampling it
+298,333.33 times per second, then a single oscillation of the sine wave will be
+broken down into 298,333.33 / 440 ≈ 678 samples. This means the pair of
+instructions will be repeated 678 times. It takes 5 bytes to store both
+instructions (2 for the first one, 3 for the second). 5 x 678 = 3390 bytes will
+comfortably fit inside the 32kb ROM, so we're safe to keep our comically high
+sample rate.
+
+I've written {% local conways-game-of-life-on-the-nes-in-rust/#rust | before %}
+about using Rust as a macro language for NES assembly programming.
+Here is some Rust code that generates the sequence of instructions that play a
+440Hz sine wave by setting the DMC's load register:
+```rust
+const NUM_SAMPLES: usize = 678;
+b.label("sine-440Hz-start");
+for i in 0..NUM_SAMPLES {
+    // get the position within a single oscillation of the signal
+    let offset = (i as f64 * ::std::f64::consts::PI * 2_f64) / 678_f64;
+    // sample the sine wave at the offset
+    let sample = offset.sin();
+    // quantize the sample to a 127 bit integer
+    let sample_quantized = (((sample + 1_f64) / 2_f64) * 127_f64) as u8;
+    // emit the instructions to set the DMC load register
+    b.inst(Lda(Immediate), sample_quantized);
+    b.inst(Sta(Absolute), Addr(0x4011));
+}
+// begin the next oscilation
+b.inst(Jmp(Absolute), "sine-440Hz-start");
+```
+
+If you're attempting to reproduce this result, be sure to enable the DMC channel
+via the APU's status register (0x4015):
+```rust
+b.inst(Lda(Immediate), 1 << 4);
+b.inst(Sta(Absolute), Addr(0x4015));
+```
+
+Looking at the generated instructions:
+```
+LDA(Immediate) 63
+STA(Absolute) 0x4011
+LDA(Immediate) 64
+STA(Absolute) 0x4011
+LDA(Immediate) 64
+STA(Absolute) 0x4011
+LDA(Immediate) 65
+STA(Absolute) 0x4011
+LDA(Immediate) 65
+STA(Absolute) 0x4011
+...
+```
+We can see that it starts with a value of 63 which is right in the middle of 0
+and 127 (the max 7-bit value), which corresponds to a signed value of 0
+quantized into a 7-bit unsigned integer.
+
+I ran the generated program in an emulator, recorded my desktop audio with OBS
+and opened the result in Audacity:
+
+{% image audacity-440hz.png alt="Screenshot from Audacity showing a time domain
+representation of the audio produced by running a NES program that plays a 440Hz
+sine wave." %}
+
+Clearly it is playing a sine wave. Switching to Audacity's spectrogram view we
+can check the frequency of the wave:
+
+{% image audacity-440hz-spectrogram.png alt="Screenshot from Audacity showing a
+spectrogram of the audio produced by running a NES program that plays a 440Hz
+sine wave." %}
+
+There's clearly a strong signal at around 440Hz. The weaker lines at every
+multiple of 440Hz is due to the signal not being a perfect sine wave.
+Taking another look at the first screenshot the waveform is clearly slightly
+misshaped (e.g. the top is asymmetrical).
+
+## Playing the song from Rainbow Road on the N64
+
+Now instead of generating samples programmatically let's take an existing song
+and play a short segment of it on a NES by repeatedly setting the DMC load
+register. We'll use the song from the Rainbow Road stage of Mario Kart 64. It
+can be downloaded
+[here](https://downloads.khinsider.com/game-soundtracks/album/mario-kart-64/18.%2520Rainbow%2520Road.mp3).
+
+{% image rainbow-road.png alt="Screenshot from the Rainbow Road stage of Mario
+Kart 64" %}
+
+Playing this file in `mplayer`, one of its log messages is:
+```
+AO: [alsa] 48000Hz 2ch floatle (4 bytes per sample)
+```
+This tells us that the song is sampled at 48kHz, and each sample is a 4 byte
+float (this will be a single-precision floating point). Additionally the song
+has two channels (a left and right channel). Audio on the NES only has a single
+channel, so we'll need to combine the left and right channel my taking the mean
+of each corresponding pair of samples. Recall that samples on the NES are 7-bit integers,
+and for convenience we'll use a single byte to store each sample. After
+combining the left and right channels, a single second of audio at a sample rate
+of 48kHz will take up 48,000 bytes.
+
+The program which plays a sine wave combined the code for loading samples with
+the sample values themselves. This simplified the program but required us to
+store 5 bytes for each sample. This time around we will save memory by storing
+the entire sample as contiguous bytes in ROM, and writing a small program which
+reads each byte in order and writes it to the DMC load register.
+
+Simple NES cartridges (NROM) have 32kb of
+ROM for storage of code and static data, and an additional 8kb of ROM for
+storage of tile data. We don't care about graphics so we can use the tile ROM
+for storing additional audio samples. This memory is accessed
+through the PPU (Picture
+Processing Unit) but it's still convenient and fast to read so the fact
+that it's not directly addressable won't be an issue.
+The program that plays audio samples will be negligibly small, so we're left
+with about 40kb of ROM for storing audio data. With a sample rate of 48kHz we
+can only fit about (48 * 1024) / 40,000 ≈ 0.85 seconds of the song in memory.

@@ -2,7 +2,7 @@
 layout: post
 title: "NES Emulator Debugging"
 date: 2019-05-08 08:00 +1000
-categories: emulation
+categories: nes emulation
 permalink: /nes-emulator-debugging/
 excerpt_separator: <!--more-->
 ---
