@@ -141,8 +141,8 @@ wave.
 {% image sine-440hz.png alt="Diagram showing a single oscillation of a 440Hz
 wave, with periodic vertical lines indicating that it has been discretized." %}
 
-If the sine wave repeats 440 times per second and we're sampling it
-298,333.33 times per second, then a single oscillation of the sine wave will be
+The sine wave repeats 440 times per second and we're sampling it
+298,333.33 times per second so a single oscillation of the sine wave will be
 broken down into 298,333.33 / 440 ≈ 678 samples. This means the pair of
 instructions will be repeated 678 times. It takes 5 bytes to store both
 instructions (2 for the first one, 3 for the second). 5 x 678 = 3390 bytes will
@@ -233,7 +233,7 @@ AO: [alsa] 48000Hz 2ch floatle (4 bytes per sample)
 This tells us that the song is sampled at 48kHz, and each sample is a 4 byte
 float (this will be a single-precision floating point). Additionally the song
 has two channels (a left and right channel). Audio on the NES only has a single
-channel, so we'll need to combine the left and right channel my taking the mean
+channel, so we'll need to combine the left and right channel by taking the mean
 of each corresponding pair of samples. Recall that samples on the NES are 7-bit integers,
 and for convenience we'll use a single byte to store each sample. After
 combining the left and right channels, a single second of audio at a sample rate
@@ -306,7 +306,7 @@ audio data itself.
 // themselves, skipping over the first ines::CHR_ROM_BLOCK_BYTES bytes with the expectation that
 // they are stored in CHR ROM instead.
 //
-// b is a mas6502 assembler which we can use to emit code and add data to the ROM
+// b is a mos6502 assembler which we can use to emit code and add data to the ROM
 // audio_data is an array of samples quantized into 7-bit integers
 fn program(b: &mut Block, audio_data: &[u8]) {
     use mos6502_model::addressing_mode::*;
@@ -335,8 +335,6 @@ fn program(b: &mut Block, audio_data: &[u8]) {
     // Enable the DMC
     b.inst(Lda(Immediate), 1 << 4);
     b.inst(Sta(Absolute), Addr(0x4015));
-
-    b.label("play-audio");
 
     // read ppu status to clear ppu address latch, then write 0 to the ppu address
     //b.inst(Bit(Absolute), Addr(0x2002)); // clear PPU address latch
@@ -368,8 +366,8 @@ fn program(b: &mut Block, audio_data: &[u8]) {
 
     // Call a function "delay" which spins for a fixed number of cycles. This is needed so that the
     // rate at which we send samples to the DMC load register is 3000 times per second. Without
-    // this, the song would play in fast-forward. Note that we do this before sending each sample
-    // to the DMC.
+    // this pause, the song would play in fast-forward. Note that we do this before sending each
+    // sample to the DMC.
     b.inst(Jsr(Absolute), "delay");
 
     // Read a value from PPU memory into the accumulator. Reading from PPU memory has the effect of
@@ -490,3 +488,62 @@ fn program(b: &mut Block, audio_data: &[u8]) {
     assert!(b.offset() <= audio_max - PRG_START);
 }
 ```
+
+The code is on
+[github](https://github.com/gridbugs/mos6502/blob/rainbow-road/nes-apu-experiment/src/main.rs).
+It requires you to downsample its input first, and the offset into the song of
+the section to place in the ROM is hard-coded.
+
+Here's how one might use it. Clone the repo and checkout the `rainbow-road`
+branch. Then run:
+```
+$ wget https://vgmsite.com/soundtracks/mario-kart-64/nbubjzcswd/18.%20Rainbow%20Road.mp3
+$ ffmpeg -i "18. Rainbow Road.mp3" -ar 3000 rr3kHz.wav
+$ cargo run --manifest-path nes-apu-experiment/Cargo.toml -- rr3kHz.wav > rr.nes
+$ fceux rr.nes   # swap fceux with your favourite NES emulator
+```
+
+Here's how it sounds:
+
+{% audio rainbow-road-1-NES.ogg %}
+
+That sounds even worse than the original 3kHz version, but the melody is still
+clearly audible. One explanation for this
+is the fact that each sample has been quantized into 7-bit integers. We can see
+the effects of this by examining the waveform in audacity:
+
+{% image audacity-NES.png alt="Screenshot of audacity showing the step shape of
+the wave form" %}
+
+The step shape of this wave form is the result of samples losing precision when
+being converted to 7 bit integers.
+
+Download the ROM {% file
+playing-sound-on-the-nes-by-directly-setting-its-dmc-output/rainbow-road.nes |
+here %}.
+
+We could improve the quality by increasing the sample rate but this would
+shorten the length of the song we can store. Some ways we could increase this
+limit:
+ - Store compressed audio - The code spends most of its waiting for the right
+   moment to send the next sample to the DMC. There might be a way to store
+   audio in a compressed form and use this time to expand the audio data into
+   RAM and then play it back from there.
+ - Delta modulation - Recall that DMC stands for Delta Modulated Channel. Delta
+   modulation takes advantage of the fact that successive audio samples are
+   usually numerically close, and saves space by only storing the differences
+   between successive samples. When using delta modulation on the NES, only
+   differences of 1 and -1 can be represented, so additional quality will be
+   lost, but it may make up for it by allowing higher sampling rates.
+ - Bank switching - This program used the simplest of NES cartridge types (known as
+   NROM) but many different types of cartridge have been produced. Some
+   cartridges contain hardware for dynamically switching the ROM bank attached
+   to the memory bus, which lets them store more than 32kb of static data.
+
+One final thing just for fun. Since we're using tile ROM to store audio data,
+you might be wondering what the resulting "tiles" look like. The fceux NES
+emulator has a PPU viewer which can be used to inspect tile data. I had to
+manually set the palette colours, and then the tiles were clearly visible:
+
+{% image tiles.png alt="Screenshot of fceux showing the tiles resulting from
+using tile memory to store audio samples" %}
