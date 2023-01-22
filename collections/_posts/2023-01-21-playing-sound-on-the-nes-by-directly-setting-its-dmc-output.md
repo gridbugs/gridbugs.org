@@ -27,7 +27,11 @@ low-level technical details but after reading it I felt I had little
 intuition for what to expect when actually using the DMC, so I did some experiments which
 I will share.
 
-First, here's my mental model of audio.
+<!--more-->
+
+## Mental model for working with audio
+
+This is my working model for the basics of digital audio.
 
 Part of a speaker called the "diaphragm" gets pushed outwards when a positive
 voltage is applied to the speaker, and pulled inwards when a negative voltage is
@@ -38,8 +42,6 @@ arranged from left to right. The left-most speaker shows the diaphragm in a neut
 position with the subtitle 'No Voltage'. The middle speaker shows the diaphragm
 pushed out with the subtitle 'Positive Voltage'. The right-most speaker shows
 the diaphragm pulled inwards with the subtitle 'Negative Voltage'." %}
-
-<!--more-->
 
 By varying the voltage applied to the speaker over time, the rapid pushing and
 pulling causes the diaphragm to
@@ -100,3 +102,37 @@ value of the sample sent to the DAC to produce sound in much the same way.
 The remainder of this post will describe some experiments I did to better
 understand how to play sound on the NES by directly writing the digital value
 sent from the DMC to the mixer (which includes a DAC).
+
+## Playing a Sine Wave
+
+Let's get the NES to play a sine wave at 440Hz which is the frequency of the
+note A above middle C. This program will work by repeatedly setting the DMC's "direct
+load" register which is mapped to the memory address 0x4011.
+There's no easy way to get the NES itself to generate a sine wave, so instead
+I'll programatically generate the instructions to set the direct load register
+to a sequence of values approximating a sine wave. The generated NES program
+will repeatedly execute the following pair of instructions:
+```
+LDA(Immediate) XXX    // load the accumulator register with the literal value XXX
+STA(Absolute) 0x4011  // store the value in the accumulator to the DMC direct load register
+```
+These two instructions will be repeated with the placeholder XXX replaced with
+successive values sampled from a sine wave. The DMC load register is 8 bits
+wide but the most significant bit is ignored so we'll be discretizing the sine
+wave to integer samples between 0 and 127.
+
+Before we can generate the sequence of samples we need to work out the sample
+rate. This is the rate at which we will be setting the DMC direct load register.
+The processor in the NTSC version of the NES runs at 1.79MHz (ie. 1,790,000
+cycles per second). The
+`LDA(Immediate)` instruction takes 2 cycles and the `STA(Absolute)` instruction
+takes 4 cycles so the repeated pair of instructions will take 6 cycles.
+This gives us a sampling rate of 1,790,000 / 6 ≈ 298,333.33 samples per second.
+This is a far higher sampling rate than is necessary to accurately produce a
+440Hz sine wave. As the sampling rate goes up, so too does the number of samples
+over a fixed period. This could cause us problems as memory is limited in the
+NES. We need to store enough samples to cover one oscillation of the 440Hz sine
+wave. If the sine wave repeats 440 times per second and we're sampling it
+298,333.33 times per second, then a single iteration of the sine wave is 
+
+
