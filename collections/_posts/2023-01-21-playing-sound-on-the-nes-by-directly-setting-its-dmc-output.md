@@ -70,7 +70,7 @@ this:
  - There are effectively an infinite number of different displacements the
    speaker diaphragm can take, but the data type used to represent samples will
    have a finite number of possible values.
- - The value of the signal is only measured periodically, but the signal itself
+ - The value of the signal is only sampled periodically, but the signal itself
    may be constantly varying. The effect of this is that [frequencies in the
    signal which are  above half the sample rate can't be represented in the
    digital signal](https://en.wikipedia.org/wiki/Nyquist_frequency).
@@ -130,8 +130,8 @@ takes 4 cycles so the repeated pair of instructions will take 6 cycles.
 This gives us a sampling rate of 1,790,000 / 6 ≈ 298,333.33 samples per second.
 This is a far higher sampling rate than is necessary to accurately produce a
 440Hz sine wave. As the sampling rate goes up, so too does the number of samples
-over a fixed period. This could cause us problems as memory is limited in the
-NES.
+over a fixed period. We have to store all the samples in ROM, which could cause
+us problems as memory is limited in the NES.
 
 To play a continuous sine wave we can get away with playing a single oscillation
 of the signal in a loop.
@@ -151,7 +151,7 @@ sample rate.
 
 I've written {% local conways-game-of-life-on-the-nes-in-rust/#rust | before %}
 about using Rust as a macro language for NES assembly programming.
-Here is some Rust code that generates the sequence of instructions that play a
+Here is some Rust code that generates the sequence of instructions that plays a
 440Hz sine wave by setting the DMC's load register:
 ```rust
 const NUM_SAMPLES: usize = 678;
@@ -328,16 +328,9 @@ fn program(b: &mut Block, audio_data: &[u8]) {
     // Execution will start at the "reset" label. This is our program's entry point.
     b.label("reset");
 
-    // write 0 to the ppu control register
-    b.inst(Lda(Immediate), 0);
-    b.inst(Sta(Absolute), Addr(0x2000));
-
     // Enable the DMC
     b.inst(Lda(Immediate), 1 << 4);
     b.inst(Sta(Absolute), Addr(0x4015));
-
-    // read ppu status to clear ppu address latch, then write 0 to the ppu address
-    //b.inst(Bit(Absolute), Addr(0x2002)); // clear PPU address latch
 
     // We'll start by playing the audio samples stored in tile memory. Tile memory is read through
     // the registers of the PPU. PPU addresses are 16 bytes wide, and the current address is set by
@@ -370,9 +363,9 @@ fn program(b: &mut Block, audio_data: &[u8]) {
     // sample to the DMC.
     b.inst(Jsr(Absolute), "delay");
 
-    // Read a value from PPU memory into the accumulator. Reading from PPU memory has the effect of
-    // incrementing the current PPU address, so the nexit read will be from the next location in
-    // PPU memory.
+    // Read a sample value from PPU memory into the accumulator. Reading from PPU memory has the
+    // effect of incrementing the current PPU address, so the next read will be from the next
+    // location in PPU memory.
     b.inst(Lda(Absolute), Addr(0x2007));
 
     // Write the value we just read from PPU memory into the DMC's load register.
@@ -539,6 +532,20 @@ limit:
    NROM) but many different types of cartridge have been produced. Some
    cartridges contain hardware for dynamically switching the ROM bank attached
    to the memory bus, which lets them store more than 32kb of static data.
+
+Games tended not to use the DMC load register for most of their music, instead
+opting to use delta encoded audio. The DMC could read the sample deltas out of
+memory in the background while the CPU did other things. In this simple example
+it was easy to feed samples to the DMC load register at the correct times, but
+if we were trying to juggle loading the DMC with also updating graphics and
+reading controller input it would quickly get out of hand. Also as we saw,
+storing raw audio samples takes up a lot of memory relative to the tiny amount
+of ROM available on the NES. Delta-encoded audio data is much more space
+efficient.
+
+The info I used to get started programming the NES DMC:
+ - [NesDev wiki page about the DMC](https://www.nesdev.org/wiki/APU_DMC)
+ - [Youtube video about the DMC](https://www.youtube.com/watch?v=mJnz6dEWwIw)
 
 One final thing just for fun. Since we're using tile ROM to store audio data,
 you might be wondering what the resulting "tiles" look like. The fceux NES
