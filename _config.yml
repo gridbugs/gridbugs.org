@@ -10,6 +10,7 @@ host: 0.0.0.0
 header_pages:
   - about.md
   - tags.md
+  - external.md
 
 series:
   roguelike-tutorial-2020:
