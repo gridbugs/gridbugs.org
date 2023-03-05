@@ -8,5 +8,6 @@ permalink: /external/
 
 Talks I have given or things I've written for other sites:
 
+- [(Video) Writing NES assembly programs in a Rust DSL](https://www.youtube.com/watch?v=hs-MrEoOX5Y)
 - [(Video) Escaping State-Machine Hell with a Pseudo-Synchronous DSL (RustAU meetup)](https://www.youtube.com/watch?v=ewNU9zYktBE)
 - [(Trustworthy Systems/Data61/NICTA/CSIRO blog) Debugging Stories: Stack alignment matters](https://research.csiro.au/tsblog/debugging-stories-stack-alignment-matters/)
