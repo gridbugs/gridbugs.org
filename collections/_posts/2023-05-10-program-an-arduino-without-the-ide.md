@@ -25,17 +25,17 @@ For this guide I'll be using one of
 
 {% image arduino3.png alt="A top-down view of an Arduino Nano" %}
 
-It's an Elagoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
+It's an Elegoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
 only noticeable differences are that you have to solder the headers pins on
 yourself, it doesn't come with any cables and it has a different USB to serial
 chip (a CH340 instead of the FT232 found on the Arduino).
 
 ## USB Serial Driver
 
-The docs on the [Elagoo
+The docs on the [Elegoo
 website](https://www.elegoo.com/en-au/products/elegoo-nano-v3-0) suggest that
 you'll need to install special drivers in order for your computer to detect the
-Elagoo Nano when you plug it in with a USB cable. The necessary Linux driver is
+Elegoo Nano when you plug it in with a USB cable. The necessary Linux driver is
 called `ch341` and it's probably already installed as a kernel module on most
 Linux distributions.
 
@@ -48,7 +48,7 @@ usbserial              73728  2 pl2303,ch341
 usbcore               385024  13 pl2303,usbserial,xhci_hcd,snd_usb_audio,usbhid,snd_usbmidi_lib,xpad,usb_storage,uvcvideo,btusb,xhci_pci,uas,ch341
 ```
 
-When you connect the Elagoo Nano via a USB cable, you'll see this in the output
+When you connect the Elegoo Nano via a USB cable, you'll see this in the output
 of `dmesg`:
 ```
 ...
@@ -103,12 +103,10 @@ LSP client (e.g. vscode, neovim with the LanguageClient-neovim plugin). This
 might be found in a package named `clang-tools` if no `clangd` package is
 available in your distro.
 
-### `bear` and `jq`
+### `bear`
 
 `bear` is a tool for generating compilation databases (`compile_commands.json`)
-from a `Makefile` and `jq` is a tool for querying/modifying JSON data which we
-will need as we'll have to programatically make some changes to the compilation
-database to tell it about some AVR-specific c-header include paths.
+from a `Makefile`.
 
 ### `avr-libc`
 
@@ -183,7 +181,92 @@ sudo picocom -b9600 /dev/ttyUSB0
 Note the `-b9600` sets the baud rate which corresponds to the line `#define
 BAUD_RATE_HZ 9600` in the program.
 
+So that we don't have to manually run `avr-gcc` every time we compile the code,
+create a `Makefile` with the following contents:
+```make
+# Makefile
+TARGET=hello
+
+SRC=main.c
+OBJ=$(SRC:.c=.o)
+
+CC=avr-gcc
+MCU=atmega328p
+
+# The --param=min-pagesize=0 argument is to fix the error:
+# error: array subscript 0 is outside array bounds of ‘volatile uint8_t[0]’
+#        {aka ‘volatile unsigned char[]’}
+# ...which is incorrectly reported in some versions of gcc
+CFLAGS=-mmcu=$(MCU) -std=c99 -Werror -Wall --param=min-pagesize=0
+
+$(TARGET).elf: $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $@
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean: 
+	rm -rf *.o *.elf
+```
+
+Note that this also enables more warnings and works around a problem where
+`avr-gcc` would incorrectly report an error.
+
+Now to rebuild the `hello.elf` binary after changing the code you can simply run `make`.
+
 ## Jump to Definition and other ergonomics with LanguageClient-neovim and clangd
+
+I won't cover setting up an LSP client here as there are too many different
+editors and plugins to choose from, but for an example neovim LSP setup, see [my
+neovim
+config](https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L72).
+
+For the LSP server we'll use `clangd`. As long as `clangd` is installed your
+editor should take care of starting and stopping it in the background. To check
+that it's installed try running the command `clangd`.
+
+For `clangd` to work correctly it needs to know how you intend on compiling the
+code. It finds this out by reading a file `compile_commands.json` that lists the
+commands used to compile the code. There are various ways of generating this
+file and since it will contain absolute paths it's not advised to check it into
+the project. One way of generating `compile_commands.json` is with a tool called
+`bear`.
+
+`bear` can generate a `compile_commands.json` from an invocation of `make`. For
+example (the working directory is `/home/s/src`):
+```
+$ bear -- make --always-make
+avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
+avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 main.o -o hello.elf
+
+$ cat compile_commands.json
+[
+  {
+    "arguments": [
+      "/usr/bin/avr-gcc",
+      "-mmcu=atmega328p",
+      "-std=c99",
+      "-Werror",
+      "-Wall",
+      "--param=min-pagesize=0",
+      "-c",
+      "-o",
+      "main.o",
+      "main.c"
+    ],
+    "directory": "/home/s/src/hello-avr",
+    "file": "/home/s/src/hello-avr/main.c",
+    "output": "/home/s/src/hello-avr/main.o"
+  }
+]
+```
+
+On some systems, this is sufficient to allow a LSP client to do code navigation
+and other ergonomic features.
+
+On other systems, opening `main.c` in a LSP-enabled editor after generating this
+file looks something like:
+
 
 ## LED Flasher Circuit
 
