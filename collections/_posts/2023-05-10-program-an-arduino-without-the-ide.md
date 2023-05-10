@@ -168,6 +168,27 @@ different device file). Also as with the `avr-gcc` command above, replace
 uses a different naming convention to `avr-gcc`.
 ```
 $ sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+
+avrdude: AVR device initialized and ready to accept instructions
+avrdude: device signature = 0x1e950f (probably m328p)
+avrdude: Note: flash memory has been specified, an erase cycle will be performed.
+         To disable this feature, specify the -D option.
+avrdude: erasing chip
+avrdude: reading input file hello.elf for flash
+         with 390 bytes in 1 section within [0, 0x185]
+         using 4 pages and 122 pad bytes
+avrdude: writing 390 bytes flash ...
+
+Writing | ################################################## | 100% 0.10 s
+
+avrdude: 390 bytes of flash written
+avrdude: verifying flash memory against hello.elf
+
+Reading | ################################################## | 100% 0.06 s
+
+avrdude: 390 bytes of flash verified
+
+avrdude done.  Thank you.
 ```
 
 To see the output of this program you'll need to use a tool that prints data
@@ -175,10 +196,44 @@ received over a serial connection. I'll use `picocom` in this guide. Run the
 following command, replacing `/dev/ttyUSB0` with the device file associated with
 the Arduino.
 ```
-sudo picocom -b9600 /dev/ttyUSB0
+$ sudo picocom -b9600 /dev/ttyUSB0
+picocom v3.2a
+
+port is        : /dev/ttyUSB0
+flowcontrol    : none
+baudrate is    : 9600
+parity is      : none
+databits are   : 8
+stopbits are   : 1
+escape is      : C-a
+local echo is  : no
+noinit is      : no
+noreset is     : no
+hangup is      : no
+nolock is      : no
+send_cmd is    : /nix/store/sy0ipq6qy2slql25lbax77i4315bynzp-lrzsz-0.12.20/bin/sz -vv
+receive_cmd is : /nix/store/sy0ipq6qy2slql25lbax77i4315bynzp-lrzsz-0.12.20/bin/rz -vv -E
+imap is        :
+omap is        :
+emap is        : crcrlf,delbs,
+logfile is     : none
+initstring     : none
+exit_after is  : not set
+exit is        : no
+
+Type [C-a] [C-h] to see available commands
+Terminal ready
+Hello, World!
 ```
 
-Note the `-b9600` sets the baud rate which corresponds to the line `#define
+To exit picocom, press Ctrl-a, then Ctrl-x.
+
+When the Arduino is plugged in via its USB port, connecting to it with picocom
+will cause the device to reset, so you won't miss the "Hello, World!" message if
+you don't connect fast enough. You can also reset the Arduino by pressing the
+button near its built-in LEDs.
+
+Also note the `-b9600` sets the baud rate which corresponds to the line `#define
 BAUD_RATE_HZ 9600` in the program.
 
 So that we don't have to manually run `avr-gcc` every time we compile the code,
@@ -212,7 +267,12 @@ clean:
 Note that this also enables more warnings and works around a problem where
 `avr-gcc` would incorrectly report an error.
 
-Now to rebuild the `hello.elf` binary after changing the code you can simply run `make`.
+Now to rebuild the `hello.elf` binary after changing the code you can simply run:
+```
+$ make
+avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
+avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 main.o -o hello.elf
+```
 
 ## Jump to Definition and other ergonomics with LanguageClient-neovim and clangd
 
@@ -233,7 +293,7 @@ the project. One way of generating `compile_commands.json` is with a tool called
 `bear`.
 
 `bear` can generate a `compile_commands.json` from an invocation of `make`. For
-example (the working directory is `/home/s/src`):
+example (the working directory is `/home/s/src/hello-avr`):
 ```
 $ bear -- make --always-make
 avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
@@ -260,13 +320,186 @@ $ cat compile_commands.json
   }
 ]
 ```
+The `--always-make` argument to `make` tells it to unconditionally run the
+build commands and removes the need to run `make clean` first. This is necessary
+as `bear` runs the build and monitors what compilation commands are run.
 
 On some systems, this is sufficient to allow a LSP client to do code navigation
 and other ergonomic features.
 
-On other systems, opening `main.c` in a LSP-enabled editor after generating this
+On other systems (such as NixOS), opening `main.c` in a LSP-enabled editor after generating this
 file looks something like:
 
+{% image errors.jpg alt="Screenshot of a text editor with errors indicating
+that the LSP server could not locate some included header files" %}
+
+It's not immediately clear from the error messages but this problem is caused by
+the LSP server (`clangd`) being unable to locate the header file `<avr/io.h>`.
+
+Since this problem is easy to reproduce on NixOS, we'll start by looking at the
+contents of `compile_commands.json` on NixOS:
+```json
+[
+  {
+    "arguments": [
+      "/nix/store/pfxqwrvm0y6lbs53injrl4sqz2njrpyl-avr-stage-final-gcc-wrapper-12.2.0/bin/avr-gcc",
+      "-mmcu=atmega328p",
+      "-std=c99",
+      "-Werror",
+      "-Wall",
+      "--param=min-pagesize=0",
+      "-c",
+      "-o",
+      "main.o",
+      "main.c"
+    ],
+    "directory": "/home/s/src/hello-avr",
+    "file": "/home/s/src/hello-avr/main.c",
+    "output": "/home/s/src/hello-avr/main.o"
+  }
+]
+```
+
+Let's try manually adding some additional include paths to help `clangd` find
+`<avr/io.h>`. Since the code compiles when we run `make`, `avr-gcc` must be
+finding headers successfully. We can ask `avr-gcc` to print out its additional
+include paths with this command:
+```
+avr-gcc -E -Wp,-v - < /dev/null
+ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
+ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
+ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
+ignoring nonexistent directory "/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/../../../../avr/sys-include"
+ignoring nonexistent directory "/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/../../../../avr/include"
+ignoring duplicate directory "/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed"
+#include "..." search starts here:
+#include <...> search starts here:
+ /nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include
+ /nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include
+ /nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed
+ /nix/store/r2jr0x50g79spg2ncm5kjmw74n7gvxzg-avr-libc-avr-2.1.0/avr/include
+End of search list.
+# 0 "<stdin>"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "<stdin>"
+```
+
+The 4 lines after
+`#include <...> search starts here:` are the paths we're interested in. Actually
+we can probably skip the first one as it's related to `avrdude` but including it
+can't hurt and simplifies the process. Manually editing `compile_commands.json`
+to explicitly add these include files results in:
+```json
+[
+  {
+    "arguments": [
+      "/nix/store/pfxqwrvm0y6lbs53injrl4sqz2njrpyl-avr-stage-final-gcc-wrapper-12.2.0/bin/avr-gcc",
+      "-mmcu=atmega328p",
+      "-std=c99",
+      "-Werror",
+      "-Wall",
+      "--param=min-pagesize=0",
+      "-c",
+      "-o",
+      "main.o",
+      "main.c",
+      "-I/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include",
+      "-I/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include",
+      "-I/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed",
+      "-I/nix/store/r2jr0x50g79spg2ncm5kjmw74n7gvxzg-avr-libc-avr-2.1.0/avr/include"
+    ],
+    "directory": "/home/s/src/hello-avr",
+    "file": "/home/s/src/hello-avr/main.c",
+    "output": "/home/s/src/hello-avr/main.o"
+  }
+]
+```
+
+Note the extra 4 `-I...` arguments to `avr-gcc`.
+
+Opening `main.c` in an LSP-enabled editor again, the errors are gone:
+
+
+{% image no-errors.jpg alt="Screenshot of a text editor editing the same file
+as above, but this time there are no errors" %}
+
+We can use LSP's "jump to definition" feature to open `<avr/io.h>`. In neovim
+(with LanguageClient-neovim)
+move the cursor over `<avr/io.h>` and run `:call
+LanguageClient#textDocument_definition()` (obviously [bind this to a key
+combination](https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L108)):
+
+{% image avr_io.jpg alt="Editor with avr/io.h open" %}
+
+For another example, move the cursor over a symbol defined in a header, such as
+the `UCSR0A` register on line 11 of `main.c`:
+
+{% image jtd.jpg alt="Editor with avr/io.h open" %}
+
+Another handy feature of LSP is showing type signatures and documentation of
+symbols. For example put the cursor over the call to `printf` in `main.c` and
+run `:call LanguageClient#textDocument_hover()` (again, assuming
+LanguageClient-neovim):
+
+{% image doc.jpg alt="Editor showing documentation of the printf function" %}
+
+One remaining problem is that `compile_commands.json` contains a bunch of
+absolute paths and so isn't portable; we can't check it into version control
+which means we need to generate it after checking out the project. Rather than
+using `bear` directly and manually modifying the result, here is a script that
+automates the modification we just performed. Note that it uses the `jq` command
+which may need to be installed.
+
+```bash
+#!/bin/sh
+set -euo pipefail
+
+# Script that prints a compilation database (typically stored in
+# compile_commands.json) which contains additional include paths found by
+# querying avr-gcc.
+
+include_paths() {
+    # Print custom include paths used by the avr compiler to stdout, one per line.
+    CC=avr-gcc
+    $CC -E -Wp,-v - < /dev/null 2>&1 \
+        | sed -n '/#include <...> search starts here:/,/End of search list./p' \
+        | tail -n+2 \
+        | head -n-1 \
+        | xargs -n1 echo
+}
+
+compile_commands() {
+    # Print the compilation database that would normally go in
+    # compile_commands.json.
+    # This would be simpler if bear supported printing to stdout:
+    # https://github.com/rizsotto/Bear/issues/525
+    TMP="$(mktemp -d)"
+    trap "rm -rf $TMP" EXIT
+    OUTPUT=$TMP/x.json
+    bear --output $OUTPUT -- make --always-make > /dev/null
+    cat $OUTPUT
+}
+
+# Comma-separated list of quoted include paths with "-I" prepended to each. E.g.
+# "-Ifoo","-Ibar"
+COMMA_SEPARATED_QUOTED_INCLUDE_ARGS=$(
+    include_paths \
+        | xargs -I{} echo '"-I{}"' \
+        | tr '\n' , \
+        | sed 's/,$//'
+)
+
+# Add the extra include paths to the compilation database and print the result.
+compile_commands | \
+    jq "map(.arguments += [$COMMA_SEPARATED_QUOTED_INCLUDE_ARGS])"
+```
+
+Put this script in `tools/compile_commands_with_extra_include_paths.sh` and run
+it with:
+```
+$ tools/compile_commands_with_extra_include_paths.sh > compile_commands.json
+```
 
 ## LED Flasher Circuit
 
