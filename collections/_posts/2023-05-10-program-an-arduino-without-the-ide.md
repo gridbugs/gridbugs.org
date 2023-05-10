@@ -8,7 +8,7 @@ excerpt_separator: <!--more-->
 og_image: arduino1.png
 ---
 
-This is a guide I wrote mostly for myself on how to set up an ergonomic
+This is a guide I wrote mostly for my future self on how to set up an ergonomic
 development environment for writing Arduino programs in c without any
 Arduino-specific tools and using an Arduino to make a simple circuit with some
 flashing LEDs. The code for this guide is at [github.com/gridbugs/hello-avr](https://github.com/gridbugs/hello-avr).
