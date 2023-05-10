@@ -25,19 +25,19 @@ For this guide I'll be using one of
 
 {% image arduino3.png alt="A top-down view of an Arduino Nano" %}
 
-It's an Elagoo Nano - a cheaper drop-in replacement for the Arduino Nano. The only
-noticeable differences are that you have to solder the headers pins on yourself
-and it has a different USB to serial chip (a CH340 instead of the FT232 found on
-the Arduino).
+It's an Elagoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
+only noticeable differences are that you have to solder the headers pins on
+yourself, it doesn't come with any cables and it has a different USB to serial
+chip (a CH340 instead of the FT232 found on the Arduino).
 
 ## USB Serial Driver
 
 The docs on the [Elagoo
 website](https://www.elegoo.com/en-au/products/elegoo-nano-v3-0) suggest that
 you'll need to install special drivers in order for your computer to detect the
-Elagoo Nano when you plug it in with a USB cable. The necessary linux driver is
+Elagoo Nano when you plug it in with a USB cable. The necessary Linux driver is
 called `ch341` and it's probably already installed as a kernel module on most
-linux distributions.
+Linux distributions.
 
 Enable it:
 ```
@@ -51,8 +51,23 @@ usbcore               385024  13 pl2303,usbserial,xhci_hcd,snd_usb_audio,usbhid,
 When you connect the Elagoo Nano via a USB cable, you'll see this in the output
 of `dmesg`:
 ```
-
+...
+[210724.817737] usb 1-6: new full-speed USB device number 23 using xhci_hcd
+[210724.958846] usb 1-6: New USB device found, idVendor=1a86, idProduct=7523, bcdDevice= 2.64
+[210724.958853] usb 1-6: New USB device strings: Mfr=0, Product=2, SerialNumber=0
+[210724.958856] usb 1-6: Product: USB Serial
+[210724.967993] ch341 1-6:1.0: ch341-uart converter detected
+[210724.981915] usb 1-6: ch341-uart converter now attached to ttyUSB0
 ```
+
+After plugging in the device you should see a new device file `/dev/ttyUSB0`.
+This will be used later on both to program the device and also to see the output
+when printing messages over the serial port.
+
+If nothing happens when you plug in the device, try a different cable (the first
+one I used didn't work for some reason). If your Linux kernel didn't come with
+the ch341 module try building and loading the ch341ser module from
+[here](https://github.com/juliagoda/CH341SER).
 
 ## Get the Tools
 
