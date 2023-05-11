@@ -365,7 +365,7 @@ Let's try manually adding some additional include paths to help `clangd` find
 finding headers successfully. We can ask `avr-gcc` to print out its additional
 include paths with this command:
 ```
-avr-gcc -E -Wp,-v - < /dev/null
+$ avr-gcc -E -Wp,-v - < /dev/null
 ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
 ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
 ignoring duplicate directory "/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include"
@@ -518,7 +518,7 @@ D4, D5, D6, D7, D8, D9, D10, A0, A1, A2, A3, A4, A5) and ground." %}
 In the circuit, some pins are connected to a resistor in series with an LED.
 The cathode of each LED is connected to ground. The resistor is there to limit
 the current flowing through the pin and LED to prevent damage to each. I used 1K
-resistors though the specific resistance doesn't matter too much.
+resistors here.
 
 Here's how the circuit looks on a breadboard:
 
