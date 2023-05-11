@@ -277,8 +277,8 @@ avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 main.o -o
 ## Jump to Definition and other ergonomics with LanguageClient-neovim and clangd
 
 I won't cover setting up an LSP client here as there are too many different
-editors and plugins to choose from, but for an example neovim LSP setup, see [my
-neovim
+editors and plugins to choose from, but for an example neovim LSP setup using
+the LanguageClient-neovim plugin, see [my neovim
 config](https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L72).
 
 For the LSP server we'll use `clangd`. As long as `clangd` is installed your
