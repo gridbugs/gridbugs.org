@@ -11,7 +11,7 @@ og_image: arduino1.png
 This is a guide I wrote mostly for my future self on how to set up an ergonomic
 development environment for writing Arduino programs in c without any
 Arduino-specific tools and using an Arduino to make a simple circuit with some
-flashing LEDs. The code for this guide is at [github.com/gridbugs/hello-avr](https://github.com/gridbugs/hello-avr).
+flashing LEDs.
 
 {% image arduino1.png alt="A breadboard holding an Arduino and several other
 components including a range of coloured LEDs, some of which are on." %}
@@ -26,8 +26,8 @@ For this guide I'll be using one of
 {% image arduino3.png alt="A top-down view of an Arduino Nano" %}
 
 It's an Elegoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
-only noticeable differences are that you have to solder the headers pins on
-yourself, it doesn't come with any cables and it has a different USB to serial
+only noticeable differences are that the header pins don't come pre-soldered,
+it doesn't come with any cables and it has a different USB to serial
 chip (a CH340 instead of the FT232 found on the Arduino).
 
 ## USB Serial Driver
@@ -37,9 +37,14 @@ website](https://www.elegoo.com/en-au/products/elegoo-nano-v3-0) suggest that
 you'll need to install special drivers in order for your computer to detect the
 Elegoo Nano when you plug it in with a USB cable. The necessary Linux driver is
 called `ch341` and it's probably already installed as a kernel module on most
-Linux distributions.
+Linux distributions and it's likely that it just work when you plug in the USB
+cable with the Arduino attached.
 
-Enable it:
+If not, here are some things to try.
+
+Enable the kernel module explicitly. If this fails it indicates that you don't have
+the `ch341` kernel module installed and may have to install it with a package manager
+or build it from source.
 ```
 $ sudo modprobe ch341
 $ lsmod | grep ch341
@@ -93,7 +98,7 @@ Arduino.
 ### `picocom`
 
 Tool for sending and receiving data over a serial port. This will be used to
-connect to the Arduino so we can see messages it prints.
+connect to the Arduino so we can see the messages it prints.
 
 ### `clangd`
 
@@ -114,6 +119,8 @@ The standard c library for AVR devices. In some Linux distros this will come wit
 `avr-gcc` but on others it will need to be installed separately.
 
 ## Print "Hello, World!"
+
+The code for this section is [here](https://github.com/gridbugs/hello-avr).
 
 Put this in `main.c`. This program implements a very simple serial (USART)
 driver for the Arduino and uses it to print `Hello, World!` with `printf`:
@@ -228,7 +235,7 @@ Hello, World!
 
 To exit picocom, press Ctrl-a, then Ctrl-x.
 
-When the Arduino is plugged in via its USB port, connecting to it with picocom
+When the Arduino is plugged in via its USB port, connecting to it with picocom (running the `sudo picocom ...` command)
 will cause the device to reset, so you won't miss the "Hello, World!" message if
 you don't connect fast enough. You can also reset the Arduino by pressing the
 button near its built-in LEDs.
@@ -281,8 +288,8 @@ editors and plugins to choose from, but for an example neovim LSP setup using
 the LanguageClient-neovim plugin, see [my neovim
 config](https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L72).
 
-For the LSP server we'll use `clangd`. As long as `clangd` is installed your
-editor should take care of starting and stopping it in the background. To check
+For the LSP server we'll use `clangd`. As long as `clangd` is installed and your editor is correctly configured,
+your editor should take care of starting and stopping `clangd` in the background. To check
 that it's installed try running the command `clangd`.
 
 For `clangd` to work correctly it needs to know how you intend on compiling the
@@ -292,8 +299,9 @@ file and since it will contain absolute paths it's not advised to check it into
 the project. One way of generating `compile_commands.json` is with a tool called
 `bear`.
 
-`bear` can generate a `compile_commands.json` from an invocation of `make`. For
-example (the working directory is `/home/s/src/hello-avr`):
+`bear` can generate a `compile_commands.json` from an invocation of `make` by
+watching what commands are run. For example (the working directory is
+`/home/s/src/hello-avr`):
 ```
 $ bear -- make --always-make
 avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
@@ -322,13 +330,15 @@ $ cat compile_commands.json
 ```
 The `--always-make` argument to `make` tells it to unconditionally run the
 build commands and removes the need to run `make clean` first. This is necessary
-as `bear` runs the build and monitors what compilation commands are run.
+as `bear` runs the build and monitors which compilation commands are run.
 
 On some systems, this is sufficient to allow a LSP client to do code navigation
 and other ergonomic features.
 
-On other systems (such as NixOS), opening `main.c` in a LSP-enabled editor after generating this
-file looks something like:
+I've tested this on Alpine Linux and NixOS. On the former, LSP features worked as expected
+at this point and no further configuration was necessary, but on NixOS I had
+some errors from `clangd` when opening `main.c` in a text editor with LSP
+support:
 
 {% image errors.jpg alt="Screenshot of a text editor with errors indicating
 that the LSP server could not locate some included header files" %}
@@ -360,7 +370,7 @@ contents of `compile_commands.json` on NixOS:
 ]
 ```
 
-Let's try manually adding some additional include paths to help `clangd` find
+Let's try manually adding some extra include paths to help `clangd` find
 `<avr/io.h>`. Since the code compiles when we run `make`, `avr-gcc` must be
 finding headers successfully. We can ask `avr-gcc` to print out its additional
 include paths with this command:
@@ -386,9 +396,10 @@ End of search list.
 ```
 
 The 4 lines after
-`#include <...> search starts here:` are the paths we're interested in. Actually
-we can probably skip the first one as it's related to `avrdude` but including it
-can't hurt and simplifies the process. Manually editing `compile_commands.json`
+`#include <...> search starts here:` are the paths we're interested in.
+We can probably skip the first one as it's related to `avrdude` but including it
+won't hurt and just adding all the extra include paths simplifies the process
+compared to adding a select few. Manually editing `compile_commands.json`
 to explicitly add these include files results in:
 ```json
 [
@@ -435,7 +446,7 @@ combination](https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec4
 For another example, move the cursor over a symbol defined in a header, such as
 the `UCSR0A` register on line 11 of `main.c`:
 
-{% image jtd.jpg alt="Editor with avr/io.h open" %}
+{% image jtd.jpg alt="Editor with the definition of UCSR0A open" %}
 
 Another handy feature of LSP is showing type signatures and documentation of
 symbols. For example put the cursor over the call to `printf` in `main.c` and
@@ -501,15 +512,64 @@ it with:
 $ tools/compile_commands_with_extra_include_paths.sh > compile_commands.json
 ```
 
-## LED Flasher Circuit
+Again, the code for this section is [here](https://github.com/gridbugs/hello-avr).
+
+## LED Chaser Circuit
+
+The code for this section is [here](https://github.com/gridbugs/arduino-nano-led-chaser).
+
+Now let's make a simple LED Chaser circuit by attaching some LEDs to some of the
+digital IO pins on the Arduino.
+
+Step 1 is working out which pins we'll be using.
 
 Here's a close up of an Arduino Nano with the names of each pin visible:
 
 {% image arduino2.png alt="A top-down view of an Arduino Nano" %}
 
-And this is the circuit diagram for the LED flasher. The orientation of the
+For ease of reading here are the pin labels copied from the above image in a
+table in the same positions as they appear in the image above:
+
+| Left Side   | Right Side  |
+| ----------- | ----------- |
+| D13         | D12         |
+| 3V3         | D11         |
+| REF         | D10         |
+| A0          | D9          |
+| A1          | D8          |
+| A2          | D7          |
+| A3          | D6          |
+| A4          | D5          |
+| A5          | D4          |
+| A6          | D3          |
+| A7          | D2          |
+| 5V          | GND         |
+| RST         | RST         |
+| GND         | RX0         |
+| VIN         | TX1         |
+
+
+And this is the pinout from the Arduino official docs. Most pins have multiple
+functions. The I/O-Port functions are what we're interested in. They are
+coloured orange without stripes in the following diagram. The key calls them
+"Microcontroler's Port" and ATmega328P manual calls them "I/O-Port".
+
+{% image pinout.png alt="A pinout of the Arduino Nano from the official Arduino
+documentation" %}
+
+Note that this diagram may contain an error. The "ADC[6]" and "ADC[7]" pins have
+labels coloured both yellow and orange with "ADC[x]" on them but the orange
+labels are for I/O-Ports only so labeling them with "ADC" doesn't make sense. We
+won't be using these pins here.
+
+I only have enough space on my breadboard for 15 LEDs, so I've chosen 15 pins on
+the Arduino Nano that connect to I/O-Port pins on the microcontroller. Using the
+labels of pins physically printed on the Arduino board, these
+pins are: D2, D3, D4, D5, D6, D7, D8, D9, D10, A0, A1, A2, A3, A4, A5.
+
+This is the circuit diagram for the LED chaser. The orientation of the
 Arduino is the same as in the above image, and the pins are all in the same
-positions.
+positions and labels.
 
 {% image arduino-circuit.jpg alt="A circuit diagram with an Arduino Nano at the
 centre, and a resistor and LED connected in series between several pins (D2, D3,
@@ -525,6 +585,10 @@ Here's how the circuit looks on a breadboard:
 {% image arduino-breadboard.png alt="An Arduino Nano on a broadboard according
 to the circuit diagram above" %}
 
-## LED Flasher Code
+## LED Chaser Code
 
 ## USB UART Adapter
+
+## Powering from a DC 12v supply with a 78L05 voltage converter
+
+## Powering from a DC 12v supply with a voltage divider and voltage follower
