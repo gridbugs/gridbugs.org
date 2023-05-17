@@ -232,9 +232,9 @@ Terminal ready
 Hello, World!
 ```
 
-To exit picocom, press Ctrl-a, then Ctrl-x.
+To exit `picocom`, press Ctrl-a, then Ctrl-x.
 
-When the Arduino is plugged in via its USB port, connecting to it with picocom (running the `sudo picocom ...` command)
+When the Arduino is plugged in via its USB port, connecting to it with `picocom` (running the `sudo picocom ...` command)
 will cause the device to reset, so you won't miss the "Hello, World!" message if
 you don't connect fast enough. You can also reset the Arduino by pressing the
 button near its built-in LEDs.
@@ -242,8 +242,8 @@ button near its built-in LEDs.
 Also note the `-b9600` sets the baud rate which corresponds to the line `#define
 BAUD_RATE_HZ 9600` in the program.
 
-Another note on picocom is that you won't be able to program the device (the
-`avrdude` command) while connected to the device with picocom. Exit picocom
+Another note on `picocom` is that you won't be able to download code to the Arduino (the
+`avrdude` command) while connected to the device with `picocom`. Exit `picocom`
 (Ctrl-a, then Ctrl-x) before running `avrdude`.
 
 So that we don't have to manually run `avr-gcc` every time we compile the code,
@@ -332,10 +332,9 @@ $ cat compile_commands.json
 ]
 ```
 The `--always-make` argument to `make` tells it to unconditionally run the
-build commands and removes the need to run `make clean` first. This is necessary
-as `bear` runs the build and monitors which compilation commands are run.
+build commands and removes the need to run `make clean` first.
 
-On some systems, this is sufficient to allow a LSP client to do code navigation
+On some systems, this is sufficient to allow an LSP client to do code navigation
 and other ergonomic features.
 
 I've tested this on Alpine Linux and NixOS. On the former, LSP features worked as expected
@@ -515,11 +514,7 @@ it with:
 $ tools/compile_commands_with_extra_include_paths.sh > compile_commands.json
 ```
 
-Again, the code for this section is [here](https://github.com/gridbugs/hello-avr).
-
 ## LED Chaser Circuit
-
-The code for this section is [here](https://github.com/gridbugs/arduino-nano-led-chaser).
 
 Now let's make a simple LED Chaser circuit by attaching some LEDs to some of the
 digital IO pins on the Arduino.
@@ -567,7 +562,9 @@ won't be using these pins here, but I did do an experiment where I turned on
 all the I/O-Port pins and A6 and A7 pins didn't turn on so they aren't
 connected to an I/O-Port.
 
-I only have enough space on my breadboard for 15 LEDs, so I've chosen 15 pins on
+I only have enough space on my breadboard for 15 LEDs (after accounting for the
+Arduino's pins and current-limiting resistors for the LEDs), so I've chosen 15
+pins on
 the Arduino Nano that connect to I/O-Port pins on the microcontroller. Using the
 labels of pins physically printed on the Arduino board, these
 pins are: D2, D3, D4, D5, D6, D7, D8, D9, D10, A0, A1, A2, A3, A4, A5.
@@ -592,10 +589,19 @@ to the circuit diagram above" %}
 
 ## LED Chaser Code
 
-Here's the code for the LED chaser. Note that we didn't use the TX1 or RX0 pins
-for powering LEDs so we can continue to print over serial. The serial (USART) driver and
-printing code isn't included in the code below for simplicity, but they are
-included in the [full example here](https://github.com/gridbugs/arduino-nano-led-chaser).
+Here's the code for the LED chaser.
+It's also available on github [here](https://github.com/gridbugs/arduino-nano-led-chaser).
+
+Most of the I/O-Port pins on the Arduino have multiple possible functions and must be
+configured by writing to various registers. All pins which can function as
+I/O-Port pins are initially configured as I/O-Port pins, so no explicit
+configuration is necessary for this example. Note however that the pins labelled
+TX1 and RX0 are also I/O-Port pins (Port D, pins 0 and 1). They must be
+explicitly configured to behave as USART pins (sending and receiving data over a
+serial port - this is how "Hello, World!" is printed on startup). Even though
+nothing is plugged into these pins, they are connected internally to the
+Arduino's USB chip. The LED chaser intentionally doesn't use this pins as if it
+did we wouldn't be able to print anything over USART.
 
 ```c
 #include <stdio.h>
@@ -706,7 +712,7 @@ code to an Arduino with the command:
 make && sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
 ```
 
-Remember to substitute /dev/ttyUSB0 with the device corresponding to your
+Remember to substitute `/dev/ttyUSB0` with the device corresponding to your
 Arduino.
 
 {% image chaser.gif alt="A video showing the LED chaser in action" %}
@@ -717,14 +723,14 @@ I have a bunch of these USB to UART adapters lying around from another project.
 It would be fun to try using one of these to talk to the Arduino directly via
 its header pins rather than through its USB port. We won't be able to program it
 through this adapter but we will be able to power it and print over UART and see
-the results in picocom.
+the results in `picocom`.
 
 {% image usb-uart.jpg alt="USB to UART adapter" %}
 
-They don't have brand names on them and I forget where I bought them from so I
+What are the 4 wires? There's no brand name and I forget where I bought it from so I
 don't know how to find documentation. However, the black wire is probably
 ground, and the red wire provides 5v. Of the two remaining wires, one of them is
-transmit (TX) and the other receive. I don't know which one is which and there
+transmit (TX) and the other receive (RX). I don't know which one is which and there
 doesn't seem to be standardised colours as far as I can tell, so I'll just
 guess.
 
@@ -735,7 +741,7 @@ from one source at a time, and we'll be using the 5v pin on the USB to UART
 adapter to power it now.
 
 I used male to male patch pins to connect the wires on the USB to UART adapter
-to my breadboard. Connect the wires as per this table
+to my breadboard. Connect the wires as per this table:
 
 | UART to USB wire function | UART to USB wire colour | Arduino pin name |
 |---------------------------|-------------------------|------------------|
@@ -760,11 +766,11 @@ can't program the device with `avrdude`, but you can still connect to it with
 `picocom` to see it print "Hello, World!".
 
 Unlike before, connecting to the
-device with `picocom` will not cause the Arduino to reset, so can miss the
+device with `picocom` will not cause the Arduino to reset, so you can miss the
 message it prints when it turns on. Just press the reset button on the top of
-the Arduino to restart it and you should see "Hello, World!" in the picocom
-session. (Resetting the Arduino does not cause picocom to disconnect as
-technically picocom is connected to the USB to UART adapter - not the Arduino.
+the Arduino to restart it and you should see "Hello, World!" in the `picocom`
+session. (Resetting the Arduino does not cause `picocom` to disconnect as
+technically `picocom` is connected to the USB to UART adapter - not the Arduino.
 It just displays whatever data arrives over the TX wire no matter what it's
 plugged into.
 In fact, if you had a magnetized needle and a steady hand...[never
@@ -780,7 +786,8 @@ Arduino and see the messages it prints over UART we would need to first run
 again we would have to stop `picocom` before running `avrdude`. That gets a bit
 annoying.
 
-To do this, unplug the red 5v wire from the UART adapter, and plug the USB cable back into
+We're going to use the USB cable for programming and the USB to UART adapter for receiving messages printed by the Arduino.
+To set this up, unplug the red 5v wire from the UART adapter, and plug the USB cable back into
 the USB port. Keep at least the green and black wires attached from the setup
 above - just make sure the red wire is unplugged as we'll be powering the
 Arduino with the USB cable once again. Now with both the USB cable (the one
@@ -790,12 +797,12 @@ corresponding to both of these devices. You can use `dmesg` to determine which
 one is which by unplugging and re-plugging them and watching the output of
 `dmesg`, or just see which one can be used to program the device with `avrdude`.
 Connect `picocom` to the USB to UART adapter, and program the device with
-`avrdude` via the USB cable, and you'll no longer need to close picocom to
+`avrdude` via the USB cable, and you'll no longer need to close `picocom` to
 reprogram the Arduino!
 
-For example this might look like (in two different terminals):
+Here's an example of how this might look.
 
-One terminal:
+In one terminal:
 ```
 $ sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
 ```
@@ -820,7 +827,7 @@ Mine has a 12v DC power supply, so here are my options:
 
 ### Powering from a DC 12v supply via the VIN pin
 
-The simplest solution would be to attach the 12v DC supply directly to the VIN
+The simplest solution is to attach the 12v DC supply directly to the VIN
 pin on the Arduino. Between the VIN and 5V pins on the Arduino there is a 5 volt
 voltage regulator (specifically, a
 [LM117IMPX-5.0](https://www.ti.com/lit/ds/symlink/lm1117.pdf?ts=168433779491) -
@@ -845,8 +852,8 @@ voltage regulator. To do this, I'll attach an external voltage regulator - a
 {% image 78l05.jpg alt="close up of a 78l05" %}
 
 It looks like a transistor but it's not. The right pin is the input which I'll
-attach to the 12v supply. This middle pin is ground. The left pin is the output
-which I'll connect to the 5v pin of the Arduino.
+attach to the 12v supply. The middle pin is ground. The left pin is the output
+which I'll connect to the 5V pin of the Arduino.
 
 This shows how the voltage regulator will be attached between the 12v power
 supply and the Arduino, via its 5v pin:
