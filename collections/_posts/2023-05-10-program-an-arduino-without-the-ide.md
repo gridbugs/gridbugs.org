@@ -1,29 +1,28 @@
 ---
 layout: post
-title: "Program an Arduino without the IDE"
+title: "Programming an Arduino the Hard Way"
 date: 2023-05-10
 categories: arduino
-permalink: /program-an-arduine-without-the-ide/
+permalink: /programming-an-arduino-the-hard-way/
 excerpt_separator: <!--more-->
-og_image: arduino1.png
+og_image: arduino1.jpg
 ---
 
 This is a guide I wrote mostly for my future self on how to set up an ergonomic
 development environment for writing Arduino programs in c without any
 Arduino-specific tools and using an Arduino to make a simple circuit with some
-flashing LEDs.
+flashing LEDs. I'll also discus options for powering the Arduino from a 12v
+DC power supply.
 
-{% image arduino1.png alt="A breadboard holding an Arduino and several other
+{% image arduino1.jpg alt="A breadboard holding an Arduino and several other
 components including a range of coloured LEDs, some of which are on." %}
 
 <!--more-->
 
-## Get an Arduino
-
 For this guide I'll be using one of
 [these](https://www.elegoo.com/en-au/products/elegoo-nano-v3-0):
 
-{% image arduino3.png alt="A top-down view of an Arduino Nano" %}
+{% image arduino3.jpg alt="A top-down view of an Arduino Nano" %}
 
 It's an Elegoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
 only noticeable differences are that the header pins don't come pre-soldered,
@@ -168,7 +167,7 @@ $ avr-gcc -mmcu=atmega328p main.c -o hello.elf
 ```
 
 Flash the Arduino. Plug it in with a USB cable, then run the following command.
-Replace /dev/ttyUSB0 with the device associated with the Arduino's serial port
+Replace `/dev/ttyUSB0` with the device associated with the Arduino's serial port
 (if you have multiple USB serial devices plugged in it might get assigned a
 different device file). Also as with the `avr-gcc` command above, replace
 `m328p` with the part number of the microcontroller on your Arduino. `avrdude`
@@ -242,6 +241,10 @@ button near its built-in LEDs.
 
 Also note the `-b9600` sets the baud rate which corresponds to the line `#define
 BAUD_RATE_HZ 9600` in the program.
+
+Another note on picocom is that you won't be able to program the device (the
+`avrdude` command) while connected to the device with picocom. Exit picocom
+(Ctrl-a, then Ctrl-x) before running `avrdude`.
 
 So that we don't have to manually run `avr-gcc` every time we compile the code,
 create a `Makefile` with the following contents:
@@ -554,13 +557,15 @@ functions. The I/O-Port functions are what we're interested in. They are
 coloured orange without stripes in the following diagram. The key calls them
 "Microcontroler's Port" and ATmega328P manual calls them "I/O-Port".
 
-{% image pinout.png alt="A pinout of the Arduino Nano from the official Arduino
+{% image pinout.jpg alt="A pinout of the Arduino Nano from the official Arduino
 documentation" %}
 
-Note that this diagram may contain an error. The "ADC[6]" and "ADC[7]" pins have
+Note that this diagram contains an error. The "ADC[6]" and "ADC[7]" pins have
 labels coloured both yellow and orange with "ADC[x]" on them but the orange
 labels are for I/O-Ports only so labeling them with "ADC" doesn't make sense. We
-won't be using these pins here.
+won't be using these pins here, but I did do an experiment where I turned on
+all the I/O-Port pins and A6 and A7 pins didn't turn on so they aren't
+connected to an I/O-Port.
 
 I only have enough space on my breadboard for 15 LEDs, so I've chosen 15 pins on
 the Arduino Nano that connect to I/O-Port pins on the microcontroller. Using the
@@ -582,13 +587,278 @@ resistors here.
 
 Here's how the circuit looks on a breadboard:
 
-{% image arduino-breadboard.png alt="An Arduino Nano on a broadboard according
+{% image arduino-breadboard.jpg alt="An Arduino Nano on a breadboard according
 to the circuit diagram above" %}
 
 ## LED Chaser Code
 
+Here's the code for the LED chaser. Note that we didn't use the TX1 or RX0 pins
+for powering LEDs so we can continue to print over serial. The serial (USART) driver and
+printing code isn't included in the code below for simplicity, but they are
+included in the [full example here](https://github.com/gridbugs/arduino-nano-led-chaser).
+
+```c
+#include <stdio.h>
+#include <avr/io.h>
+
+
+// The arduino clock is 16Mhz and the USART0 divides this clock rate by 16
+#define USART0_CLOCK_HZ 1000000
+#define BAUD_RATE_HZ 9600
+#define UBRR_VALUE (USART0_CLOCK_HZ / BAUD_RATE_HZ)
+
+// Send a character over USART0.
+int USART0_tx(char data, struct __file* _f) {
+    while (!(UCSR0A & (1 << UDRE0))); // wait for the data buffer to be empty
+    UDR0 = data; // write the character to the data buffer
+    return 0;
+}
+
+// Create a stream associated with transmitting data over USART0 (this will be
+// used for stdout so we can print to a terminal with printf).
+static FILE uartout = FDEV_SETUP_STREAM(USART0_tx, NULL, _FDEV_SETUP_WRITE);
+
+void USART0_init( void ) {
+    UBRR0H = (UBRR_VALUE >> 8) & 0xF; // set the high byte of the baud rate
+    UBRR0L = UBRR_VALUE & 0xFF; // set the low byte of the baud rate
+    UCSR0B = 1 << TXEN0; // enable the USART0 transmitter
+    UCSR0C = 3 << UCSZ00; // use 8-bit characters
+    stdout = &uartout;
+}
+
+// Represents a single I/O-Port pin
+typedef struct {
+    volatile uint8_t* port; // pointer to the port's register
+    uint8_t bit; // (0 to 7) which bit in the register the port corresponds to
+} led_t;
+
+// List out each pin with an attached LED in the order we want them to flash
+led_t leds[] = {
+    { .port = &PORTD, .bit = 7 },
+    { .port = &PORTD, .bit = 6 },
+    { .port = &PORTD, .bit = 5 },
+    { .port = &PORTD, .bit = 4 },
+    { .port = &PORTD, .bit = 3 },
+    { .port = &PORTD, .bit = 2 },
+    { .port = &PORTB, .bit = 2 },
+    { .port = &PORTB, .bit = 1 },
+    { .port = &PORTB, .bit = 0 },
+    { .port = &PORTC, .bit = 5 },
+    { .port = &PORTC, .bit = 4 },
+    { .port = &PORTC, .bit = 3 },
+    { .port = &PORTC, .bit = 2 },
+    { .port = &PORTC, .bit = 1 },
+    { .port = &PORTC, .bit = 0 },
+};
+
+// The number of LEDs
+#define N_LEDS (sizeof(leds) / sizeof(led_t))
+
+// Turn on a single LED without affecting the state of the other LEDs
+void led_on(led_t led) {
+    *led.port |= 1 << led.bit;
+}
+
+int main(void) {
+    USART0_init();
+    printf("Hello, World!\r\n");
+
+    // Set the data direction for each I/O-Port pin to "output".
+    // Each DDRx register controls whether each pin in I/O-Port x is
+    // an input pin (0) or an output pin (1).
+    DDRB = 0xFF;
+    DDRC = 0xFF;
+    DDRD = 0xFF;
+
+    // The starting points for the indices into the global `leds` array
+    // that will be on. We'll have 3 lights on at a time in a rotating
+    // pattern, evenly spaced out.
+    int indices[] = {0, 5, 10};
+
+    while (1) {
+
+        // Briefly turn off all the LEDs
+        PORTB = 0;
+        PORTC = 0;
+        PORTD = 0;
+
+        // Turn on just the pins at the indices, and increment each index
+        // wrapping around at N_LEDS
+        for (int i = 0; i < (sizeof(indices) / sizeof(indices[0])); i++) {
+            led_on(leds[indices[i]]);
+            indices[i] = (indices[i] + 1) % N_LEDS;
+        }
+
+        // Wait for a short amount of time before progressing
+        uint32_t delay = 100000;
+        while (delay > 0) {
+            delay -= 1;
+        }
+    }
+
+    return 0;
+}
+```
+
+Use the same Makefile as in the previous example, then build and download the
+code to an Arduino with the command:
+```
+make && sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+```
+
+Remember to substitute /dev/ttyUSB0 with the device corresponding to your
+Arduino.
+
+{% image chaser.gif alt="A video showing the LED chaser in action" %}
+
 ## USB UART Adapter
 
-## Powering from a DC 12v supply with a 78L05 voltage converter
+I have a bunch of these USB to UART adapters lying around from another project.
+It would be fun to try using one of these to talk to the Arduino directly via
+its header pins rather than through its USB port. We won't be able to program it
+through this adapter but we will be able to power it and print over UART and see
+the results in picocom.
 
-## Powering from a DC 12v supply with a voltage divider and voltage follower
+{% image usb-uart.jpg alt="USB to UART adapter" %}
+
+They don't have brand names on them and I forget where I bought them from so I
+don't know how to find documentation. However, the black wire is probably
+ground, and the red wire provides 5v. Of the two remaining wires, one of them is
+transmit (TX) and the other receive. I don't know which one is which and there
+doesn't seem to be standardised colours as far as I can tell, so I'll just
+guess.
+
+Turns out the green wire is TX and the white wire is RX.
+
+Disconnect the USB cable from the Arduino's USB port as we should only power it
+from one source at a time, and we'll be using the 5v pin on the USB to UART
+adapter to power it now.
+
+I used male to male patch pins to connect the wires on the USB to UART adapter
+to my breadboard. Connect the wires as per this table
+
+| UART to USB wire function | UART to USB wire colour | Arduino pin name |
+|---------------------------|-------------------------|------------------|
+| 5v                        | Red                     | 5V               |
+| Ground                    | Black                   | GND (any of them)|
+| TX (UART end)             | Green                   | TX1              |
+| RX (UART end)             | White                   | RX0              |
+
+I clarify "UART end" for the TX an RX wires as for example the other end of the
+TX wire would be labelled "RX"; the Arduino transmits data on this wire and the
+device at the other end of the wire (the UART to USB adapter in this case)
+receives that data, and vice versa.
+
+Again, disconnect the cable from the Arduino's USB port before doing this.
+Here's how it looks on my breadboard:
+
+{% image with-usb-to-uart.jpg alt="Arduino powered by USB to UART adapter" %}
+
+When you plug the USB end of the adapter into your computer it should show up as
+a device `/dev/ttyUSBx`, just like the Arduino did when we plugged it in. You
+can't program the device with `avrdude`, but you can still connect to it with
+`picocom` to see it print "Hello, World!".
+
+Unlike before, connecting to the
+device with `picocom` will not cause the Arduino to reset, so can miss the
+message it prints when it turns on. Just press the reset button on the top of
+the Arduino to restart it and you should see "Hello, World!" in the picocom
+session. (Resetting the Arduino does not cause picocom to disconnect as
+technically picocom is connected to the USB to UART adapter - not the Arduino.
+It just displays whatever data arrives over the TX wire no matter what it's
+plugged into.
+In fact, if you had a magnetized needle and a steady hand...[never
+mind](https://xkcd.com/378/)).
+
+Also note that we aren't transmitting any data _to_ the Arduino over UART, so
+you don't even need to plug the white wire in at all.
+
+One trick this adapter lets us perform is continuously seeing the output of the
+Arduino, even while programming it. Previously if we wanted to program the
+Arduino and see the messages it prints over UART we would need to first run
+`avrdude` to program it, then run `picocom` to see its output. To program it
+again we would have to stop `picocom` before running `avrdude`. That gets a bit
+annoying.
+
+To do this, unplug the red 5v wire from the UART adapter, and plug the USB cable back into
+the USB port. Keep at least the green and black wires attached from the setup
+above - just make sure the red wire is unplugged as we'll be powering the
+Arduino with the USB cable once again. Now with both the USB cable (the one
+attached to the Arduino's USB port) _and_ the USB to UART adapter both plugged
+into your computer, you should see devices `/dev/ttyUSB0` and `/dev/ttyUSB1`
+corresponding to both of these devices. You can use `dmesg` to determine which
+one is which by unplugging and re-plugging them and watching the output of
+`dmesg`, or just see which one can be used to program the device with `avrdude`.
+Connect `picocom` to the USB to UART adapter, and program the device with
+`avrdude` via the USB cable, and you'll no longer need to close picocom to
+reprogram the Arduino!
+
+For example this might look like (in two different terminals):
+
+One terminal:
+```
+$ sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+```
+
+And in the other terminal:
+```
+$ sudo picocom /dev/ttyUSB1
+```
+
+Depending on the order you plugged things in, the `ttyUSB0` and `ttyUSB1` in the
+above commands might have to be swapped.
+
+## Power Options
+
+There are a couple of additional ways you can power the arduino besides the two
+mentioned above. When your Arduino is deployed in whatever wonderful project
+you're planning to use it for, probably there won't be a USB cable or USB to
+UART adapter attached to it.
+
+Power solutions will depend on what power supply is available in your project.
+Mine has a 12v DC power supply, so here are my options:
+
+### Powering from a DC 12v supply via the VIN pin
+
+The simplest solution would be to attach the 12v DC supply directly to the VIN
+pin on the Arduino. Between the VIN and 5V pins on the Arduino there is a 5 volt
+voltage regulator (specifically, a
+[LM117IMPX-5.0](https://www.ti.com/lit/ds/symlink/lm1117.pdf?ts=168433779491) -
+see the Arduino Nano schematics
+[here](https://docs.arduino.cc/static/59500e84ace853fee30c7854084c2e2c/A000005-schematics.pdf)).
+
+{% image vreg.jpg alt="Diagram showing the VIN pin connected to the 5V pin
+through a voltage regulator" %}
+
+This means that you can provide a range of voltages to the VIN pin and the
+voltage regulator will provide a steady 5v to the rest of the board. All the
+advice I can find recommends between 7 and 12 volts be provided to this pin. Too
+little and the voltage regulator might not be able to provide 5v at its output.
+Too much and it could overheat.
+
+### Powering from a DC 12v supply with a 78L05 voltage regulator
+
+You can also power the Arduino directly from its 5v pin, bypassing the built-in
+voltage regulator. To do this, I'll attach an external voltage regulator - a
+78L05, like this one:
+
+{% image 78l05.jpg alt="close up of a 78l05" %}
+
+It looks like a transistor but it's not. The right pin is the input which I'll
+attach to the 12v supply. This middle pin is ground. The left pin is the output
+which I'll connect to the 5v pin of the Arduino.
+
+This shows how the voltage regulator will be attached between the 12v power
+supply and the Arduino, via its 5v pin:
+
+{% image vreg-circuit.jpg alt="diagram showing 78l05 attached between 12v power
+supply and Arduino 5v pin" %}
+
+Here it is on my breadboard:
+
+{% image vreg-breadboard.jpg alt="78l05 attached to the breadboard" %}
+
+And here's proof that it didn't immediately catch fire when I turned it on!
+
+{% image benchtop.jpg alt="breadboard with arduino and LED chaser powered by a
+12v power supply through the 78l05 voltage regulator" %}
