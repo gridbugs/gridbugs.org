@@ -737,7 +737,7 @@ guess.
 Turns out the green wire is TX and the white wire is RX.
 
 Disconnect the USB cable from the Arduino's USB port as we should only power it
-from one source at a time, and we'll be using the 5v pin on the USB to UART
+from one source at a time, and we'll be using the 5V pin on the USB to UART
 adapter to power it now.
 
 I used male to male patch pins to connect the wires on the USB to UART adapter
@@ -845,7 +845,7 @@ Too much and it could overheat.
 
 ### Powering from a DC 12v supply with a 78L05 voltage regulator
 
-You can also power the Arduino directly from its 5v pin, bypassing the built-in
+You can also power the Arduino directly from its 5V pin, bypassing the built-in
 voltage regulator. To do this, I'll attach an external voltage regulator - a
 78L05, like this one:
 
@@ -856,10 +856,10 @@ attach to the 12v supply. The middle pin is ground. The left pin is the output
 which I'll connect to the 5V pin of the Arduino.
 
 This shows how the voltage regulator will be attached between the 12v power
-supply and the Arduino, via its 5v pin:
+supply and the Arduino, via its 5V pin:
 
 {% image vreg-circuit.jpg alt="diagram showing 78l05 attached between 12v power
-supply and Arduino 5v pin" %}
+supply and Arduino 5V pin" %}
 
 Here it is on my breadboard:
 
