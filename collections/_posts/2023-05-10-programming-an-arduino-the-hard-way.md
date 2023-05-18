@@ -734,7 +734,7 @@ transmit (TX) and the other receive (RX). I don't know which one is which and th
 doesn't seem to be standardised colours as far as I can tell, so I'll just
 guess.
 
-Turns out the green wire is TX and the white wire is RX.
+Turns out the white wire is TX and the green wire is RX.
 
 Disconnect the USB cable from the Arduino's USB port as we should only power it
 from one source at a time, and we'll be using the 5V pin on the USB to UART
@@ -747,8 +747,8 @@ to my breadboard. Connect the wires as per this table:
 |---------------------------|-------------------------|------------------|
 | 5v                        | Red                     | 5V               |
 | Ground                    | Black                   | GND (any of them)|
-| TX (UART end)             | Green                   | TX1              |
-| RX (UART end)             | White                   | RX0              |
+| TX (UART end)             | White                   | TX1              |
+| RX (UART end)             | Green                   | RX0              |
 
 I clarify "UART end" for the TX an RX wires as for example the other end of the
 TX wire would be labelled "RX"; the Arduino transmits data on this wire and the
@@ -777,7 +777,7 @@ In fact, if you had a magnetized needle and a steady hand...[never
 mind](https://xkcd.com/378/)).
 
 Also note that we aren't transmitting any data _to_ the Arduino over UART, so
-you don't even need to plug the white wire in at all.
+you don't even need to plug the green wire in at all.
 
 One trick this adapter lets us perform is continuously seeing the output of the
 Arduino, even while programming it. Previously if we wanted to program the
@@ -788,7 +788,7 @@ annoying.
 
 We're going to use the USB cable for programming and the USB to UART adapter for receiving messages printed by the Arduino.
 To set this up, unplug the red 5v wire from the UART adapter, and plug the USB cable back into
-the USB port. Keep at least the green and black wires attached from the setup
+the USB port. Keep at least the white and black wires attached from the setup
 above - just make sure the red wire is unplugged as we'll be powering the
 Arduino with the USB cable once again. Now with both the USB cable (the one
 attached to the Arduino's USB port) _and_ the USB to UART adapter both plugged
