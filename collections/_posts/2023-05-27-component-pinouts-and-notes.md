@@ -39,7 +39,7 @@ powered by the incorrectly connected 78L05.
 The component has a round side and a flat side.
 As shown in the image above, with the flat side facing you, with the pins
 pointing downwards:
- - The _left_ pin is the _output_ and will provide 5V if sufficient voltage
+ - The _left_ pin is the _output_ and will provide 5v if sufficient voltage
    (at least 7v) is supplied to the input.
  - The _middle_ pin is _ground_.
  - The _right_ pin is the _input_.
