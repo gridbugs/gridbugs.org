@@ -7,8 +7,9 @@ permalink: /component-pinouts/
 excerpt_separator: <!--more-->
 ---
 
-This page will list pinouts of commonly electronic components and some notes on
-using them that might not be obvious from reading the datasheets.
+This page will list pinouts of some electronic components I commonly find myself
+using, as well as some notes on using them that might not be obvious from
+reading the datasheets.
 
 <!--more-->
 
