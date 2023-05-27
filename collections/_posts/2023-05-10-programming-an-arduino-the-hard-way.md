@@ -2,7 +2,7 @@
 layout: post
 title: "Programming an Arduino the Hard Way"
 date: 2023-05-10
-categories: arduino
+categories: electronics
 permalink: /programming-an-arduino-the-hard-way/
 excerpt_separator: <!--more-->
 og_image: arduino1.jpg
