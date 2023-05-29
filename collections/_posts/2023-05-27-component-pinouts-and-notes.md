@@ -226,7 +226,7 @@ them together through resistors to a common node. The diagram below shows two
 pins connected in this way but it works for arbitrarily many pins. If the
 resistors all have the same resistance then the common node will have a voltage
 that is the mean of voltages at the output pins, but using different resistors
-results in the a mean instead.
+results in the weighted mean instead.
 
 {% image arduino-output-pins-mean.png alt="diagram showing two output pins
 connected through resistors (labeled R1 and R2) to a common node M, with plots comparing the voltages
@@ -240,7 +240,7 @@ say 40mA) and also they can consume a lot of current. This means that when an
 output pin is producing logic 0 (0v), it serves a similar role to ground (it has
 0v and it's a current sink). Thus we can analyse the circuit above as we would a
 simple voltage divider. When one output is low and one output is high, then half
-the high voltage is seen between the two resistors.
+the high voltage is seen between the two resistors provided that they have the same resistance.
 
 This idea can be extended to implement a digital to analog converter by
 combining the voltages of many pins through carefully chosen resistances.
@@ -248,7 +248,7 @@ combining the voltages of many pins through carefully chosen resistances.
 Note that as with naive voltage divider circuits (this is really just a naive
 voltage divider circuit) the output of this circuit (the node with mixed voltage) has
 high impedance (due to the resistors used). This means its voltage will rapidly
-reduce as current is drawn through that node in the circuit.
+reduce as current is drawn through that node of the circuit.
 One way to fix this problem is to
 connect it to a voltage forwarder op-amp configuration:
 
