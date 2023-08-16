@@ -120,7 +120,6 @@ impl World {
                 TerrainTile::Npc(npc_type) => {
                     let entity = self.spawn_npc(coord, npc_type);
                     self.spawn_floor(coord);
-                    ai_state.insert(entity, ());
                 }
             }
         }
