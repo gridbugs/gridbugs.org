@@ -55,7 +55,7 @@ from the output, but if it's up to 100mA then 7v will be fine.
 
 {% file component-datasheets/lm358.pdf | Datasheet (pdf) for LM385 Dual Op Amp (also contains information on related components) %}
 
-{% file component-datasheets/tl072.pdf | Datasheet (pdf) for TL072 Dual Op Amp (also contains information on related components) %}
+{% file component-datasheets/tl07x.pdf | Datasheet (pdf) for TL072 Dual Op Amp (also contains information on related components) %}
 
 Both components include a pair of op amps on a single chip and they have
 identical pinouts. This is the pinout viewed from top-down:
@@ -80,6 +80,52 @@ and in this configuration the IN- pin and the OUT pin are connected together. I
 like to pretend that the designer wanted to make it easy to setup a voltage
 forwarder by putting the OUT and IN- pins next to each other for both op amps on
 the chip.
+
+## TL074 Quad Op Amp
+
+{% file component-datasheets/tl07x.pdf | Datasheet (pdf) for TL074 Dual Op Amp (also contains information on related components) %}
+
+This is 4 op-amps in a single chip. This is the pinout viewed top-down:
+
+{% image tl074.png alt="pinout of tl074" %}
+
+This table lists the pins corresponding to their arrangement in the diagram
+above. The semi-circular indentation on the top of the IC is facing upwards.
+
+| Left Side   | Right Side  |
+| ----------- | ----------- |
+| 1OUT        | 4OUT        |
+| 1IN-        | 4IN-        |
+| 1IN+        | 4IN+        |
+| VCC+        | VCC-        |
+| 2IN+        | 3IN+        |
+| 2IN-        | 3IN-        |
+| 2OUT        | 3OUT        |
+
+## MAX495 Op Amp
+
+{% file component-datasheets/MAX49x.pdf | Datasheet (pdf) for MAX495 Op Amp (also contains information on related components) %}
+
+This Op Amp is marketed as "Rail to Rail" which means its min and max outputs are close to the + and - supply voltages.
+
+In the pinouts below I've added VCC- and VCC+ labels in addition to the VEE and VCC labels from the manual
+for consistency with other component pinouts.
+
+{% image max495.png alt="pinout of max495" %}
+
+This table lists the pins corresponding to their arrangement in the diagram
+above. The semi-circular indentation on the top of the IC is facing upwards.
+
+| Left Side      | Right Side     |
+| -------------- | -------------- |
+| NULL           | N.C.           |
+| IN-            | VCC (ie. VCC+) |
+| IN+            | OUT            |
+| VEE (ie. VCC-) | NULL           |
+
+The NULL pins are not the same as the N.C. (Not Connected) pin. The NULL pins
+can be used to adjust something called "input offset voltage". There's more
+info in the manual.
 
 ## Arduino Nano
 
