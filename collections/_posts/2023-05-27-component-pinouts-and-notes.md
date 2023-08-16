@@ -119,9 +119,12 @@ above. The semi-circular indentation on the top of the IC is facing upwards.
 | Left Side      | Right Side     |
 | -------------- | -------------- |
 | NULL           | N.C.           |
-| IN-            | VCC (ie. VCC+) |
-| IN+            | OUT            |
+| IN1-           | VCC (ie. VCC+) |
+| IN1+           | OUT            |
 | VEE (ie. VCC-) | NULL           |
+
+The inputs are numbered even though there is only one op-amp on the chip. The
+output is not numbered in the manual but it could just as well be called OUT1.
 
 The NULL pins are not the same as the N.C. (Not Connected) pin. The NULL pins
 can be used to adjust something called "input offset voltage". There's more
