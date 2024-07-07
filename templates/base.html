@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    {# Required for correct display on mobile devices. Without this some links and headings are rendered too small. #}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    {% if page %}
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ page.title }}">
+    <link rel="canonical" href="{{ page.permalink | safe }}">
+    <meta property="og:url" content="{{ page.permalink | safe }}">
+
+    {% if page.description %}
+    <meta name="description" content="{{ page.description }}">
+    <meta property="og:description" content="{{ page.description }}">
+    {% endif %}
+    {% if page.date %}
+    <meta property="article:published_time" content="{{ page.date | date(format="%Y-%m-%dT%H:%M:%S%:z") }}">
+    {% endif %}
+    {% if page.extra.og_image %}
+    <meta property="og:image" content="{{ page.permalink | safe }}{{ page.extra.og_image }}">
+    {% endif %}
+    {% elif section %}
+    {% if section.title == "gridbugs" %}
+    <meta property="og:title" content="gridbugs">
+    {% else %}
+    <meta property="og:title" content="gridbugs: {{ section.title }}">
+    {% endif %}
+    {% endif %}
+
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="{{ config.base_url | safe }}/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="{{ config.base_url | safe }}/atom.xml">
+
+    <link rel="stylesheet" href="{{ config.base_url | safe }}/style.css">
+    <title>{% block title %} {% endblock title %}</title>
+  </head>
+  <body>
+    <div id="content">
+      {% include "header.html" %}
+      {% block content %} {% endblock content %}
+      {% include "footer.html" %}
+    </div>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{# Index page for the 2020 roguelike tutorial #}
+{% extends "section.html" %}
+
+{% block title %}
+{{ section.title }}
+{% endblock title %}
+
+{% block content %}
+<h1 class="title">
+  {{ section.title }}
+</h1>
+
+{{ section.content | safe }}
+
+<ul>
+  {% for page in section.pages %}
+  <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
+  {% endfor %}
+</ul>
+
+<img src="{{ section.permalink }}/screenshot.png">
+{% endblock content %}

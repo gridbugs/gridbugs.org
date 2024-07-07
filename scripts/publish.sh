@@ -10,7 +10,6 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cd $DIR
-    jekyll build --config _config.yml,_config_gridbugs.yml
-    rm -f _site/*.core
-    rsync -Pav _site/ gridbugs_nfs:
+    zola build
+    rsync -Pav public/ gridbugs_nfs:
 fi

@@ -1,0 +1,37 @@
+{% macro post_link(page) %}
+<a href="{{ page.permalink | safe }}">{{ page.title }}</a><span class="post-link-date"> — <time datetime="{{ page.date }}">{{ page.date | date(format = "%B %d, %Y") }}</time></span>
+{% endmacro post_link %}
+
+{% macro nav_links(page, reverse) %}
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      {% if reverse %}
+      {% set left_page = page.lower %}
+      {% set right_page = page.higher %}
+      {% else %}
+      {% set left_page = page.higher %}
+      {% set right_page = page.lower %}
+      {% endif %}
+      <li class="nav-prev">
+	{% if left_page %}
+	<a href="{{ left_page.permalink }}" aria-label="Previous">
+	  Previous: {{ left_page.title }}
+	</a>
+	{% else %}
+	<span class="disabled-link">Previous: (none)</span>
+	{% endif %}
+      </li>
+      <li class="nav-next">
+	{% if right_page %}
+	<a href="{{ right_page.permalink }}" aria-label="Next">
+	  Next: {{ right_page.title }}
+	</a>
+	{% else %}
+	<span class="disabled-link">Next: (none)</span>
+	{% endif %}
+      </li>
+    </ul>
+  </nav>
+</div>
+{% endmacro nav_links %}

@@ -1,0 +1,19 @@
+{# Index page for blog-like sections #}
+{% extends "section.html" %}
+
+{% import "macros.html" as macros %}
+
+{% block content %}
+<h1 class="title">
+  {{ section.title }}
+</h1>
+
+{{ section.content | safe }}
+
+<ul>
+  {% for page in section.pages %}
+  <li>{{ macros::post_link(page=page) }}</li>
+  {% endfor %}
+</ul>
+{% endblock content %}
+

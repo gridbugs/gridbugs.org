@@ -1,7 +1,3 @@
-_site
-.sass-cache
-.jekyll-metadata
-.jekyll-cache
-*.core
-vendor
-.DS_Store
+.envrc
+.direnv
+public/

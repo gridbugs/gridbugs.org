@@ -1,0 +1,169 @@
+@charset "utf-8";
+
+$underline-color: lightgrey;
+$content-max-width: 800px;
+$content-horizontal-padding: 40px;
+$link-color: steelblue;
+$link-color-visited: rebeccapurple;
+$text-color: black;
+$post-meta-text-color: dimgrey;
+$link-color-disabled: dimgrey;
+$nav-link-space: 1rem;
+
+body {
+    color: $text-color;
+    max-width: $content-max-width;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+// Display content with a different background colour
+div#content {
+    padding-left: $content-horizontal-padding;
+    padding-right: $content-horizontal-padding;
+}
+
+// Use sans-serif font for headings
+h1, h2, h3, h4, h5, h6 {
+    font-family: Sans-Serif;
+}
+
+// Draw a line under the heading at the top of each page.
+h1.title {
+    border-bottom: 2px solid $underline-color;
+}
+
+// Customize colours for links. This is mostly so that visited nav
+// links can be made to be the same colour as unvisited links without
+// having to guess the style for unvisited links.
+a {
+    color: $link-color;
+    &:visited {
+	color: $link-color-visited;
+    }
+    &:hover {
+	background-color: lightcyan;
+    }
+}
+
+// For links in headings and navigation elements, don't change the
+// colour if the link has been visited.
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a, nav a {
+    color: $link-color;
+    &:visited {
+	color: $link-color;
+    }
+}
+
+// This is used for places where there would normally be a navigation
+// link for the next or previous page, but this is the first or last
+// post in a sequence so there is no next or previous post.
+.disabled-link {
+    color: $link-color-disabled;
+}
+
+// Prevent images in articles appearing wider than the article body.
+article img {
+  max-width: 100%;
+}
+
+// Date and tags subheading of posts
+p.post-meta {
+    color: $post-meta-text-color;
+}
+
+// Dates in lists of posts
+span.post-link-date {
+    color: $post-meta-text-color;
+}
+
+// Links at the top of each page
+div.header-nav-container ul {
+    padding: 0;
+    margin: 0;
+    padding-top: 20px;
+    list-style: none;
+    display: flex;
+
+    // Render a slash between the root link and the section link.
+    li.slash-before {
+	&:before {
+	    content: "/";
+	    margin-left: 0.5ch;
+	    margin-right: 0.5ch;
+	}
+    }
+
+    li.first-rhs {
+	margin-left: auto;
+    }
+
+    li.rhs {
+	margin-right: $nav-link-space;
+    }
+}
+
+// Next and previous post links
+div.next-prev-nav-container ul {
+    padding: 0;
+    margin: 0;
+    padding-top: 20px;
+    list-style: none;
+    display: flex;
+
+    li.nav-prev {
+	padding-right: 40px;
+    }
+    
+    li.nav-next {
+	padding-left: 40px;
+	margin-left: auto;
+    }
+}
+
+// Copyright information at the bottom of each page
+ul.copyright {
+    list-style: none;
+    text-align: center;
+
+    li {
+	display: block;
+    }
+}
+
+// Lists of links at the bottom of each page
+div.footer-nav-container {
+    border-top: 2px solid $underline-color;
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+
+    ul {
+	list-style: none;
+	text-align: center;
+	padding: 0;
+
+	li {
+	    display: block;
+	}
+    }
+}
+
+// Additional styling for code in articles. This applies to code
+// blocks and inline text.
+article code {
+    font-size: 1rem;
+}
+
+// Anchor headings are rendered like regular headings rather than
+// links.
+a.zola-anchor {
+    color: $text-color;
+    text-decoration: none;
+
+    &:visited {
+	color: $text-color;
+    }
+}

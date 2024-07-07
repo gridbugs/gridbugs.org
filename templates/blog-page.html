@@ -1,0 +1,29 @@
+{# A single blog post #}
+{% extends "page.html" %}
+
+{% import "macros.html" as macros %}
+
+{% block title %}
+{{ page.title }}
+{% endblock title %}
+
+{% block content %}
+
+{% set section = get_section(path=page.ancestors | last) %}
+{% if section.extra.top_nav_links %}
+{{ macros::nav_links(page = page, reverse = false) }}
+{% endif %}
+
+<article>
+<h1 class="title">
+  {{ page.title }}
+</h1>
+
+{% include "date-and-tags.html" %}
+
+{{ page.content | safe }}
+</article>
+
+{{ macros::nav_links(page = page, reverse = false) }}
+
+{% endblock content %}

@@ -1,0 +1,40 @@
+<footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="{{ config.base_url | safe }}/blog">Blog</a></li>
+	<li><a href="{{ config.base_url | safe }}/projects">Projects</a></li>
+	<li><a href="{{ config.base_url | safe }}/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="{{ config.base_url | safe }}/about">About</a></li>
+	<li><a href="{{ config.base_url | safe }}/contact">Contact</a></li>
+	<li><a href="{{ config.base_url | safe }}/external">External</a></li>
+	<li><a href="{{ config.base_url | safe }}/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="{{ config.base_url | safe }}/atom.xml">Atom</a></li>
+	<li><a href="{{ config.base_url | safe }}/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-{{ now() | date(format="%Y") }} Stephen Sherratt.
+    </li>
+  </ul>
+</footer>

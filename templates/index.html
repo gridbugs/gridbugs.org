@@ -1,0 +1,76 @@
+{# Only used by the index page of the site #}
+{% extends "section.html" %}
+
+{% import "macros.html" as macros %}
+
+{% block content %}
+{{ section.content | safe }}
+
+<h1 class="title">Hi, I'm Steve</h1>
+
+<p>
+Welcome to my website! I'm interested in game development and
+synthesizers and retro hardware and emulation and going outside and
+some other things.
+</p>
+
+<p>
+Posts are organized into the categories listed on this page as well as
+with finer-grained <a href="{{ config.base_url }}/tags">tags</a>. There's also an
+<a href="{{ config.base_url }}/rss.xml">RSS</a> and
+<a href="{{ config.base_url }}/atom.xml">Atom</a>
+feed with all posts.
+</p>
+
+{% set blog_section = get_section(path="blog/_index.md") %}
+<h2><a href="{{ blog_section.permalink }}">{{ blog_section.title }}</a></h2>
+<p>Recent posts:</p>
+<ul>
+  {% for page in blog_section.pages | slice(end=5) %}
+  <li>{{ macros::post_link(page=page) }}</li>
+  {% endfor %}
+  <li><a href="{{ blog_section.permalink }}">more...</a></li>
+</ul>
+
+{% set projects_section = get_section(path="projects/_index.md") %}
+<h2><a href="{{ projects_section.permalink }}">{{ projects_section.title }}</a></h2>
+<p>Recent projects:</p>
+<ul>
+  {% for project in projects_section.pages | slice(end=5) %}
+  <li>{{ macros::post_link(page=project) }}</li>
+  {% endfor %}
+  <li><a href="{{ projects_section.permalink }}">more...</a></li>
+</ul>
+
+{% set devlogs_section = get_section(path="devlogs/_index.md") %}
+<h2><a href="{{ devlogs_section.permalink }}">Devlogs</a></h2>
+<p>Recent updates:</p>
+<ul>
+  {% for devlog in devlogs_section.pages | slice(end=5) %}
+  <li>{{ macros::post_link(page=devlog) }}</li>
+  {% endfor %}
+  <li><a href="{{ devlogs_section.permalink }}">more...</a></li>
+</ul>
+
+<h2>Other Stuff</h2>
+
+<ul>
+  <li>
+    <a href="{{ config.base_url }}/roguelike-tutorial-2020">Roguelike Tutorial 2020</a>.
+    A step-by-step guide to making a traditional roguelike in rust
+    using some of my libraries. It's out of date and I'm not actively
+    maintaining it but some may still find it useful.
+  </li>
+
+  <li>
+    <a href="{{ config.base_url }}/daily">Daily Posts</a>.
+    An experiment where I wrote a short post every day for about
+    100 days in 2020. I might pick this up again one day.
+  </li>
+</ul>
+
+<h2>External Links</h2>
+
+<p>For more things I've worked on outside of this site, see the <a href="{{ config.base_url }}/external">External Links</a> page.</p>
+
+{% endblock content %}
