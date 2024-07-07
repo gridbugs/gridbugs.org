@@ -1,5 +1,6 @@
 +++
 title = "gridbugs"
+description = "I post about game development, experiments with retro hardware, and DIY synthesizers."
 +++
 
 # Hi, I'm Steve
