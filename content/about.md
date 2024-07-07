@@ -6,7 +6,10 @@ template = "page.html"
 # About
 
 I'm Stephen Sherratt. I live in Sydney, Australia and I write software
-for a living. I'm obsessed with modular synthesizers and technology from the 80s. Sometimes I make games. I cycle a lot, and enjoy camping and hiking, though I don't post much about that here.
+for a living. I'm obsessed with modular synthesizers and technology
+from the 80s. I use he/him pronouns. Sometimes I make games. I cycle a
+lot, and enjoy camping and hiking, though I don't post much about that
+here.
 
 For a long time my main hobby was roguelike development. I've entered
 the [7 Day Roguelike](https://7drl.com/) every year since 2016. This
