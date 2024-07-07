@@ -11,29 +11,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     {% if page %}
-    <meta property="og:type" content="article">
-    <meta property="og:title" content="{{ page.title }}">
-    <link rel="canonical" href="{{ page.permalink | safe }}">
-    <meta property="og:url" content="{{ page.permalink | safe }}">
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="{{ page.title }}">
+	<link rel="canonical" href="{{ page.permalink | safe }}">
+	<meta property="og:url" content="{{ page.permalink | safe }}">
 
-    {% if page.description %}
-    <meta name="description" content="{{ page.description }}">
-    <meta property="og:description" content="{{ page.description }}">
-    {% endif %}
-    {% if page.date %}
-    <meta property="article:published_time" content="{{ page.date | date(format="%Y-%m-%dT%H:%M:%S%:z") }}">
-    {% endif %}
-    {% if page.extra.og_image %}
-    <meta property="og:image" content="{{ page.permalink | safe }}{{ page.extra.og_image }}">
-    {% endif %}
+	{% if page.description %}
+	    <meta name="description" content="{{ page.description }}">
+	    <meta property="og:description" content="{{ page.description }}">
+	{% endif %}
+
+	{% if page.date %}
+	    <meta property="article:published_time" content="{{ page.date | date(format="%Y-%m-%dT%H:%M:%S%:z") }}">
+	{% endif %}
+
+	{% if page.extra.og_image %}
+	    <meta property="og:image" content="{{ page.permalink | safe }}{{ page.extra.og_image }}">
+	{% else %}
+	    <meta property="og:image" content="{{ config.base_url | safe }}/logo.png">
+	{% endif %}
     {% elif section %}
-    {% if section.title == "gridbugs" %}
-    <meta property="og:title" content="gridbugs">
-    {% else %}
-    <meta property="og:title" content="gridbugs: {{ section.title }}">
-    {% endif %}
+	{% if section.title == "gridbugs" %}
+	    <meta property="og:title" content="gridbugs">
+	{% else %}
+	    <meta property="og:title" content="gridbugs: {{ section.title }}">
+	{% endif %}
+	<meta property="og:image" content="{{ config.base_url | safe }}/logo.png">
     {% endif %}
 
+    <link rel="icon" type="image/x-icon" href="{{ config.base_url | safe }}/favicon.png">
     <link rel="alternate" type="application/rss+xml" title="gridbugs" href="{{ config.base_url | safe }}/rss.xml">
     <link rel="alternate" type="application/atom+xml" title="gridbugs" href="{{ config.base_url | safe }}/atom.xml">
 
