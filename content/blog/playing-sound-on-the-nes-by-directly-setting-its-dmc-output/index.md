@@ -5,6 +5,9 @@ path = "playing-sound-on-the-nes-by-directly-setting-its-dmc-output"
 
 [taxonomies]
 tags = ["nes", "audio"]
+
+[extra]
+og_image = "audacity-NES.png"
 +++
 
 Games on the Nintendo Entertainment System play audio using a handful of

@@ -46,7 +46,7 @@ to myself that I could actually make games, I spent the weekend making
 [this little platform game](https://games.gridbugs.org/unfinished-game/).
 
 ## Runnable versions of game engine (runs in browser)
-- [Large area with buggy dynamic lighting and shaders](https://games.gridbugs.org/top-down-sidescrolling-engine)
+- [Large area with buggy dynamic lighting and shaders](https://games.gridbugs.org/abandoned-game-big)
 - [Large area with dynamic lighting but no shaders](https://games.gridbugs.org/abandoned-game-big-noshaders)
 - [Small area with dynamic lighting but no shaders](https://games.gridbugs.org/abandoned-game-small)
 
