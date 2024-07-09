@@ -83,14 +83,14 @@ a way to motivate players to do that more.
 ![In a smoke-filled street, the player is aiming a pistol at a Venter enemy.](screenshot3.png)
 
 I'm satisfied with how the 7DRL week went. I had an easier time
-staying motivated and managed to spend almost every non-work waking
-hour during the week working on my game. It feels like I'm hitting up
-against the limit of the productivity I can achieve with my current
-tools. I say this every year but I do want to keep working on Electric
-Organ now that the jam is finished, both because I want to use it to
-improve my tools (or experiment with new tools), and because I really
-like how the game turned out and want to spend some time making it
-even better.
+staying motivated than in the last few 7DRLs and managed to spend
+almost every non-work waking hour during the week working on my
+game. It feels like I'm hitting up against the limit of the
+productivity I can achieve with my current tools. I say this every
+year but I do want to keep working on Electric Organ now that the jam
+is finished, both because I want to use it to improve my tools (or
+experiment with new tools), and because I really like how the game
+turned out and want to spend some time making it even better.
 
 ![Message log death screen after the player attacked a vendor who then turned hostile and killed them](screenshot2.png)
 
