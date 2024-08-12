@@ -5,6 +5,9 @@ path = "component-pinouts-and-notes"
 
 [taxonomies]
 tags = ["electronics"]
+
+[extra]
+enable_toc = true
 +++
 
 This page will list pinouts of some electronic components I commonly find myself
