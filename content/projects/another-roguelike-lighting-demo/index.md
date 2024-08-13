@@ -4,7 +4,7 @@ date = 2017-12-10T17:37:00+10:00
 path = "another-roguelike-lighting-demo"
 
 [taxonomies]
-tags = ["gamedev", "roguelikes", "lighting", "project"]
+tags = ["gamedev", "roguelikes", "lighting"]
 +++
 
 In keeping with my habit of making game engines rather than entire games, here's
@@ -41,7 +41,7 @@ needs to be updated is an entry in the index buffer.
 ## Dynamic Lighting
 
 I've experimented with 
-[dynamic lighting in roguelikes](@/blog/roguelike-lighting-demo/index.md) before.
+[dynamic lighting in roguelikes](@/projects/roguelike-lighting-demo/index.md) before.
 What's new here is the lighting is implemented in a shader, and the effect is
 applied to individual pixels rather than cells. I use
 [recursive shadowcast](@/blog/visible-area-detection-recursive-shadowcast/index.md),

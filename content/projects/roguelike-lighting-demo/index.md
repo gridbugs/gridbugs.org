@@ -4,7 +4,7 @@ date = 2016-12-20T09:31:00+10:00
 path = "roguelike-lighting-demo"
 
 [taxonomies]
-tags = ["gamedev", "roguelikes", "lighting", "project"]
+tags = ["gamedev", "roguelikes", "lighting"]
 +++
 
 This is a demonstration of some lighting techniques I've been experimenting

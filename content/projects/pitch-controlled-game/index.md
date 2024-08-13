@@ -4,7 +4,7 @@ date = 2015-07-10T22:46:01+10:00
 path = "pitch-controlled-game"
 
 [taxonomies]
-tags = ["project"]
+tags = ["gamedev"]
 +++
 
 A game I made for UNSW ArtsWeek 2014. Control the cat by making noises of various pitches.

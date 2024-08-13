@@ -4,7 +4,7 @@ date = 2015-07-11T22:46:01+10:00
 path = "top-down-sidescrolling-engine"
 
 [taxonomies]
-tags = ["project"]
+tags = ["gamedev"]
 +++
 
 A partially-complete game engine I wrote in 2014 in javascript/html5.

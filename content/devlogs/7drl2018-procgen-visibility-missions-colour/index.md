@@ -20,7 +20,7 @@ the main area.
 For visible area detection, I'm using a library:
 [shadowcast](https://crates.io/crates/shadowcast).
 I implemented recursive shadowcast for an
-[old project](@/blog/another-roguelike-lighting-demo/index.md),
+[old project](@/projects/another-roguelike-lighting-demo/index.md),
 and extracted it into a library for easy inclusion in other projects.
 While adding shadowcast I found a bug in
 [prototty](https://github.com/gridbugs/prototty) - my terminal rendering 
