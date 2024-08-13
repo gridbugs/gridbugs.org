@@ -12,3 +12,4 @@ taxonomies = [
 highlight_code = true
 highlight_theme = "inspired-github"
 smart_punctuation = true
+extra_syntaxes_and_themes = ["syntaxes"]

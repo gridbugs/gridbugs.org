@@ -1,0 +1,47 @@
+# A subset of dune syntax
+
+name: dune
+file_extensions:
+  - dune
+scope: source.dune
+
+contexts:
+  main:
+    - include: comments
+    - include: strings
+    - include: numbers
+    - include: keywords
+    - include: operators
+    - include: variables
+
+  comments:
+    - match: ';.*$'
+      scope: comment.line.dune
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.dune
+      push: string
+  string:
+    - meta_scope: string.quoted.double.dune
+    - match: '"'
+      scope: punctuation.definition.string.end.dune
+      pop: true
+    - match: '\\.'
+      scope: constant.character.escape.dune
+
+  numbers:
+    - match: \b\d+\b
+      scope: constant.numeric.dune
+
+  keywords:
+    - match: (?<=\(\w*)(library|name|no_dynlink|foreign_archives|c_library_flags|library_flags|executable|public_name|libraries|:include|rule|enabled_if|action|with-stdout-to|progn|echo|bash|write-file|and|target|run)\b
+      scope: keyword.control.dune
+
+  operators:
+    - match: <>|=
+      scope: keyword.operator.dune
+
+  variables:
+    - match: \%\{system\}
+      scope: entity.name.function

@@ -1,11 +1,14 @@
 @charset "utf-8";
 
-$underline-color: lightgrey;
+$underline-color: #dddddd;
+$inline-code-background-color: #eeeeee;
 $content-max-width: 800px;
 $content-horizontal-padding: 40px;
 $link-color: steelblue;
 $link-color-visited: rebeccapurple;
 $text-color: black;
+$quote-text-color: #444444;
+$quote-line-color: #444444;
 $post-meta-text-color: dimgrey;
 $link-color-disabled: dimgrey;
 $nav-link-space: 1rem;
@@ -151,10 +154,32 @@ div.footer-nav-container {
     }
 }
 
-// Additional styling for code in articles. This applies to code
-// blocks and inline text.
+article p {
+    line-height: 150%;
+}
+
+// Additional styling for inline code in articles
 article code {
-    font-size: 1rem;
+    font-size: 11pt;
+    font-family: Menlo, Monaco, Consolas, Courier New, monospace;
+    background-color: $inline-code-background-color;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 1px;
+    padding-bottom: 2px;
+    border-radius: 4px;
+}
+
+article a:hover code {
+    background-color: transparent;
+}
+
+article pre code {
+    line-height: 120%;
+    background-color: $inline-code-background-color;
+    display: block;
+    border-radius: 4px;
+    padding: 10px;
 }
 
 // Anchor headings are rendered like regular headings rather than
@@ -166,4 +191,11 @@ a.zola-anchor {
     &:visited {
 	color: $text-color;
     }
+}
+
+blockquote {
+    color: $quote-text-color;
+    border-left: 4px solid $quote-line-color;
+    margin-left: 0;
+    padding-left: 2rem;
 }
