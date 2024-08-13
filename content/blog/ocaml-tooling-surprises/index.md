@@ -75,7 +75,7 @@ library `llama_low_level` (my synthesizer library is named `llama`) to
 wrap it with a higher-level interface.
 
 I'm using Dune to build this project. Dune has a mechanism for linking
-OCaml code against native libraries like `liblow_level.a`, and the
+against native libraries like `liblow_level.a`, and the
 [`ocaml-rs` documentation](https://zshipko.github.io/ocaml-rs/) gives
 some advice on how to write your `dune` file (the per-directory build
 config files used by Dune). I started with this:
@@ -99,10 +99,10 @@ Error: No rule found for dlllow_level.so
 Dune is looking for the shared library file `dlllow_level.so` for my
 `low_level` library, but I only compiled `low_level` to a static
 archive `liblow_level.a`. There's no reason the linker needs to be
-provided with both of these files, dune a look through
+provided with both of these files, so I took a look through
 [dune's (library ...) stanza documentation](https://dune.readthedocs.io/en/stable/dune-files.html#library)
 to see if there's a way to only link against the static library and
-found the `no_dynlink` field:
+discovered the `no_dynlink` field:
 
 > `(no_dynlink)` disables dynamic linking of the library. This is for advanced use only. By default, you shouldn’t set this option.
 
@@ -119,7 +119,9 @@ A little intimidating but let's give it a shot:
 
 Running `dune build` on the `llama_low_level` library now works as expected.
 
-Next step is to actually make some noise. I made a little program simply named `experiment` which uses `llama_low_level` to play a sine wave. Here's its `dune` file:
+Next step is to actually make some noise. I made a little program
+simply named `experiment` which uses `llama_low_level` to play a sine
+wave. Here's its `dune` file:
 
 ```dune
 (executable
@@ -141,15 +143,17 @@ Undefined symbols for architecture arm64:
 
 I searched the web for `AudioComponentFindNext` which led me to some
 Apple developer docs for the AudioToolbox framework. So the foreign
-archive must depend on some frameworks on MacOS for doing "audio
-stuff" and I need to tell the linker about it. Eventually I found the
+archive must depend on some frameworks on MacOS for doing audio
+stuff and I need to tell the linker about it. Eventually I found the
 appropriate linker flags to copy/paste from stack overflow:
 
 ```
 -framework CoreServices -framework CoreAudio -framework AudioUnit -framework AudioToolbox
 ```
 
-Now I have to find a way to pass these flags to the linker. If this was a C program I could pass them via the C compiler. Something like:
+Now I have to find a way to pass these flags to the linker. If this
+was a C program I could pass them via the C compiler. Something like:
+
 ```
 clang foo.c -Wl,-framework,CoreServices,-framework,CoreAudio,-framework,AudioUnit,-framework,AudioToolbox
 ```
@@ -157,7 +161,10 @@ clang foo.c -Wl,-framework,CoreServices,-framework,CoreAudio,-framework,AudioUni
 Dune provides a mechanism for passing additional linker flags when compiling a library:
 > `(library_flags (<flags>))` is a list of flags passed to ocamlc and ocamlopt when building the library archive files.
 
-And similar to the C compiler example above, the OCaml compiler also has a way of passing custom flags along to the linker. From `man ocamlc`:
+And similar to the C compiler example above, the OCaml compiler also
+has a way of passing custom flags along to the linker. From `man
+ocamlc`:
+
 >    -cclib -llibname
 >
 >    Pass the -llibname option to the C linker when linking in "custom
@@ -196,14 +203,16 @@ sound driver. You might get away with just passing `-lasound`
 to the linker but in general you should probe the current machine for
 linker arguments by running `pkg-config --libs alsa`.
 
-For example I run NixOS by the way and for me the correct linker arguments are:
+For example I run NixOS (by the way) and for me the correct linker arguments are:
 
 ```
 $ pkg-config --libs alsa
 -L/nix/store/g3a56c2y6arvxyr4kxvlg409gzfwyfp0-alsa-lib-1.2.11/lib -lasound
 ```
 
-As an experiment I modified the `dune` file to have the output of `pkg-config` hard-coded to see if that was enough for it to work on Linux:
+As an experiment I modified the `dune` file to have the output of
+`pkg-config` hard-coded to see if that was enough for it to work on
+Linux:
 
 ```dune
 (library
@@ -222,14 +231,14 @@ linked against the shared library file `libasound.so` despite the
 
 Obviously we can't leave the linker arguments hard-coded like
 that. Instead we need to get Dune to invoke `pkg-config` at build time
-so the right arguments for the current machine are passed to the
+so the correct arguments for the current machine are passed to the
 linker. First we'll make it so the linker arguments are loaded from a
-file, then we'll have dune generate that file at build time by running
+file, then we'll have Dune generate that file at build time by running
 `pkg-config`.
 
-Dune allows the contents of [S-expression
-(sexp)](https://en.wikipedia.org/wiki/S-expression) files to be
-included in most fields. Make a file `library_flags.sexp` with the
+Dune allows the contents of
+[S-expression (sexp)](https://en.wikipedia.org/wiki/S-expression) files to be
+included in most fields. I made a file `library_flags.sexp` with the
 contents:
 
 ```
@@ -286,7 +295,7 @@ in one place only to include it in another place, and Dune doesn't
 help at all with emitting sexp syntax, requiring me to explicitly
 escape quotes and remember to include the parentheses.
 
-This solution is specific to Linux. To add back support for MacOS
+Also this solution is specific to Linux. To add back support for MacOS
 we need to conditionally enable the rule and add a second rule for
 MacOS that generates a sexp file with the original linker arguments:
 
@@ -322,14 +331,19 @@ MacOS that generates a sexp file with the original linker arguments:
  ...
 ```
 
-Note the third rule which is necessary so that the
+Note that the third rule is necessary so that the
 `library_flags.sexp` file is still generated on machines that are
 running neither MacOS nor Linux. Also note that the comparisons `(=
 %{system} linux)` and `(= %{system} macosx)` are string comparisons,
 so if you accidentally typed `macos` instead of `macosx` then the
-condition would always be false.
+condition would be false on MacOS machines.
 
-In this project I found that it was getting out of hand to manage the conditional rules and to generate sexp files using Dune's built-in configuration language. Fortunately there is an external library [`dune-configurator`](https://opam.ocaml.org/packages/dune-configurator) to help you write OCaml programs that generate sexp files.
+In this project I found that it was getting out of hand to manage the
+conditional rules and to generate sexp files using Dune's built-in
+configuration language. Fortunately there is an external library
+[`dune-configurator`](https://opam.ocaml.org/packages/dune-configurator)
+to help you write ocaml programs that query the current machine and
+generate sexp files for inclusion in `dune` files.
 
 In a separate directory, I made a little executable called `discover` with this `dune` file:
 
@@ -339,7 +353,7 @@ In a separate directory, I made a little executable called `discover` with this 
  (libraries dune-configurator))
 ```
 
-Then I rewrote the logic from the Dune rules into OCaml:
+Then I rewrote the logic from the custom Dune rules into OCaml:
 
 ```ocaml
 module C = Configurator.V1
@@ -370,6 +384,7 @@ let () =
 ```
 
 Finally I updated the `dune` file for `llama_low_level` to run `discover`:
+
 ```dune
 (rule
  (target library_flags.sexp)
