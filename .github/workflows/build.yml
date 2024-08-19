@@ -10,5 +10,5 @@ jobs:
       - name: build_and_deploy
         uses: shalzz/zola-deploy-action@v0.19.1
         env:
-          BUILD_FLAGS: --base-url https://gridbugs.github.io/gridbugs.org
+          BUILD_FLAGS: --base-url https://gridbugs.github.io/gridbugs.org --drafts
           TOKEN: ${{ secrets.TOKEN }}
