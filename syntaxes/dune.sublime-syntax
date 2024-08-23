@@ -35,7 +35,7 @@ contexts:
       scope: constant.numeric.dune
 
   keywords:
-    - match: (?<=\(\w*)(library|name|no_dynlink|foreign_archives|c_library_flags|library_flags|executable|public_name|libraries|:include|rule|enabled_if|action|with-stdout-to|progn|echo|bash|write-file|and|target|run)\b
+    - match: (?<=\(\w*)(library|name|no_dynlink|foreign_archives|c_library_flags|library_flags|executable|public_name|libraries|:include|rule|enabled_if|action|with-stdout-to|progn|echo|bash|write-file|and|target|run|deps|source_tree|chdir)\b
       scope: keyword.control.dune
 
   operators:
