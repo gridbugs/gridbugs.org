@@ -16,39 +16,44 @@ I wrote the first version of this post a year ago for
 I recently got permission to post it here instead.
 </div>
 
-This post is about some frustrating interactions I had with tooling
-while developing my first non-trivial OCaml project - [an audio
-synthesizer library](https://github.com/gridbugs/llama/). My goal here
-is to help normalize the idea that some OCaml dev tools
-are rough around the edges. If you're learning OCaml and struggling
-with the tools, it's not because you're bad at programming - it's the
-tools. I've spent years of my programming career dealing with
-imposter syndrome and if someone had told me at the start of my OCaml journey
-"Yeh don't worry, everyone has trouble installing packages with Opam,
-it's not just you," it would have improved my mental
-health a ton. I'll attempt to normalize the idea that OCaml tools can be
-hard to use by sharing a bunch of stories where
-a tool didn't work the way I expected (as well as the necessary workarounds
-and related github issues!).
+At the time of writing I'm employed by Tarides to work on the Dune
+build system, but all the opinions in this post are my own.
 
-But first, some disclaimers. I'm
-currently employed by Tarides where I work on the team largely
-responsible for the Dune build system, but all the opinions in this
-post are my own. I've been a user of Dune and Opam for about 2 years (1
-year at the point when I first wrote this) and I've worked as a
-programmer for over a decade across many different software
-ecosystems.
+This post is about some frustrating experiences I had while developing
+my first non-trivial OCaml project - [an audio synthesizer
+library](https://github.com/gridbugs/llama/).  I generally enjoy
+programming in OCaml but I often find its development tools to be
+counter-intuitive in their UX and surprising-in-a-bad-way in their
+behaviour.  Realistic expectations are important for avoiding
+disappointment and my expectations were too high when I started the
+project. The goal of this post is to communicate my err...updated
+expectations of OCaml development tools by listing all the times they
+didn't work the way I expected while working on my synthesizer
+library.
 
-The language I use most is Rust, though I've only used it for personal
-projects. I choose Rust for most of my hobby programming specifically
-because I find it easy to manage dependencies and build projects with
-Cargo. I have limited free time and I'd rather spend it making cool
-stuff instead of fighting against the package manager or build
-system. Which brings us to...
+This isn't just a cathartic rant (though it's also that).  I'm worried
+that people will try out OCaml, encounter friction with its tools, and
+bounce off to a more ergonomic ecosystem. Or worse, I'm worried that
+users will attribute their negative experiences with OCaml's tooling
+as a deficiency in their own programming ability rather than a
+deficiency in the tools themselves. I want to reach these people and
+convey that if you are struggling with the tools, know that it's not
+you - it's the tools. Almost every OCaml programmer I know struggles
+to install packages with Opam, and struggles to configure Dune to do
+anything non-trivial when building projects. OCaml tools are hard to
+use. You are not alone.
+
+My initial high expectations of OCaml tooling is possibly related to
+the fact that the language I use for most of my personal programming
+projects is Rust. I choose Rust for most of my hobby programming
+specifically because I find it easy to manage dependencies and build
+projects with Cargo. I have limited free time and I'd rather spend it
+making cool stuff instead of fighting against the package manager or
+build system. Which brings us to...
 
 ## All the times an OCaml dev tool or library did something unexpected while I was developing my synthesizer library
 
-- [Linking against native libraries with Dune is non-trivial (but possible!)](#linking-against-native-libraries-with-dune-is-non-trivial-but-possible)
+- [Linking against native libraries with Dune is hard (but possible!)](#linking-against-native-libraries-with-dune-is-hard-but-possible)
 - [Dune silently ignores directories starting with a period (by default), breaking Rust interoperability](#dune-silently-ignores-directories-starting-with-a-period-by-default-breaking-rust-interoperability)
 - [The obvious choice of package for reading `.wav` files crashes when reading `.wav` files](#the-obvious-choice-of-package-for-reading-wav-files-crashes-when-reading-wav-files)
 - [Transferring an array of floats from Rust to OCaml produced a broken array (this is now fixed!)](#transferring-an-array-of-floats-from-rust-to-ocaml-produced-a-broken-array-this-is-now-fixed)
@@ -56,7 +61,7 @@ system. Which brings us to...
 - [If some (but not all) of the interdependent packages in a project are released, Opam cannot automatically install the project's dependencies](#if-some-but-not-all-of-the-interdependent-packages-in-a-project-are-released-opam-cannot-automatically-install-the-project-s-dependencies)
 - [Dune can generate `.opam` files but requires a workaround for adding the `available` field](#dune-can-generate-opam-files-but-requires-a-workaround-for-adding-the-available-field)
 
-### Linking against native libraries with Dune is non-trivial (but possible!)
+### Linking against native libraries with Dune is hard (but possible!)
 
 The first thing I needed to do was make a program that plays a simple
 sound.  The most reliable cross-platform library I'm aware of for
@@ -68,7 +73,7 @@ bindings for the cross-platform audio library `libao`.)
 
 Calling into Rust from OCaml was easier than I expected
 thanks to the [`ocaml-rs`](https://crates.io/crates/ocaml)
-library. Using `ocaml-rs` and `cpal`, I made a small Rust library
+library. I used `ocaml-rs` and `cpal` to make a small Rust library
 named `low_level` which accepts a stream of `float`s representing
 audio data, and plays them on the computer's speakers. I compiled this
 library to an archive file `liblow_level.a`, and wrote a little OCaml
@@ -746,23 +751,29 @@ tests people will write.
 
 ### Dune can generate `.opam` files but requires a workaround for adding the `available` field
 
-## Conclusions
+## The "Happy Path"
 
 I hear a lot that OCaml tooling works well when you keep to the "Happy
-Path" and I tend to agree with this. I've been developing a [CLI
-parsing library](https://github.com/gridbugs/climate) for several
-months. It's entirely written in OCaml, doesn't link with any external
-libraries, only depends on third-party packages for its tests and is available on
-all architectures, and I'm having a great time.
+Path" and I tend to agree with this. This refers to the case where all
+the code in your project is written in OCaml and you use the default
+configurations for everything. Lately I've been developing a [CLI
+parsing library](https://github.com/gridbugs/climate) in OCaml which
+sticks to the Happy Path. It's entirely written in OCaml, doesn't link
+with any external libraries, only depends on third-party packages for
+its tests and is available on all architectures. So far I haven't had
+any issues with tooling, and even been pleasantly surprised a couple
+of times.
 
 Most of the negative experiences from this post happened when I
-strayed from the happy path into parts of the ecosystem that are less
+strayed from the Happy Path into parts of the ecosystem that are less
 polished and battle tested, or that my assumptions ran contrary to the
 assumptions made by tools. If you find yourself struggling with the
 tools don't beat yourself up about it. Remember it's not you - it's
 the tools. Most OCaml users I know struggle. I clearly struggle. The
 tooling is always gradually improving and in most cases you can trick
 the tools into doing what you want.
+
+## Conclusions
 
 As for my synth library, due to the friction I experienced developing
 it in OCaml, and the future frustration I anticipated if I continued
