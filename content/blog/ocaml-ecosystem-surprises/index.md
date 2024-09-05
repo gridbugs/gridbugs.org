@@ -26,7 +26,7 @@ behaviour.  Realistic expectations are important for avoiding
 disappointment and my expectations were too high when I started the
 project. The goal of this post is to communicate my err...updated
 expectations of OCaml development tools by listing all the times they
-didn't work the way I expected while developing on my synthesizer
+didn't work the way I expected while developing my synthesizer
 library.
 
 This isn't just a cathartic rant (though it's also that).  I'm worried
