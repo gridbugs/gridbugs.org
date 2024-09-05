@@ -743,7 +743,7 @@ what to do with preprocessor directives and require external packages
 to be installed just to know how to ignore them.
 
 I think there's an opportunity to reduce some of the friction around
-testing in OCaml/Dune, especially since security is one of the main selling
+testing in OCaml and Dune, especially since security is one of the main selling
 points of OCaml. The lower the barrier for writing tests, the more
 tests people will write.
 
@@ -765,10 +765,10 @@ any issues with tooling, and even been pleasantly surprised a couple
 of times.
 
 Most of the negative experiences from this post happened when I
-strayed from the Happy Path into parts of the ecosystem that are less
-polished and battle tested, or that my assumptions ran contrary to the
-assumptions made by tools. If you find yourself struggling with the
-tools don't beat yourself up about it. Remember it's not you - it's
+strayed from the happy path into parts of the ecosystem that are less
+polished and battle tested, or that my assumptions ran contrary to
+those made by tools. If you find yourself struggling with the tools
+don't beat yourself up about it. Remember it's not you - it's
 the tools. Most OCaml users I know struggle. I clearly struggle. The
 tooling is always gradually improving and in most cases you can trick
 the tools into doing what you want.
@@ -776,6 +776,6 @@ the tools into doing what you want.
 ## Conclusions
 
 As for my synth library, due to the friction I experienced developing
-it in OCaml, and the future frustration I anticipated if I continued
-the project, I switched to Rust. The Rust rewrite is
+it in OCaml, and to avoid the future frustration I anticipated if I
+continued the project, I switched to Rust. The Rust rewrite is
 [here](https://github.com/gridbugs/caw).
