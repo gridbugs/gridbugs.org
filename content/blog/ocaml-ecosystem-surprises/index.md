@@ -1,7 +1,7 @@
 +++
-title = "OCaml Tooling Surprises"
+title = "OCaml Ecosystem Surprises"
 date = 2024-08-12
-path = "ocaml-tooling-surprises"
+path = "ocaml-ecosystem-surprises"
 draft = true
 
 [taxonomies]
@@ -11,13 +11,12 @@ tags = ["ocaml"]
 ![A landscape of a rugged mountain range](background.jpg)
 
 <div style="color:gray;font-style:italic">
-I wrote the first version of this post a year ago for
-<a href="https://tarides.com/blog">my employer's blog</a> but it was never published.
-I recently got permission to post it here instead.
-</div>
-
 At the time of writing I'm employed by Tarides to work on the Dune
-build system, but all the opinions in this post are my own.
+build system, but all the opinions in this post are my own.  I wrote
+the first version of this post a year ago for the Tarides blog but it
+was never published.  I recently got permission to post it here
+instead.
+</div>
 
 This post is about some frustrating experiences I had while developing
 my first non-trivial OCaml project - [an audio synthesizer
@@ -28,7 +27,7 @@ behaviour.  Realistic expectations are important for avoiding
 disappointment and my expectations were too high when I started the
 project. The goal of this post is to communicate my err...updated
 expectations of OCaml development tools by listing all the times they
-didn't work the way I expected while working on my synthesizer
+didn't work the way I expected while developing on my synthesizer
 library.
 
 This isn't just a cathartic rant (though it's also that).  I'm worried
@@ -43,7 +42,7 @@ to install packages with Opam, and struggles to configure Dune to do
 anything non-trivial when building projects. OCaml tools are hard to
 use. You are not alone.
 
-My initial high expectations of OCaml tooling is possibly related to
+My initially high expectations of OCaml tooling is possibly related to
 the fact that the language I use for most of my personal programming
 projects is Rust. I choose Rust for most of my hobby programming
 specifically because I find it easy to manage dependencies and build
@@ -51,17 +50,17 @@ projects with Cargo. I have limited free time and I'd rather spend it
 making cool stuff instead of fighting against the package manager or
 build system. Which brings us to...
 
-## All the times an OCaml dev tool or library did something unexpected while I was developing my synthesizer library
+## All the times an OCaml dev tool or library wasted my time by doing something unexpected while I was developing my synthesizer library
 
-- [Linking against native libraries with Dune is hard (but possible!)](#linking-against-native-libraries-with-dune-is-hard-but-possible)
-- [Dune silently ignores directories starting with a period (by default), breaking Rust interoperability](#dune-silently-ignores-directories-starting-with-a-period-by-default-breaking-rust-interoperability)
+- [Linking against OS-specific native libraries with Dune is hard](#linking-against-os-specific-native-libraries-with-dune-is-hard)
+- [Dune silently ignores directories starting with a period, breaking Rust interoperability](#dune-silently-ignores-directories-starting-with-a-period-breaking-rust-interoperability)
 - [The obvious choice of package for reading `.wav` files crashes when reading `.wav` files](#the-obvious-choice-of-package-for-reading-wav-files-crashes-when-reading-wav-files)
 - [Transferring an array of floats from Rust to OCaml produced a broken array (this is now fixed!)](#transferring-an-array-of-floats-from-rust-to-ocaml-produced-a-broken-array-this-is-now-fixed)
 - [Adding inline tests to a library requires adding over 20 (runtime) dependencies](#adding-inline-tests-to-a-library-requires-adding-over-20-runtime-dependencies)
-- [If some (but not all) of the interdependent packages in a project are released, Opam cannot automatically install the project's dependencies](#if-some-but-not-all-of-the-interdependent-packages-in-a-project-are-released-opam-cannot-automatically-install-the-project-s-dependencies)
 - [Dune can generate `.opam` files but requires a workaround for adding the `available` field](#dune-can-generate-opam-files-but-requires-a-workaround-for-adding-the-available-field)
+- [If some (but not all) of the interdependent packages in a project are released, Opam can't solve the project's dependencies](#if-some-but-not-all-of-the-interdependent-packages-in-a-project-are-released-opam-can-t-solve-the-project-s-dependencies)
 
-### Linking against native libraries with Dune is hard (but possible!)
+### Linking against OS-specific native libraries with Dune is hard
 
 The first thing I needed to do was make a program that plays a simple
 sound.  The most reliable cross-platform library I'm aware of for
@@ -209,7 +208,7 @@ sound driver. You might get away with just passing `-lasound`
 to the linker but in general you should probe the current machine for
 linker arguments by running `pkg-config --libs alsa`.
 
-For example I run NixOS (by the way) and for me the correct linker arguments are:
+For example I run NixOS (by the way) where the correct linker arguments are:
 
 ```
 $ pkg-config --libs alsa
@@ -266,7 +265,7 @@ Now this file can be included in the `dune` file:
  (c_library_flags
   (-lpthread -lc -lm))
  (library_flags
-  (:include library_flags.sexp)))
+  (:include library_flags.sexp)))  ; <- here!
 ```
 
 Next we'll need to generate `library_flags.sexp` by running
@@ -348,7 +347,7 @@ In this project I found that it was getting out of hand to manage the
 conditional rules and to generate sexp files using Dune's built-in
 configuration language. Fortunately there is an external library
 [`dune-configurator`](https://opam.ocaml.org/packages/dune-configurator)
-to help you write ocaml programs that query the current machine and
+to help you write OCaml programs that query the current machine and
 generate sexp files for inclusion in `dune` files.
 
 In a separate directory, I made a little executable called `discover` with this `dune` file:
@@ -411,11 +410,11 @@ Now when Dune needs to generate the `library_flags.sexp` file it will
 first build the `discover` executable and then run it to generate the
 file, before including the contents of that file to set the extra
 flags passed to the OCaml compiler to configure the linker.
-While this does work, it feels like a Rube Goldberg Machine, and I was
+While this does work, it feels like a [Rube Goldberg Machine](https://en.wikipedia.org/wiki/Rube_Goldberg_machine), and I was
 surprised to find that such a complex solution was needed to pass
 different linker flags while building on different operating systems.
 
-### Dune silently ignores directories starting with a period (by default), breaking Rust interoperability
+### Dune silently ignores directories starting with a period, breaking Rust interoperability
 
 In the previous section I mentioned compiling a Rust library `liblow_level.a` and calling into it from OCaml.
 Up until now I was running the commands to build it myself, but I'd rather have Dune do this for me.
@@ -435,9 +434,19 @@ I added this rule to the `dune` file for `llama_low_level`:
 
 Now if any of the Rust code inside the `low-level-rust` directory
 changes, Dune will invoke Cargo to rebuild `liblow_level.a` before
-relinking the OCaml library against the new version. One problem with the code above is that running `cargo build --release` will download any Rust dependencies before building the Rust library. This is a problem because when Opam installs a package it doesn't allow build commands to access the network. The solution is to vendor any rust dependencies inside the project so they are already available when `cargo build --release` runs.
+relinking the OCaml library against the new version. One problem with
+the code above is that running `cargo build --release` will download
+any Rust dependencies before building the Rust library. This is a
+problem because I intend to release my library on Opam, and when Opam
+installs a package it doesn't allow build commands to access the
+network. The solution is to vendor any rust dependencies inside the
+project so they are already available when `cargo build --release`
+runs.
 
-To vendor Rust dependencies just run `cargo vendor` in the Rust project, and create the file `.cargo/config.toml` at the top level of the Rust project with the contents:
+To vendor Rust dependencies just run `cargo vendor` in the Rust
+project and create the file `.cargo/config.toml` at the top level of
+the Rust project with the contents:
+
 ```toml
 [source.crates-io]
 replace-with = "vendored-sources"
@@ -488,18 +497,18 @@ Cargo was ignoring the vendored libraries.
 It turns out that directories beginning with a `.` or `_` are ignored
 when recursively copying directories specified with `source_tree`.
 There's even an [issue on Dune's github](https://github.com/ocaml/dune/issues/7135)
-where someone else ran into the same problem.
+where others have run into the same problem.
 
 The documentation for `source_tree` doesn't mention this behaviour
 because it's just the default behaviour for which files in a directory
-are ignored (it affects more that just `source_tree`). This behaviour
+are ignored in general (it affects more that just `source_tree`). This behaviour
 can be adjusted by placing a `dune` file inside the rust project with
 contents:
 
 ```dune
 (dirs :standard .cargo)
 ```
-...which adds the `.cargo` directory to the default set of directories not ignore.
+...which adds the `.cargo` directory to the default set of directories to not ignore.
 
 I understand wanting to avoid copying some hidden directories, such as
 `.git` or `_build`. My issue with this UX is that if you're learning
@@ -521,7 +530,7 @@ issue in the future they can find help online.
 
 ### The obvious choice of package for reading `.wav` files crashes when reading `.wav` files
 
-I wanted to load drum samples from `.wav` files and decided to try out
+I wanted to load some audio samples from `.wav` files and decided to try out
 [ocaml-mm](https://github.com/savonet/ocaml-mm) which seemed like the
 obvious choice for working with media files. To learn its API I wrote
 some code that reads a `.wav` file and prints its sample rate:
@@ -573,8 +582,13 @@ Fatal error: exception Mm_audio.Audio.IO.Invalid_file
 ```
 
 At this point I gave up on `mm` and solved the problem in Rust
-instead. I extended my Rust library `low_level` to read `.wav` files
-using [hound](https://crates.io/crates/hound).
+instead. I developed the first version of my synthesizer library
+during a hackathon and didn't have time to debug `mm`. I'd
+already done the work to set up Rust interoperability for this project
+so it was very quick to extend my Rust library `low_level` to read
+`.wav` files using [hound](https://crates.io/crates/hound).
+
+This worked well except I ran into an issue copying the audio data from Rust to OCaml...
 
 ### Transferring an array of floats from Rust to OCaml produced a broken array (this is now fixed!)
 
@@ -619,7 +633,7 @@ I wanted a MIDI parser so I could [play other people's songs on my
 synth](https://www.youtube.com/watch?v=A8a1Dem2eKs) and I elected to
 write my own rather than chance the one in `ocaml-mm` (fool me once,
 etc). This turned out to be really interesting and I ended up
-publishing a [standalone library just for parsing midi
+publishing a [standalone library just for parsing MIDI
 data](https://ocaml.org/p/llama_midi/latest).
 
 MIDI encodes integers in a variable number of bytes with a special
@@ -674,14 +688,14 @@ Error: Library "ppx_inline_test" not found.
 The machine I was using didn't have the `ppx_inline_test` package
 installed but I wasn't trying to run my tests - just install the
 library. It turns out that packages that do pre-processing like
-`ppx_inline_test` cannot be marked as with-test; they must be
+`ppx_inline_test` cannot be marked as `with-test`; they must be
 unconditional dependencies. This is because preprocessor directives
 like `let%test` are not valid OCaml syntax, and the OCaml compiler is
 unable to parse the files until something has gone through and removed
 all the preprocessor directives.
 
 I was hesitant to make `ppx_inline_test` an unconditional dependency
-of my MIDI parsing library because it didn't have any
+of my MIDI parsing library because my library didn't have any
 dependencies. From a supply-chain security point of view and also in
 my endless pursuit of minimalism it seemed  shame to depend on
 `ppx_inline_test` unconditionally, since the transitive dependency
@@ -747,35 +761,325 @@ testing in OCaml and Dune, especially since security is one of the main selling
 points of OCaml. The lower the barrier for writing tests, the more
 tests people will write.
 
-### If some (but not all) of the interdependent packages in a project are released, Opam cannot automatically install the project's dependencies
 
 ### Dune can generate `.opam` files but requires a workaround for adding the `available` field
 
+My library only works on `x86_64` and `arm64` architectures, I think
+because of its Rust dependencies (I haven't really investigated this).
+OCaml is supported on many architectures, so to prevent llama from
+being installed on incompatible computers, I manually added this line the
+package manifest that I released to the Opam repository:
+
+```diff
+ ...
+ license: "MIT"
+ homepage: "https://github.com/gridbugs/llama"
+ bug-reports: "https://github.com/gridbugs/llama/issues"
++available: arch != "arm32" & arch != "ppc64" & arch != "s390x" & arch != "x86_32"
+ depends: [
+   "dune" {>= "3.0"}
+   "llama_core" {= version}
+ ...
+```
+
+Llama's Opam manifests are generated by Dune. The same metadata is present in its `dune-project` file as:
+
+```dune
+...
+(source (github gridbugs/llama))
+(license MIT)
+(package
+ (name llama)
+ (synopsis "Language for Live Audio Module Arrangement")
+ (description "Libraries for declaratively building software-defined modular synthesizers")
+ (depends
+  (llama_core (= :version))
+  ...
+```
+
+This looked to me like a one-to-one translation from the `dune-project` file to the Opam package manifest, so I assumed I could add an `available` field to the package's description like:
+
+```dune
+(package
+ (name llama)
+ (available (and (<> :arch arm32) (<> :arch ppc64) (<> :arch s390x) (<> :arch x86_32)))
+ ...
+```
+
+But this is not supported:
+
+```
+File "dune-project", line 31, characters 2-11:
+31 |  (available (and (<> :arch arm32) (<> :arch ppc64) (<> :arch s390x) (<> :arch x86_32)))
+Error: Unknown field available
+```
+
+I found this surprising as it really seemed like it was a one-to-one
+translation. It felt like Dune's UI had trained me to expect that it
+works a certain way, only then to reveal that it actually works a
+different way. The [docs for generating Opam
+files](https://dune.readthedocs.io/en/stable/howto/opam-file-generation.html)
+don't specify that the `available` field is supported and at first I
+thought it was just not yet implemented. There is a [github
+issue](https://github.com/ocaml/dune/issues/7059) to support
+additional fields, but from the discussion there it's apparent that the
+missing fields are omitted intentionally. There is a policy of not
+adding fields that are only used by Opam, and Dune doesn't currently
+have an analog of this feature.
+
+There is a workaround to add the `available` field to
+the generated Opam file using an "Opam Template". If I had read the
+[generating Opam files
+docs](https://dune.readthedocs.io/en/stable/howto/opam-file-generation.html)
+more carefully I would have noticed:
+
+> `(package)` stanzas do not support all opam fields or complete
+> syntax for dependency specifications. If the package you are
+> adapting requires this, keep the corresponding opam fields in a
+> `pkg.opam.template` file.
+
+So I just ended up making a `llama.opam.template` file with the contents:
+
+```
+available: arch != "arm32" & arch != "ppc64" & arch != "s390x" & arch != "x86_32"
+```
+
+
+### If some (but not all) of the interdependent packages in a project are released, Opam can't solve the project's dependencies
+
+I released my synthesizer library on Opam. It was made up of 3 packages:
+- `llama_core` defines the data types for representing audio streams and contains a library of sound effects and filters
+- `llama` lets you play audio streams through your speakers
+- `llama_interactive` lets you use your computer's keyboard and mouse to control the synthesizer
+
+There's also an unreleased package `llama_tests` that contains all the
+tests. As described above, tests are in a separate package to avoid
+adding unconditional testing dependencies to other packages.
+
+The MIDI decoder was originally part of `llama_core` but I wanted to
+split it out into a new package `llama_midi` since it's useful on its
+own outside of the context of the synthesizer library. I created the
+new package but didn't release it to the Opam repository right
+away. Around this time I tried setting up the project on a new
+computer, and this is when my problems started.
+
+Following the convention for OCaml projects, I put an Opam package manifest for each package in the project in the root directory of the project.
+
+```
+$ ls
+...
+llama.opam
+llama_core.opam
+llama_interactive.opam
+llama_midi.opam
+llama_tests.opam
+...
+```
+
+Opam supports running `opam install <dir>` which will install all the
+packages with package manifests in `<dir>`, along with all their
+dependencies. If you just want the dependencies and not the packages
+themselves you can pass `--deps-only`. To set up the project on my new
+computer, I thought the right thing to do would be running `opam
+install . --deps-only` from the root directory of the project.
+
+```
+$ opam install . --deps-only
+[ERROR] Package conflict!
+  * Missing dependency:
+    - llama_midi >= 0.0.1
+    no matching version
+
+No solution found, exiting
+```
+
+This was frustrating as `llama_midi.opam` was right there. Remember
+that `llama_midi` was a new package, and not yet released to the Opam
+repo. Maybe Opam was trying to find `llama_midi` in the Opam repo and
+failing because it's not released yet.
+
+Next I tried running `opam pin`. This does a similar thing to `opam
+install` except it associates local packages with the path to their
+source code on disk. This shouldn't be necessary in this case; I don't
+even want to install `llama_midi` - just the dependencies of my local
+packages. I tried it anyway:
+
+```
+$ opam pin .
+This will pin the following packages: llama, llama_core, llama_interactive,
+llama_midi, llama_tests. Continue? [Y/n] Y
+Processing  3/5: [llama: git] [llama_core: git] [llama_interactive: git]
+llama is now pinned to git+file:///.../llama#main (version 0.0.1)
+llama_core is now pinned to git+file:///.../llama#main (version 0.0.1)
+llama_interactive is now pinned to git+file:///.../llama#main (version 0.0.1)
+Package llama_midi does not exist, create as a NEW package? [Y/n] Y
+llama_midi is now pinned to git+file:///.../llama#main (version ~dev)
+Package llama_tests does not exist, create as a NEW package? [Y/n] Y
+llama_tests is now pinned to git+file:///.../llama#main (version ~dev)
+[ERROR] Package conflict!
+  * Missing dependency:
+    - llama_midi >= 0.0.1
+    no matching version
+
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+```
+
+Same error as before, only this time it happened to print the version
+number of each pinned package. Notice how for the three released
+packages it says `(version 0.0.1)` but for the unreleased `llama_midi`
+and `llama_tests` it says `(version ~dev)`. This tells me that Opam is
+trying to install `0.0.1` of all the released packages, and version
+`~dev` of the unreleased packages. `0.0.1` happens to be the version
+number I used when releasing `llama_core`, `llama`, and
+`llama_interactive`.
+
+Since the initial release, I split `llama_midi` out of `llama_core`,
+and made `llama_core` depend on the new `llama_midi` package. I want
+to keep the versions of all the llama packages tied together, so when
+one of the llama packages depends on another, I declare that
+dependency as:
+
+```
+# llama_core.opam
+...
+depends: [
+  "llama_midi" {= version}
+  ...
+]
+```
+
+The `{= version}` tells Opam that any given version of `llama_core`
+depends on the `llama_midi` package with the identical version
+number. And the error I'm seeing is because Opam is trying to install
+version `0.0.1` of `llama_core`, but since `llama_midi` has never been
+released, the only version Opam knows about is the synthetic version
+number `~dev`.
+
+But why was Opam installing version `0.0.1` of `llama_core` in the
+first place?  Unlike some (most?) other package managers, Opam package
+manifests don't contain the version number of the package they
+describe. The only place where package version numbers are recorded is
+as part of a directory name inside the Opam package repository, where
+manifests are stored in directories named like `<package>.<version>`
+([for
+example](https://github.com/ocaml/opam-repository/tree/master/packages/llama_core)
+`llama_core.0.0.1`).  My expectation was that since it's being
+installed as a local package from a local Opam package manifest file,
+`llama_core` would be given the version number `~dev`. The local
+package file is clearly being read because Opam is trying to respect
+the fact that `llama_core` now depends on `llama_midi`, but Opam is
+still using the version number of the released version of
+`llama_core`: `0.0.1`. That version number isn't stored anywhere in
+llama's git repo, so Opam must be using information from its package
+repository to choose this version number, and then it can't solve
+dependencies because there is no version of `llama_midi` with the same
+version number.
+
+So maybe I need to find a way to force Opam to install the
+local packages with the version number `~dev` rather than taking the
+version numbers from the package repository.
+
+I learnt that it's possible to override the version number of packages installed with `opam pin` by passing `--with-version`.
+I tried installing all the local packages with version number `sigh` as I was getting quite exasperated.
+
+```
+opam pin . --with-version sigh
+...
+#=== ERROR while compiling llama.sigh =========================================#
+# context     2.1.5 | macos/arm64 | ocaml-base-compiler.4.14.1 | pinned(git+file:///.../llama#main#06deea42efa6b84653be43529daf8aa08dc106
+68)
+# path        /.../_opam/.opam-switch/build/llama.sigh
+# command     ~/.opam/opam-init/hooks/sandbox.sh build dune build -p llama -j 7 @install
+# exit-code   1
+# env-file    ~/.opam/log/llama-60822-042f19.env
+# output-file ~/.opam/log/llama-60822-042f19.out
+### output ###
+# error: failed to get `anyhow` as a dependency of package `low_level v0.1.0 (.../_opam/.opam-switch/build/llama.sigh/_build/default/src
+/low-level/low-level-rust)`
+# [...]
+# Caused by:
+#   failed to query replaced source registry `crates-io`
+#
+# Caused by:
+#   download of config.json failed
+#
+# Caused by:
+#   failed to download from `https://index.crates.io/config.json`
+#
+# Caused by:
+#   [7] Couldn't connect to server (Failed to connect to index.crates.io port 443 a
+fter 0 ms: Couldn't connect to server)
+```
+
+That error is because the package `llama` contains some Rust
+code. Earlier in the post I described vendoring all of the Rust
+dependencies as they can't be downloaded when building the package
+with Opam, as Opam's build sandbox doesn't have internet access. This
+vendoring usually takes place in a build script that runs as a github
+action. I don't check in the vendored libraries as it would bloat the
+repo, and when developing locally with Dune there is no need to vendor
+them (Dune's build sandbox _does_ have internet access).
+
+Recall that I don't even want to install `llama` with Opam - I
+just want to install all the non-local dependencies of the local
+packages that make up my project. There may well be a way to do this
+but I couldn't find it and nobody I asked knew how to do it so I just
+ended up installing the dependencies by hand. Fortunately
+there were only a few.
+
+This was the point where I was really starting to question whether
+OCaml was the right tool for this project, and really any project I
+want to develop on my own time.  It's important to me that I can clone
+a project on a machine with OCaml installed on it and be up and
+running after a command or two, kind of like `npm install` or `cargo
+run` which in my experience tend to "just work".  The fact that it was
+such a headache to do something that I expected to be simple indicated
+to me that the philosophy underpinning the UX of Opam is really
+different from the way that I tend to approach software
+development. Fortunately this won't be a problem for much longer as
+Dune's package management features are quickly maturing and are
+designed with this use case in mind.
+
+
 ## The "Happy Path"
 
-I hear a lot that OCaml tooling works well when you keep to the "Happy
+I hear from a lot of OCaml developers that tooling works well when you keep to the "Happy
 Path" and I tend to agree with this. This refers to the case where all
 the code in your project is written in OCaml and you use the default
 configurations for everything. Lately I've been developing a [CLI
 parsing library](https://github.com/gridbugs/climate) in OCaml which
 sticks to the Happy Path. It's entirely written in OCaml, doesn't link
 with any external libraries, only depends on third-party packages for
-its tests and is available on all architectures. So far I haven't had
+its tests and is compatible with all architectures. So far I haven't had
 any issues with tooling, and even been pleasantly surprised a couple
 of times.
 
 Most of the negative experiences from this post happened when I
-strayed from the happy path into parts of the ecosystem that are less
-polished and battle tested, or that my assumptions ran contrary to
-those made by tools. If you find yourself struggling with the tools
-don't beat yourself up about it. Remember it's not you - it's
-the tools. Most OCaml users I know struggle. I clearly struggle. The
-tooling is always gradually improving and in most cases you can trick
-the tools into doing what you want.
+strayed from the Happy Path into parts of the ecosystem that are less
+polished and battle tested, or when my assumptions ran contrary to
+those made by tools.
 
 ## Conclusions
 
+This experience taught me that if you go into an OCaml project
+expecting the tools to "just work", you're probably going to have a
+bad time. Expect that the first few times you try to modify a Dune
+build configuration that the syntax will be incorrect, and once that's
+fixed expect the configuration to not do what you wanted
+in the first place, and the eventual solution will be a Rube Goldberg Machine. Expect third-party packages to be buggy and untested around
+edge-cases. Expect to get into confusing situations when using Opam to
+manage local packages that you're actively developing. And expect [yak
+shaves](https://en.wiktionary.org/wiki/yak_shaving) - so many times
+when one thing isn't working correctly I run into a second, unrelated
+issue while trying to resolve the first issue.
+
+Normalize complaining about this stuff so that new OCaml users can
+correctly set their expectations coming in and don't get a nasty shock
+the first time they leave the Happy Path. And if you find yourself
+struggling with the tools, don't beat yourself up about it. Most OCaml
+users struggle. I clearly struggle. Remember, it's not you - it's the
+tools.
+
 As for my synth library, due to the friction I experienced developing
 it in OCaml, and to avoid the future frustration I anticipated if I
-continued the project, I switched to Rust. The Rust rewrite is
-[here](https://github.com/gridbugs/caw).
+continued the project, [I rewrote it in Rust](https://github.com/gridbugs/caw).
