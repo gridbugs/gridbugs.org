@@ -1,7 +1,7 @@
 +++
-title = "OCaml Ecosystem Surprises"
+title = "Frustrating Interactions with the OCaml Ecosystem while developing a Synthesizer Library"
 date = 2024-09-05
-path = "ocaml-ecosystem-surprises"
+path = "frustrating-interactions-with-the-ocaml-ecosystem-while-developing-a-synthesizer-library"
 
 [taxonomies]
 tags = ["ocaml"]
