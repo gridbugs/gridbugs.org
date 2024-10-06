@@ -299,3 +299,12 @@ to increase the gain of the op-amp to be equal to the number of pins being
 combined. With a voltage forwarder the gain is 1 so its output is the (possibly
 weighted) mean
 of voltages rather than the (possibly weighted) sum of voltages.
+
+### Arduino Analog Pins
+
+The ADC can be configured to use an internal reference voltage by setting the
+`REFS0` and `REFS1` bits of the `ADMUX` register, avoiding the need to connect
+a reference voltage to the `AREF` pin. To use the supply voltage as the
+reference voltage, use the "AV CC with external capacitor at `AREF` pin" by
+setting `REFS0` and `REFS1` to 1 and 0 respectively. In this configuration,
+connect a 100nF capacitor between `AREF` and ground to reduce noise.
