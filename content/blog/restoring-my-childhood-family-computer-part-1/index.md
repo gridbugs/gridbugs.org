@@ -49,3 +49,5 @@ rust!) I might end up replacing the motherboard if it is indeed irreparable.
 
 That's all for now. The next step will be taking off the shell and inspecting
 the power supply.
+
+Part 2 is [here](@/blog/restoring-my-childhood-family-computer-part-2/index.md).
