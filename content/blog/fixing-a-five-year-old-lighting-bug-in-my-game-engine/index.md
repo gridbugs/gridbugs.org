@@ -19,7 +19,7 @@ There are two tasks the lighting system needs to do. The first is to determine
 which parts of the map are illuminated by each light. This is the same problem
 as detecting which parts of the map the player can see and is solved by a
 library I made called [shadowcast](https://github.com/gridbugs/shadowcast).
-This library knows how to combine which parts of the map are visible, and which
+This library knows how to compute which parts of the map are visible, and which
 parts of the map are lit by each light, and combine this information to
 determine what the player should see.
 
@@ -61,12 +61,13 @@ Well I did suspect something was wrong with it a couple of times. The brightness
 of the lights seemed to drop off with distance in an unnatural-looking way. Too
 slowly up to a point and then too quickly. I checked and double checked the
 maths and managed to convince myself that it was correct, and then I'd just
-compensate for it by messing with the brightness of the lights. Pretty much all
-the roguelike development I've done over the past five years has been in a game
-jam setting and I was always too busy with the jam to properly investigate. That
-is until this year's 7DRL when I finally sat down with a pen and paper and
-concluded once and for all that the maths was wrong and had been wrong this
-whole time, and when I fixed it my game went from looking like this:
+compensate for it by messing with the brightness of the lights in whatever game
+I was working on. Pretty much all the roguelike development I've done over the
+past five years has been in a game jam setting and I was always too busy with
+the jam to properly investigate. That is until this year's 7DRL when I finally
+relented and sat down with a pen and paper to conclude once and for all that
+the maths was wrong and had been wrong this whole time, and when I fixed it my
+game went from looking like this:
 
 ![Gameplay from the traditional roguelike "Electric Organ" from before this bug
 was fixed](electric-organ-bad.png)
