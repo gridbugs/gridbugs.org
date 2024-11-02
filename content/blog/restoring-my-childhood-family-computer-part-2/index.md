@@ -101,3 +101,5 @@ I was still a bit disappointed.
 I'm betting that the motherboard is the main source of the problem. By which I
 mean I've spent money on a replacement I found on ebay. When it arrives I'll
 post again about trying it out.
+
+Part 3 is [here](@/blog/restoring-my-childhood-family-computer-part-3/index.md).
