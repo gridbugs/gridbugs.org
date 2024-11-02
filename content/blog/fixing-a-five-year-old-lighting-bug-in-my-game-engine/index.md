@@ -1,8 +1,7 @@
 +++
 title = "Fixing a Five Year Old Lighting Bug in my Game Engine"
-date = 2024-10-31
+date = 2024-11-04
 path = "fixing-a-five-year-old-lighting-bug-in-my-game-engine"
-draft = true
 
 [taxonomies]
 tags = ["gamedev", "lighting", "roguelikes"]
@@ -89,3 +88,13 @@ history of how this code was written and to try to understand why I implemented 
 of arithmetic incorrectly, and why the bug was so hard to spot from looking at
 the code. I'll also backport the fix to all the games I've made since 2019 that
 suffer from this bug and share some before and after pics.
+
+## The Inverse Square Rule
+
+![](plot1.png)
+![](plot2.png)
+![](plot3.png)
+![](plot5.png)
+![](plot4.png)
+![](plot6.png)
+![](plot7.png)
