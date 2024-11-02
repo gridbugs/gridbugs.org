@@ -7,6 +7,8 @@ path = "restoring-my-childhood-family-computer-part-3"
 tags = ["retrocomputing", "electronics"]
 +++
 
+![Close-up of the logo on the front of my Macintosh LC575](banner.jpg)
+
 In [Part 2](@/blog/restoring-my-childhood-family-computer-part-1/index.md) I
 inspected the power supply and cleaned out a bunch of wasp nests from the
 circuitry. I concluded that the power supply for the CRT seems to work and
