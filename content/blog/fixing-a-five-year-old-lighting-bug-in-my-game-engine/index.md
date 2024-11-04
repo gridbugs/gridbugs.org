@@ -2,6 +2,7 @@
 title = "Fixing a Five Year Old Lighting Bug in my Game Engine"
 date = 2024-11-04
 path = "fixing-a-five-year-old-lighting-bug-in-my-game-engine"
+draft = true
 
 [taxonomies]
 tags = ["gamedev", "lighting", "roguelikes"]
