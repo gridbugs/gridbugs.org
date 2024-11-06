@@ -118,20 +118,114 @@ drops off approaching 0 as the distance increases.
 
 I wanted a way of slowing down the rate with which the light diminishes so that
 it spreads out over a larger area so I added a parameter `C` which can be used
-to tune the rate with which the light diminishes, effectively stretching out the
+to tune the light diminishing rate, effectively stretching out the
 curve horizontally.
 
-![A plot of y=1/max(d², 1), where y is Light Intensity and d = Distance](plot3.png)
+![A plot of y=1/(C × max(d², 1)), where y is Light Intensity and d = Distance](plot3.png)
 
 And this was the bug. I didn't account for the fact that stretching out the
 curve horizontally would also stretch it _vertically_. Assuming the colour of
 the light is white, this will effectively clip the curve at y=1, causing
 saturation:
 
-![](plot4.png)
+![A plot of y=min(1, 1/(C × max(d², 1))), where y is Light Intensity and d = Distance](plot4.png)
 
 Visualizing with a heatmap, this has the effect of creating a large bright spot
 in the saturated region which then quickly drops off outside that region which
-matches the original symptom of this bug.
+matches the original symptom of the bug.
 
-![](map2.png)
+![A heatmap of min(1, 1/(C × max(d², 1))), where d is the distance from the
+centre and C=0.1](map2.png)
+
+My first thought for how to fix this would be stop flattening the curve below a
+distance of 1, but instead ensure that the function is defined at a distance of
+0 by _shifting_ the entire curve to the left such that it has a value of 1 at a
+distance of 0.
+
+I switched to the formula `1 / (Cd² + 1)`. Like before, `C` can be used to
+control how quickly the light diminishes. I didn't realize at the time that I
+made this change (remember I was mid game jam!) but this function changes the
+shape of the curve to be less steep around a distance of 0 as is clear in the
+following plot.
+
+![A plot of y=1/(Cd² + 1), where y is Light Intensity and d = Distance](plot5.png)
+
+Here's the new heatmap:
+
+![A heatmap of 1/(Cd² + 1), where d is the distance from the centre and
+C=0.1](map3.png)
+
+I didn't find out until revisiting the lighting maths while writing this post,
+but the shape of these curves is actually physically accurate, and I had stumbled
+upon the formula for the intensity of the light on the ground a horizontal
+distance from a light, at a fixed height. The `C` parameter controls the height
+of the light, with `C = 1/height²`.
+
+To demonstrate imagine we have a light `H` distance above the ground, and we're
+interested in finding the light intensity at a point `p` with a horizontal
+distance of `d` from the light.
+
+![Diagram showing a light `H` units above the ground, and a point `p` with a
+horizontal distance `d` from the light. A line connecting the light to `P` forms
+the hypotenuse of a triangle, labelled with `sqrt(d² + H²)`.](pythag.jpg)
+
+The line from `p` to the light is the hypotenuse of a right triangle, so the
+distance from `p` to the light is `sqrt(d² + H²)`. Now according to the inverse
+square law, the intensity of the light at `p` is proportional to `1/sqrt(d² + H²)² = 1/(d² + H²)`.
+When `d=0`, this will have the value of `1/H²` (the distance is just the height
+of the light above the ground). To match the rest of the post I'd rather the
+intensity be 1 at `d=0` so multiply the formula by `H²` to get `H²/(d² + H²)`.
+Now divide the top and bottom of this fraction by `H²` to get `1/(d²/H² + 1)`
+which is the same as `1/(Cd² + 1)` where `C = 1/H²`.
+
+The formula above was good enough for the game jam, but while working on this
+post I wanted to take things a step further. My solution was physically accurate
+for lights a given distance above the ground that shine uniformly in all
+directions, but sometimes the effect of these lights on the ground looks too
+unfocused. Occasionally I want a sharp point of light that radiates out in all
+directions, diminishing at a configurable rate. `1/d²` has the shape I want
+but it's not defined at 0, however `1/(d + 1)²` has the same shape but is
+shifted to the left such that it has the value 1 at `d=0`. To control the rate of
+diminishing, multiply `d` by the parameter `C` as before:
+
+
+![A plot of y=1/(Cd + 1)², where y is Light Intensity and d = Distance](plot6.png)
+
+The heatmap shows a much more focused point of light compared to the previous
+formula:
+
+![A heatmap of 1/(Cd + 1)², where d is the distance from the centre and C=0.1](map4.png)
+
+The final step is to combine the two different lighting formulae into a single
+formula and add a second parameter for interpolating between them.
+
+Recall that the unfocused lighting formula is `1/(d²/H² + 1)` and the focused
+formula is `1/(Cd + 1)²`. Start with the denominator of the focused formula: `(Cd + 1)²,`.
+This is equivalent to `C²d² + 2Cd + 1`, so the focused formula becomes `1/(C²d² + 2Cd + 1)`.
+Now if we replace the constant `C` with the constant expression `1/H`, the
+second formula becomes `1/(d²/H² + 2d/H + 1)` which is very similar to the
+unfocused lighting formula. The only difference is the `2d/H` term in the
+denominator. We can introduce a new parameter `F` (for "focus") and multiply it
+by that term, and then we'll be able to smoothly interpolate between the
+unfocused and focused lighting formulae by changing `F` between 0 and 1.
+The formula becomes `1/(d²/H² + 2Fd/H + 1)`, which can be made more readable by
+multiplying the top and bottom by `H²` to get `H²/(d² + 2FHd + H²)`.
+
+![A plot of y=H²/(d² + 2FHd + H²), where y is Light Intensity and d = Distance](plot7.png)
+
+So now we can use a single formula to represent both focused and unfocused
+lights, as well as everything in between.
+
+Here's a heatmap of a totally unfocused light:
+
+![A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=0](map5.png)
+
+Here's a heatmap of a partially focused light:
+
+![A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=0.5](map6.png)
+
+And here's a heatmap of a focused light:
+
+![A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=1](map7.png)
+
+## Applying the fix to existing games
