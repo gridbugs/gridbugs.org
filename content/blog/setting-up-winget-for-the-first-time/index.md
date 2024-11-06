@@ -1,7 +1,7 @@
 +++
 title = "Setting up WinGet for the First Time"
 date = 2024-11-04
-path = "fixing-a-five-year-old-lighting-bug-in-my-game-engine"
+path = "setting-up-winget-for-the-first-time"
 
 [taxonomies]
 tags = ["windows", "security"]

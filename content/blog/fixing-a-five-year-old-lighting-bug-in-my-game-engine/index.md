@@ -84,18 +84,54 @@ was crucial to the visuals I was trying to create, with
 lots of dark places and flickering fire light and it's important that the
 dynamic changes to the lighting were accurately reflected in the environment.
 
-So now that the bug is fixed I thought it might be interesting to dig through the
-history of how this code was written and to try to understand why I implemented such a simple piece
-of arithmetic incorrectly, and why the bug was so hard to spot from looking at
-the code. I'll also backport the fix to all the games I've made since 2019 that
-suffer from this bug and share some before and after pics.
+So now that the bug is fixed I thought it might be interesting to dig through
+the history of how this code was written and to try to understand why I
+implemented such a simple piece of arithmetic incorrectly, and how to fix it.
+I'll also backport the fix to all the games I've made since 2019 that suffer
+from this bug and share some before and after pics.
 
 ## The Inverse Square Rule
 
-![](plot1.png)
-![](plot2.png)
-![](plot3.png)
-![](plot5.png)
+The intensity of a light at a point is proportional to the inverse of the
+square of the distance from the light source to that point. The easiest way to
+implement diminishing lighting is to multiply the red, green and blue components
+of the light colour by `1 / distance²`.
+
+![A plot of y=1/d², where y is Light Intensity and d = Distance](plot1.png)
+
+The first issue with this is that the function is not defined at a distance of
+0. Since this lighting system is for games rendered as a grid of tiles, the
+shortest possible distance between a light's tile and any other tile is 1. Thus
+my original solution was to limit the distance to the light to 1 in lighting
+calculations.
+
+![A plot of y=1/max(d², 1), where y is Light Intensity and d = Distance](plot2.png)
+
+Now that this function is defined at all distances we can visualize it by
+plotting the function on a heatmap:
+
+![A heatmap of 1/max(d², 1) where d is the distance from the centre](map1.png)
+
+On the heatmap there's a solid circle with radius 1 corresponding to the flat
+part of the function below a distance of 1, and then the brightness quickly
+drops off approaching 0 as the distance increases.
+
+I wanted a way of slowing down the rate with which the light diminishes so that
+it spreads out over a larger area so I added a parameter `C` which can be used
+to tune the rate with which the light diminishes, effectively stretching out the
+curve horizontally.
+
+![A plot of y=1/max(d², 1), where y is Light Intensity and d = Distance](plot3.png)
+
+And this was the bug. I didn't account for the fact that stretching out the
+curve horizontally would also stretch it _vertically_. Assuming the colour of
+the light is white, this will effectively clip the curve at y=1, causing
+saturation:
+
 ![](plot4.png)
-![](plot6.png)
-![](plot7.png)
+
+Visualizing with a heatmap, this has the effect of creating a large bright spot
+in the saturated region which then quickly drops off outside that region which
+matches the original symptom of this bug.
+
+![](map2.png)
