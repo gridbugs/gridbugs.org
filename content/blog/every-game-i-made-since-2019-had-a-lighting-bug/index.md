@@ -17,6 +17,9 @@ Skip head:
 - [Fixing all my games (with side-by-side comparisons)](#fixing-all-my-games)
   - [Rip](#rip)
   - [slime99](#slime99)
+  - [Orbital Decay](#orbital-decay)
+  - [Rain Forest](#rain-forest)
+  - [Electric Organ](#electric-organ)
 
 In late 2019 I returned to Australia after living abroad for two years and had
 a few months to myself before starting my next job. I spent some of this
@@ -36,8 +39,9 @@ determine what the player should see.
 
 For example this screenshot shows a player (the @-sign) standing in a room lit with white
 light, and to their south there is a doorway leading into a room lit with red
-light. Note the wall to their right is illuminated with white light, as the
-player can see the side of the wall facing the white light.
+light. Note the wall to the player's right is illuminated with white light, as the
+player can see the side of the wall facing the white light but not the side of
+the wall facing the red light.
 
 ![A square grid map showing the player in a room lit with white light next to a
 doorway leading south into a second room lit with red light](shadowcast-demo1.png)
@@ -103,9 +107,10 @@ from this bug and share some before and after pics.
 ## The bug
 
 The intensity of a light at a point is proportional to the inverse of the
-square of the distance from the light source to that point. The easiest way to
+square of the distance from the light source to that point. This is known as
+the [Inverse-square law](https://en.wikipedia.org/wiki/Inverse-square_law). The easiest way to
 implement diminishing lighting is to multiply the red, green and blue components
-of the light colour by `1 / distance²`.
+of the light's colour by `1 / distance²`.
 
 ![A plot of y=1/d², where y is Light Intensity and d = Distance](plot1.png)
 
@@ -180,8 +185,8 @@ horizontal distance `d` from the light. A line connecting the light to `P` forms
 the hypotenuse of a triangle, labelled with `sqrt(d² + H²)`.](pythag.jpg)
 
 The line from `p` to the light is the hypotenuse of a right triangle, so the
-distance from `p` to the light is `sqrt(d² + H²)`. Now according to the inverse
-square law, the intensity of the light at `p` is proportional to `1/sqrt(d² + H²)² = 1/(d² + H²)`.
+distance from `p` to the light is `sqrt(d² + H²)`. Now according to the 
+Inverse-square law, the intensity of the light at `p` is proportional to `1/sqrt(d² + H²)² = 1/(d² + H²)`.
 When `d=0`, this will have the value of `1/H²` (the distance is just the height
 of the light above the ground). To match the rest of the post I'd rather the
 intensity be 1 at `d=0` so multiply the formula by `H²` to get `H²/(d² + H²)`.
@@ -189,14 +194,14 @@ Now divide the top and bottom of this fraction by `H²` to get `1/(d²/H² + 1)`
 which is the same as `1/(Cd² + 1)` where `C = 1/H²`.
 
 The formula above was good enough for the game jam, but while working on this
-post I wanted to take things a step further. My solution was physically accurate
+post I wanted to take things a step further. My solution so far is physically accurate
 for lights a given distance above the ground that shine uniformly in all
 directions, but sometimes the effect of these lights on the ground looks too
 unfocused. Occasionally I want a sharp point of light that radiates out in all
 directions, diminishing at a configurable rate. `1/d²` has the shape I want
 but it's not defined at 0, however `1/(d + 1)²` has the same shape but is
 shifted to the left such that it has the value 1 at `d=0`. To control the rate of
-diminishing, multiply `d` by the parameter `C` as before:
+diminishing, multiply `d` by a constant parameter `C` as before:
 
 
 ![A plot of y=1/(Cd + 1)², where y is Light Intensity and d = Distance](plot6.png)
@@ -254,8 +259,8 @@ gradient.
 
 ### slime99
 
-slime99 was my 7DRL entry in 2020. [Here](@/projects/slime99/index.md)'s its
-project page. The game has lots of glowing green acid pools whose brightness
+[slime99](@/projects/slime99/index.md) was my 7DRL entry in 2020.
+The game has lots of glowing green acid pools whose brightness
 dynamically changes in realtime but the effect was kind of lost until this
 lighting bug was fixed.
 
@@ -264,6 +269,57 @@ lighting bug was fixed.
 
 ### Orbital Decay
 
-{{ video_player_mp4_autoplay_loop(src="orbital-decay-old-lighting2.mp4") }}
-{{ video_player_mp4_autoplay_loop(src="orbital-decay-new-lighting2.mp4") }}
+[Orbital Decay](@/projects/orbital-decay/index.md) was my 7DRL entry in 2021.
+This game didn't
+do as much with lighting as the previous game but fixing the bug caused the
+lighting gradients to become more apparent.
 
+{{ video_player_mp4_autoplay_loop(src="orbital-decay-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="orbital-decay-new-lighting.mp4") }}
+
+### Rain Forest
+
+[Rain Forest](@/projects/rain-forest/index.md) was my 7DRL entry in 2022.
+This game didn't have a lot of gameplay and was more of an exercise in using
+visuals to set the mood than an actual game. Still it's very pretty and fixing
+the lighting makes it even prettier, softening up the edges on the pools of
+light.
+
+{{ video_player_mp4_autoplay_loop(src="rainforest1-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="rainforest1-new-lighting.mp4") }}
+
+Here's another comparison from Rain Forest. After fixing the lighting the door
+of the cabin now casts a shadow, where its shadow was washed out by the
+over-saturated lights in the original version.
+
+{{ video_player_mp4_autoplay_loop(src="rainforest2-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="rainforest2-new-lighting.mp4") }}
+
+(We skipped 2023 as that year's game doesn't use the lighting system.)
+
+### Electric Organ
+
+[Electric Organ](@/projects/electric-organ/index.md) was my 7DRL in 2024.
+I fixed the lighting bug while working on it, so it didn't actually have this
+bug. I re-introduced the bug for the purposes of comparison, but the effect is
+very subtle. The corrected version is slightly darker and the lighting gradients
+are more apparent. For the games made before the bug was fixed, the lights were
+configured to be darker than the lights in this game to compensate for the lighting bug
+which caused the lights to be oversaturated near the light source. Electric
+Organ didn't need to compensate in this way. Its lights are naturally
+brighter, so the effect of re-introducing the bug is less pronounced.
+
+{{ video_player_mp4_autoplay_loop(src="electric-organ-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="electric-organ-new-lighting.mp4") }}
+
+I'm not going to re-release any of the fixed games. This is partly because they
+were playtested on the buggy lighting system and fixing it may cause some parts
+of the games to be too dark or not look the way I originally intended. Also in
+making this post I found that the graphical and web versions of the older games
+(especially Rip and slime99) had bitrotted quite badly. The Rust libraries for
+rendering with WebGPU and for working with WebAssembly were in a very
+experimental state back in 2019, and even with lockfiles it's
+non-trivial to get some Rust libraries from over 5 years ago to play nice with the current
+versions of drivers and system libraries, at least on Linux. I got them running
+on MacOS though, and all the relevant git repos now have a `lighting-fix` branch
+so curious and determined folks can try them out.
