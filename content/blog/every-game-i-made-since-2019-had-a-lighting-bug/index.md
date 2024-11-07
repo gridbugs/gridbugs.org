@@ -2,7 +2,6 @@
 title = "Every Game I Made Since 2019 had a Lighting Bug"
 date = 2024-11-07
 path = "every-game-i-made-since-2019-had-a-lighting-bug"
-draft = true
 
 [taxonomies]
 tags = ["gamedev", "lighting", "roguelikes"]
