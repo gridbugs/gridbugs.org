@@ -1,7 +1,7 @@
 +++
-title = "Fixing a Five Year Old Lighting Bug in my Game Engine"
-date = 2024-11-04
-path = "fixing-a-five-year-old-lighting-bug-in-my-game-engine"
+title = "Every Game I Made Since 2019 had a Lighting Bug"
+date = 2024-11-07
+path = "every-game-i-made-since-2019-had-a-lighting-bug"
 draft = true
 
 [taxonomies]
