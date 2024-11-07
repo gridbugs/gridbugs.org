@@ -2,16 +2,23 @@
 title = "Every Game I Made Since 2019 had a Lighting Bug"
 date = 2024-11-07
 path = "every-game-i-made-since-2019-had-a-lighting-bug"
+description = "I've used the same game engine for all the roguelikes I've made since 2019 and I found out this year that they are all affected by a bug in the way lighting is calculated. This post describes the bug, the fix, and shows the effect fixing the bug had on all the affected games."
+
 
 [taxonomies]
 tags = ["gamedev", "lighting", "roguelikes"]
 
 [extra]
 og_image = "og_image.png"
+
 +++
 ![Banner from a screenshot from the game Rain Forest showing a lamp in some fog](banner.jpg)
 
-Skip head:
+I've used the same game engine for all the roguelikes I've made since 2019 and I
+found out this year that they are all affected by a bug in the way lighting is
+calculated. This post describes the bug, the fix, and shows the effect fixing the
+bug had on all the affected games.
+
 - [The bug](#the-bug)
 - [Fixing all my games (with side-by-side comparisons)](#fixing-all-my-games)
   - [Rip](#rip)
@@ -19,6 +26,7 @@ Skip head:
   - [Orbital Decay](#orbital-decay)
   - [Rain Forest](#rain-forest)
   - [Electric Organ](#electric-organ)
+  - [Small Wolf](#small-wolf)
 
 In late 2019 I returned to Australia after living abroad for two years and had
 a few months to myself before starting my next job. I spent some of this
@@ -310,6 +318,20 @@ brighter, so the effect of re-introducing the bug is less pronounced.
 
 {{ video_player_mp4_autoplay_loop(src="electric-organ-old-lighting.mp4") }}
 {{ video_player_mp4_autoplay_loop(src="electric-organ-new-lighting.mp4") }}
+
+### Small Wolf
+
+This bug also appears in another [small
+project](https://github.com/gridbugs/small-wolf/) I did a few years ago where I
+recreated a simple version of the Wolfenstein 3D render in javascript.
+Originally the brightness of the walls would get saturated at the max and min
+brightness causing the gradients to be lost, ruining the 3D effect. I fixed that
+while I was at it and it now looks much better.
+
+{{ video_player_mp4_autoplay_loop(src="small-wolf-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="small-wolf-new-lighting.mp4") }}
+
+## Conclusion
 
 I'm not going to re-release any of the fixed games. This is partly because they
 were playtested on the buggy lighting system and fixing it may cause some parts
