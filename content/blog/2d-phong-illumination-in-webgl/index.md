@@ -27,7 +27,7 @@ relevant to lighting. These maps correspond pixel by pixel to the texture being
 drawn onto the surface, and are used when shading fragments (pixels) to
 determine exactly how light should behave.
 
-A demo that uses this technique is [here](https://www.gridbugs.org/2d-phong-illumination-in-webgl/).
+A demo that uses this technique is [here](https://games.gridbugs.org/old-webgl-shader-demos/tiles/).
 
 For the tiles demo, I use two maps. The __bump map__ stores the surface normal
 (vector at right angle to the surface at a point)

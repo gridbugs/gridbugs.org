@@ -6,7 +6,17 @@ draft = true
 
 [taxonomies]
 tags = ["gamedev", "lighting", "roguelikes"]
+
+[extra]
+og_image = "og_image.png"
 +++
+![Banner from a screenshot from the game Rain Forest showing a lamp in some fog](banner.jpg)
+
+Skip head:
+- [The bug](#the-bug)
+- [Fixing all my games (with side-by-side comparisons)](#fixing-all-my-games)
+  - [Rip](#rip)
+  - [slime99](#slime99)
 
 In late 2019 I returned to Australia after living abroad for two years and had
 a few months to myself before starting my next job. I spent some of this
@@ -90,7 +100,7 @@ implemented such a simple piece of arithmetic incorrectly, and how to fix it.
 I'll also backport the fix to all the games I've made since 2019 that suffer
 from this bug and share some before and after pics.
 
-## The Inverse Square Rule
+## The bug
 
 The intensity of a light at a point is proportional to the inverse of the
 square of the distance from the light source to that point. The easiest way to
@@ -228,4 +238,32 @@ And here's a heatmap of a focused light:
 
 ![A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=1](map7.png)
 
-## Applying the fix to existing games
+## Fixing all my games
+
+### Rip
+
+Rip was the project I was working on when I implemented the lighting system and
+most of the rest of my roguelike game engine. It wasn't really a game, just a
+collection of demos of different engine components such as the particle system
+used to implement the explosions in the videos below. The video on the right has
+the lighting bug corrected. The lighting is softer and there's more of a
+gradient.
+
+{{ video_player_mp4_autoplay_loop(src="rip-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="rip-new-lighting.mp4") }}
+
+### slime99
+
+slime99 was my 7DRL entry in 2020. [Here](@/projects/slime99/index.md)'s its
+project page. The game has lots of glowing green acid pools whose brightness
+dynamically changes in realtime but the effect was kind of lost until this
+lighting bug was fixed.
+
+{{ video_player_mp4_autoplay_loop(src="slime99-old-lighting.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="slime99-new-lighting.mp4") }}
+
+### Orbital Decay
+
+{{ video_player_mp4_autoplay_loop(src="orbital-decay-old-lighting2.mp4") }}
+{{ video_player_mp4_autoplay_loop(src="orbital-decay-new-lighting2.mp4") }}
+
