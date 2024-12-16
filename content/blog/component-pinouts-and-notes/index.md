@@ -308,3 +308,15 @@ a reference voltage to the `AREF` pin. To use the supply voltage as the
 reference voltage, use the "AV CC with external capacitor at `AREF` pin" by
 setting `REFS0` and `REFS1` to 1 and 0 respectively. In this configuration,
 connect a 100nF capacitor between `AREF` and ground to reduce noise.
+
+## IRF3205 MOSFET in TO-220 package
+
+The IRF3205 is an N-Channel MOSFET.
+
+Facing the front of the component (ie. the text is visible) with the pins pointing downwards, the pinout from left to right is:
+
+1. Gate
+2. Drain
+3. Source
+
+![Photo of an IRF3205 MOSFET with the pins labeled from left to right: "1: Gate", "2: Drain", "3: Source", and an overlay with text "IRF3205 N-Channel MOSFET"](irf3205.jpg)
