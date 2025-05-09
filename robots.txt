@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+Allow: /
+Sitemap: https://gridbugs.github.io/gridbugs.org/sitemap.xml
