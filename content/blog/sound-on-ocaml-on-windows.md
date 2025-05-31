@@ -16,19 +16,22 @@ and development experience. I've written down some of my complaints about
 the developer experience working on llama in a [previous
 post](@/blog/frustrating-interactions-with-the-ocaml-ecosystem-while-developing-a-synthesizer-library/index.md)
 and some of those difficulties came from complications working with Rust/OCaml
-interop.
+interop, so removing all Rust from the project will help reduce friction
+developing it further.
 
 I have a proof-of-concept version of llama based on [OCaml's libao
 bindings](https://opam.ocaml.org/packages/ao/) which works on Linux and MacOS.
 Libao claims to support Windows but I haven't figured out how to install it on
 Windows so I might experiment with some alternatives in this post.
 
+The intention of this post is to serve as a guide to anyone getting started with
+OCaml on Windows, to highlight some of the remaining problems with the OCaml ecosystem on
+Windows, and to demonstrate some usability issues with Opam.
 
 ## Install Opam
 
 For the purposes of this post I'll set up an entire OCaml environment on Windows
-from scratch. I'll use PowerShell 7.5.1 as my shell for this post and try to use
-as many recommended settings as possible.
+from scratch. I'll be using PowerShell 7.5.1 for all shell commands in this post.
 
 We'll install Opam with WinGet. I've had some difficulty setting up WinGet in
 the past and written about setting it up properly in a [previous
@@ -52,10 +55,11 @@ How should opam obtain Unix tools?
 Allowing Opam to manage its own Cygwin installation results Cygwin being
 installed to `C:\Users\s\AppData\Local\opam\.cygwin`. This might come in handy
 to know if we ever need to manually install a Cygwin package, though hopefully
-Opam can take care of installing any packages via `depexts`.
+Opam can take care of installing any such packages via Opam's `depexts` system.
 
 Bear in mind that Opam's initialization can take 15 minutes or so on Windows
-with most of the time spent building the OCaml compiler.
+with most of the time spent building the OCaml compiler. Go make a coffee. Trust
+me.
 
 
 ## Install a sound library
@@ -187,12 +191,12 @@ depexts     ["pkg-config"] {os-family = "debian" | os-family = "ubuntu"}
 
 So it stands to reason that my initial concerns about cygwinports were merited.
 
-The second issue is that even though Opam install `pkgconf` with Cygwin, the
+The second issue is that even though Opam installed `pkgconf` with Cygwin, the
 `pkg-config` executable couldn't be found while installing the `conf-portaudio`
 package. Remember earlier we located the Cygwin installation that Opam will be
-managing. Looking in `C:\Users\s\AppData\Local\opam\.cygwin\root\bin`, and there
-is a program `pkgconf.exe`, but not a `pkg-config.exe`. It looks like at some
-point `pkg-config` was renamed to `pkgconf` and this change is slowly trickling
+managing? Looking in `C:\Users\s\AppData\Local\opam\.cygwin\root\bin`, there
+is a program `pkgconf.exe`, but not a `pkg-config.exe`. At some
+point in the past few years `pkg-config` was renamed to `pkgconf` and this change is slowly trickling
 into different package managers at different rates.
 
 The first thing to try here is modifying the package metadata for
@@ -1168,7 +1172,7 @@ to run an example:
 Honestly that was easier than I thought it would be. I'm really happy that I
 didn't need to manually install libao and that Msys2/Opam could take care of
 installing it and all the other system dependencies needed to build the synth
-library and to access the soundcard.
+library and to access the sound card.
 
 Most of what went wrong during this process could conceivably be called "user
 error" though the fact that I have 5 years of OCaml programming behind me
