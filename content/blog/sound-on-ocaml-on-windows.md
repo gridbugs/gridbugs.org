@@ -68,7 +68,7 @@ Now we need to choose a library in the Opam repository that can give us access
 to the sound card. Ideally we would use a library with a depext tailored to
 Windows, as that way Opam can take care of installing any system dependencies
 via Cygwin. I've already started implementing llama on top of libao, but its
-depexts don't look promising:
+`depexts` don't look promising:
 ```
 PS C:\Users\s> opam show conf-ao
 ...
@@ -176,9 +176,9 @@ A few things have gone wrong here. Firstly, from:
 The following system packages will first need to be installed:
     pkgconf
 ```
-...we can see that Opam has detected that some depexts need to be installed, but
+...we can see that Opam has detected that some `depexts` need to be installed, but
 only `pkgconf` and not `portaudio` are on the list. To help understand why, look
-at the depexts of the `conf-pkg-config` package:
+at the `depexts` of the `conf-pkg-config` package:
 ```
 PS C:\Users\s> opam show conf-pkg-config
 ...
@@ -216,14 +216,14 @@ This command hung with `Processing 1/1: [conf-portaudio.1: rsync]` so I left it
 running while I went to run some errands and when I got back it was still hung.
 
 I cancelled the hung operation. Despite not completing it did have the side
-effect of creating an Opam "pin" for the `conf-portaudio` package, as evidenced
-by:
+effect of creating an Opam "pin" for the `conf-portaudio` package.
+An Opam pin is a configuration to override the source of a package, usually to allow for local development of a package. We can see all the current Opam pins with:
 ```
 PS C:\Users\s> opam pin list
 conf-portaudio.1  (uninstalled)  rsync  file://C:/Users/s
 ```
 
-Before proceeding I wanted to undo the pin:
+Before proceeding I wanted to remove the pin, since something has clearly gone wrong:
 ```
 PS C:\Users\s> opam pin remove conf-portaudio
 Cannot remove C:\Users\s\AppData\Local\opam\default\.opam-switch\sources\conf-portaudio\
@@ -237,7 +237,10 @@ Application Data\Application Data\Application Data\Application Data\Application 
 Temporary Internet Files: No such file or directory).
 ```
 
-Hmm. The `Application Data\Application Data\Application Data` component of the path looks suspicious. Digging deeper:
+Hmm. The `Application Data\Application Data\Application Data` component of the path looks suspicious.
+Opam creates a copy of the package (or maybe a symlink in some cases?), so let's take a look inside
+`C:\Users\s\AppData\Local\opam\default\.opam-switch\sources\conf-portaudio`:
+
 ```
 PS C:\Users\s> ls .\AppData\Local\opam\default\.opam-switch\sources\conf-portaudio\
 
@@ -263,7 +266,7 @@ d----          29/05/2025    16:03                AppData
 ```
 
 Yeh that's my home directory. It appears I unwittingly pinned the
-`conf-portaudio` package to my entire home directory, and since opam installs
+`conf-portaudio` package to my entire home directory, and since Opam installs
 packages _inside_ my home directory it was recurring forever, continuously
 copying my home directory inside itself. No wonder it hung.
 
@@ -287,11 +290,20 @@ PS C:\Users\s> opam pin remove conf-portaudio
 Ok, conf-portaudio is no longer pinned to file://C:/Users/s (version 1)
 ```
 
-Now let's try again, but this time from a new directory with only the
-`conf-portaudio.opam` file. I copied it to a new folder and modified its build
-command to run `pkgconf` rather than `pkg-config`. Rather than installing it
-directly, I'll explicitly pin it first to test that my local change has had an
-effect:
+What I've learnt here is that you don't pin individual files, but rather the
+directory that contains them. A pin is a mapping from package to directory, and when
+you run `opam pin .\foo.opam` Opam learns the package name is `foo` from the
+name of the file (I think), but assumes the directory is `.`. Most Opam package
+source directories contain a .opam file and the source code for the package.
+What's unusual in this case is that the `conf-portaudio` package does not have source
+code. We say it's a "metapackage" as installing it just installs its dependencies
+(including external dependencies) and runs a command to verify their installation.
+So in order to pin `conf-portaudio` we need to first create a new directory and
+move the .opam file there.
+
+Pinning the directory is sufficient as Opam will scan the directory for any .opam files
+and create pins for each corresponding package using the current directory as the source.
+I've also modified the .opam file to run `pkgconf` rather than `pkg-config`.
 ```
 PS C:\Users\s\conf-portaudio> opam pin .
 [NOTE] Package conf-portaudio is already pinned to file://C:/Users/s/conf-portaudio (version 1).
@@ -305,9 +317,12 @@ Proceed with ∗ 1 installation? [y/n] n   (don't want to install it just yet)
 [NOTE] Pinning command successful, but your installed packages may be out of sync.
 ```
 
-This created an Opam "pin" which stores some state somewhere instructing Opam to
-use my custom version of the `conf-portaudio` package. To test that this worked,
-run:
+By default `opam pin` will prompt to install the pinned package in addition to just storing
+the package -> directory mapping, but I just want to create the mapping for now so I
+chose `n` at the prompt. Before installing the package I want to make sure that
+pinning it had the desired effect. Ask Opam what it thinks should be the package metadata
+for `conf-portaudio` now:
+
 ```
 PS C:\Users\s\conf-portaudio> opam show conf-portaudio --raw
 opam-version: "2.0"
@@ -379,16 +394,18 @@ The following actions will be performed:
 
 That's progress! There's now an error message indicating that `pkgconf --exists
 portaudio-2.0` failed, which is expected because the `conf-portaudio` package's
-depexts don't contain a case for `os-distribution = "cygwin"` (only `os-distribution = "cygwinports"`).
+`depexts` don't contain a case for `os-distribution = "cygwin"` (only `os-distribution = "cygwinports"`).
 
-Next step is to fix the `conf-portaudio` depexts so they install the appropriate
+Next step is to fix the `conf-portaudio` `depexts` so they install the appropriate
 package on Cygwin. I added this line to the `depexts` section in `conf-portaudio.opam`:
 ```
     ["portaudio"] {os = "win32" & os-distribution = "cygwin"}
 ```
 
 I needed to run `opam pin .` again to get Opam to update its copy of the custom
-version of this package's metadata.
+version of this package's metadata. Every time you change the .opam file of a
+pinned package you have to re-pin the package for the change to be come visible
+to Opam.
 
 Then I tried installing `conf-portaudio` again:
 ```
@@ -561,7 +578,7 @@ can select Msys2 as an alternative to Cygwin, though there's no option for Opam
 to setup the Msys2 environment for us. There appears to be a `libao` package in
 the Msys2 repository, so the next step will be to try setting up an Msys2
 environment and a new Opam installation which uses it and then install the
-`conf-ao` package along with its depexts within that environment.
+`conf-ao` package along with its `depexts` within that environment.
 
 ## Trying again with Msys2
 
@@ -879,7 +896,7 @@ depexts:
   ["mingw-w64-x86_64-pkgconf"] {os = "win32" & os-distribution = "msys2"}
 ```
 
-From this we can learn that when using Msys2 to install depexts, the
+From this we can learn that when using Msys2 to install `depexts`, the
 `os-distribution` variable evaluates to "msys2" instead of "cygwin". Also on
 Msys2 Opam will install the system package `mingw-w64-x86_64-pkgconf` to
 install `pkg-config`/`pkgconf`. This suggests that the correct `depext` entry
