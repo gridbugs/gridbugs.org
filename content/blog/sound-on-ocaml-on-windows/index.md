@@ -7,7 +7,7 @@ description = "I got my OCaml music synthesizer working on Windows. Here's all t
 tags = ["windows", "ocaml", "synthesizer", "audio"]
 
 [extra]
-og_image = "banner.png"
+og_image = "banner.jpg"
 +++
 
 ![Close up of a modular synthesizer](banner.jpg)
