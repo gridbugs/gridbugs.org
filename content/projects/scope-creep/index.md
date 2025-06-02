@@ -4,7 +4,7 @@ date = 2025-05-09
 path = "scope-creep"
 
 [taxonomies]
-tags = ["roguelikes", "7drl", "synthesizer"]
+tags = ["roguelikes", "7drl", "synthesizer", "audio"]
 
 [extra]
 og_image = "screenshot1.png"

@@ -1,41 +1,53 @@
 +++
 title = "Sound on OCaml on Windows"
-date = 2025-05-29
+date = 2025-06-02
 path = "sound-on-ocaml-on-windows"
-
+description = "I got my OCaml music synthesizer working on Windows. Here's all the things that went wrong in the process."
 [taxonomies]
-tags = ["windows", "ocaml"]
+tags = ["windows", "ocaml", "synthesizer", "audio"]
+
+[extra]
+og_image = "banner.png"
 +++
+
+![Close up of a modular synthesizer](banner.jpg)
 
 This post will chronicle my attempt to use OCaml to play generated audio
 samples on a Windows PC. This is part of my work on the [llama synthesizer
-library](https://github.com/gridbugs/llama/), where I've been replacing the
+library](https://github.com/gridbugs/llama/), where I've been rewriting the
 low-level audio logic formerly written in Rust (with
-[cpal](https://crates.io/crates/cpal)) with OCaml to simplify the build process
+[cpal](https://crates.io/crates/cpal)) into OCaml to simplify the build process
 and development experience. I've written down some of my complaints about
-the developer experience working on llama in a [previous
+the developer experience working on `llama` in a [previous
 post](@/blog/frustrating-interactions-with-the-ocaml-ecosystem-while-developing-a-synthesizer-library/index.md)
 and some of those difficulties came from complications working with Rust/OCaml
 interop, so removing all Rust from the project will help reduce friction
 developing it further.
 
-I have a proof-of-concept version of llama based on [OCaml's libao
+I have a proof-of-concept version of `llama` based on [OCaml's libao
 bindings](https://opam.ocaml.org/packages/ao/) which works on Linux and MacOS.
 Libao claims to support Windows but I haven't figured out how to install it on
-Windows so I might experiment with some alternatives in this post.
+Windows so I might experiment with some easier-to-install alternatives in this post.
 
 The intention of this post is to serve as a guide to anyone getting started with
 OCaml on Windows, to highlight some of the remaining problems with the OCaml ecosystem on
-Windows, and to demonstrate some usability issues with Opam.
+Windows, and to demonstrate some usability issues with Opam in general. My summary is that
+OCaml on Windows is easier than I expected it to be, but there are still some
+rough edges that newcomers should be aware of to properly set expectations. I
+wrote down everything I tried as I tried it, so all the mistakes, blind alleys
+and failed debugging experiments will be documented here as well as the paths
+that eventually led to solutions.
 
 ## Install Opam
 
 For the purposes of this post I'll set up an entire OCaml environment on Windows
-from scratch. I'll be using PowerShell 7.5.1 for all shell commands in this post.
+from scratch. I'll be using PowerShell 7.5.1 for all shell commands in this
+post. For the purposes of translating commands and paths to other machines, I'll
+state explicitly that my username is "s".
 
 We'll install Opam with WinGet. I've had some difficulty setting up WinGet in
 the past and written about setting it up properly in a [previous
-post](@/blog/setting-up-winget-for-the-first-time/index.md).
+post](@/blog/setting-up-winget-for-the-first-time/index.md) but today it worked as expected.
 
 ```
 PS C:\Users\s> winget install Git.Git OCaml.opam
@@ -52,23 +64,28 @@ How should opam obtain Unix tools?
 ...
 ```
 
-Allowing Opam to manage its own Cygwin installation results Cygwin being
+Allowing Opam to manage its own Cygwin installation is the recommended way of
+using Opam on Windows, so that's what I'll try first. This results in Cygwin being
 installed to `C:\Users\s\AppData\Local\opam\.cygwin`. This might come in handy
 to know if we ever need to manually install a Cygwin package, though hopefully
-Opam can take care of installing any such packages via Opam's `depexts` system.
+Opam can take care of installing any such packages via Opam's `depexts` system
+which knows how to install system-specific packages needed by Opam packages by
+directly invoking the package manager to install the appropriately-named package.
 
 Bear in mind that Opam's initialization can take 15 minutes or so on Windows
-with most of the time spent building the OCaml compiler. Go make a coffee. Trust
-me.
+with most of the time spent building the OCaml compiler. Compiling OCaml code
+on Windows tends to be much slower than on MacOS and Linux. I don't understand
+why.
 
 
 ## Install a sound library
 
-Now we need to choose a library in the Opam repository that can give us access
-to the sound card. Ideally we would use a library with a depext tailored to
-Windows, as that way Opam can take care of installing any system dependencies
-via Cygwin. I've already started implementing llama on top of libao, but its
-`depexts` don't look promising:
+We need to choose a library in the Opam repository that can give us access
+to the sound card. Ideally we would use a library with a `depext` tailored to
+Windows with Cygwin, as that way Opam can take care of installing any system dependencies
+via Cygwin. Since my experimental version of `llama` is already implemented with
+libao that would be the most convenient choice, however its `depexts` don't look
+promising:
 ```
 PS C:\Users\s> opam show conf-ao
 ...
@@ -104,11 +121,11 @@ depexts     ["portaudio-dev"] {os-distribution = "alpine"}
             ["portaudio19-dev"] {os-family = "debian" | os-family = "ubuntu"}
 ```
 
-That's more promising as there's a depext that gets chosen on `{os = "win32" &
+That's more promising as there's a `depext` that gets chosen on `{os = "win32" &
 os-distribution = "cygwinports"}`. It's a little concerning that the name of the
 `os-distribution` is "cygwinports" and not just "cygwin". I've never come across
 cygwinports before, but maybe it won't matter. The next step is to see if
-installing `conf-portaudio` with Opam causes the right depext to be installed
+installing `conf-portaudio` with Opam causes the right `depext` to be installed
 with Cygwin:
 
 ```
@@ -189,7 +206,9 @@ depexts     ["pkg-config"] {os-family = "debian" | os-family = "ubuntu"}
 
 ```
 
-So it stands to reason that my initial concerns about cygwinports were merited.
+This package makes an explicit distinction between "cygwinports" and "cygwin" so
+it stands to reason that my initial concerns about `os-distribution =
+"cygwinports"` were merited.
 
 The second issue is that even though Opam installed `pkgconf` with Cygwin, the
 `pkg-config` executable couldn't be found while installing the `conf-portaudio`
@@ -213,17 +232,20 @@ PS C:\Users\s> opam install .\conf-portaudio.opam
 ```
 
 This command hung with `Processing 1/1: [conf-portaudio.1: rsync]` so I left it
-running while I went to run some errands and when I got back it was still hung.
+running while I went to run some errands and when I got back over an hour later
+it was still hung.
 
 I cancelled the hung operation. Despite not completing it did have the side
 effect of creating an Opam "pin" for the `conf-portaudio` package.
-An Opam pin is a configuration to override the source of a package, usually to allow for local development of a package. We can see all the current Opam pins with:
+An Opam pin is a configuration to override the source of a package, usually to
+allow for local development of said package. We can see all the current Opam
+pins with:
 ```
 PS C:\Users\s> opam pin list
 conf-portaudio.1  (uninstalled)  rsync  file://C:/Users/s
 ```
 
-Before proceeding I wanted to remove the pin, since something has clearly gone wrong:
+Before proceeding I wanted to remove the pin since something has clearly gone wrong:
 ```
 PS C:\Users\s> opam pin remove conf-portaudio
 Cannot remove C:\Users\s\AppData\Local\opam\default\.opam-switch\sources\conf-portaudio\
@@ -238,7 +260,8 @@ Temporary Internet Files: No such file or directory).
 ```
 
 Hmm. The `Application Data\Application Data\Application Data` component of the path looks suspicious.
-Opam creates a copy of the package (or maybe a symlink in some cases?), so let's take a look inside
+Opam creates a copy of pinned packages so let's take a look at `conf-portaudio`'s
+copy in
 `C:\Users\s\AppData\Local\opam\default\.opam-switch\sources\conf-portaudio`:
 
 ```
@@ -265,7 +288,7 @@ d----          29/05/2025    16:03                AppData
 ...
 ```
 
-Yeh that's my home directory. It appears I unwittingly pinned the
+Hey, that looks like my home directory! It appears I unwittingly pinned the
 `conf-portaudio` package to my entire home directory, and since Opam installs
 packages _inside_ my home directory it was recurring forever, continuously
 copying my home directory inside itself. No wonder it hung.
@@ -280,9 +303,10 @@ The item at C:\Users\s\AppData\Local\opam\default\.opam-switch\sources\conf-port
 Removed 32536 of 134845 files [1.197 GB of 15.926 GB (48.6 MB/s)
 ```
 
-That's almost `16GB` of recursive copies of my home directory. This command
+That's almost `16GB` of recursive copies of my home directory! This command
 ended up failing due to permission problems so I had to delete it from the
-explorer UI instead.
+explorer UI instead as I'm not very familiar with file management within
+PowerShell.
 
 Now that I manually deleted that folder, removing the pin works:
 ```
@@ -290,20 +314,21 @@ PS C:\Users\s> opam pin remove conf-portaudio
 Ok, conf-portaudio is no longer pinned to file://C:/Users/s (version 1)
 ```
 
-What I've learnt here is that you don't pin individual files, but rather the
-directory that contains them. A pin is a mapping from package to directory, and when
-you run `opam pin .\foo.opam` Opam learns the package name is `foo` from the
-name of the file (I think), but assumes the directory is `.`. Most Opam package
-source directories contain a .opam file and the source code for the package.
-What's unusual in this case is that the `conf-portaudio` package does not have source
-code. We say it's a "metapackage" as installing it just installs its dependencies
-(including external dependencies) and runs a command to verify their installation.
-So in order to pin `conf-portaudio` we need to first create a new directory and
-move the .opam file there.
+What I've learnt here is that Opam doesn't pin individual files but rather
+entire directories. A pin is a mapping from package to directory, and when you
+run `opam pin .\foo.opam` Opam learns the package name is `foo` from the name of
+the file (I think), but assumes the directory is the directory containing
+`foo.opam`. Most Opam package source directories contain an opam file and the
+source code for the package. What's unusual in this case is that the
+`conf-portaudio` package does not have source code. We say it's a "metapackage"
+as installing it just installs its dependencies (including external
+dependencies) and runs a command to verify their installation, but it has no
+source code of its own. So in order to pin `conf-portaudio` we need to first
+create a new directory and move the opam file there.
 
-Pinning the directory is sufficient as Opam will scan the directory for any .opam files
+Pinning the directory is sufficient as Opam will scan the directory for any opam files
 and create pins for each corresponding package using the current directory as the source.
-I've also modified the .opam file to run `pkgconf` rather than `pkg-config`.
+I've also modified the opam file to run `pkgconf` rather than `pkg-config`.
 ```
 PS C:\Users\s\conf-portaudio> opam pin .
 [NOTE] Package conf-portaudio is already pinned to file://C:/Users/s/conf-portaudio (version 1).
@@ -318,7 +343,7 @@ Proceed with ∗ 1 installation? [y/n] n   (don't want to install it just yet)
 ```
 
 By default `opam pin` will prompt to install the pinned package in addition to just storing
-the package -> directory mapping, but I just want to create the mapping for now so I
+the package → directory mapping, but I just want to create the mapping for now so I
 chose `n` at the prompt. Before installing the package I want to make sure that
 pinning it had the desired effect. Ask Opam what it thinks should be the package metadata
 for `conf-portaudio` now:
@@ -403,7 +428,7 @@ package on Cygwin. I added this line to the `depexts` section in `conf-portaudio
 ```
 
 I needed to run `opam pin .` again to get Opam to update its copy of the custom
-version of this package's metadata. Every time you change the .opam file of a
+version of this package's metadata. Every time you change the opam file of a
 pinned package you have to re-pin the package for the change to be come visible
 to Opam.
 
@@ -469,10 +494,10 @@ However digging around in the Cygwin package repo I did come across a package
 named `mingw64-x86_64-portaudio`, though it's unmaintained and hasn't been
 updated since 2018. I _also_ happened to find the package
 `mingw64-x86_64-libao`, also unmaintained and not updated since 2013, however if
-this package works then I might be able to use llama on Windows unmodified,
+this package works then I might be able to use `llama` on Windows unmodified,
 since it's currently based on libao.
 
-Repeating the steps above to created a custom version of the `conf-ao` package -
+Repeating the steps above to create a custom version of the `conf-ao` package -
 Opam's meta package for installing the system-appropriate libao package:
 ```
 PS C:\Users\s\conf-ao> opam show conf-ao --raw > conf-ao.opam
@@ -568,6 +593,7 @@ Mode                 LastWriteTime         Length Name
 -a---          02/12/2013    15:27           9386 libao.dll.a
 ```
 
+But that's doesn't look like a standard path for libraries.
 Reading more about the `mingw64-x86_64-*` packages in the Cygwin repo and it
 doesn't look like I'll easily be able to mix them with other Cygwin packages,
 which could make it tricky to proceed with Opam in its current configuration
@@ -575,7 +601,7 @@ where it manages a Cygwin environment for us.
 
 An alternative package manager for Windows is "Msys2". During `opam init` you
 can select Msys2 as an alternative to Cygwin, though there's no option for Opam
-to setup the Msys2 environment for us. There appears to be a `libao` package in
+to install the Msys2 environment for us. There appears to be a `libao` package in
 the Msys2 repository, so the next step will be to try setting up an Msys2
 environment and a new Opam installation which uses it and then install the
 `conf-ao` package along with its `depexts` within that environment.
@@ -589,7 +615,7 @@ which created a directory `C:\msys64` which will be the root directory of our
 Msys2 environment.
 
 Then I reran `opam init` to create a new Opam environment, this time selecting
-the second option for obtaining Unix tools `Use an existing Cygwin/MSYS2
+the second option for obtaining Unix tools: `Use an existing Cygwin/MSYS2
 installation`. I'll post the entire output of the interactive session with `opam
 init` in case it helps someone set up Opam on their machine:
 ```
@@ -790,7 +816,7 @@ Done.
 ```
 
 During initialization, Opam took care of installing a C compiler and various
-other essential tools into the msys2 environment at `C:\msys64`.
+other essential tools into the Msys2 environment at `C:\msys64`.
 
 My next goal is to get Opam to install libao with Msys2. I'm not sure what the
 correct `depexts` entry should be for this, so I'll start with `["libao"] {os =
@@ -820,9 +846,9 @@ Net Upgrade Size:      0.00 MiB
 :: Proceed with installation? [Y/n] n
 ```
 
-Ok looks like `rsync` is already installed.
+Ok looks like `rsync` was already installed.
 
-Maybe when Opam isn't managing the Cygwin environment for us we need to to
+Maybe when Opam isn't managing Cygwin for us we need to to manually
 update the shell environment to bring various commands into PATH?
 ```
 PS C:\Users\s\conf-ao> (& opam env --switch=default) -split '\r?\n' | ForEach-Object { Invoke-Expression $_ }
@@ -876,9 +902,18 @@ Proceed with ∗ 3 installations? [y/n] n
 [NOTE] Pinning command successful, but your installed packages may be out of sync.
 ```
 
-That's good. Before installing it, let's investigate that
-`conf-mingw-w64-pkgconf-x86_64` package as it wasn't needed when installing
-depexts with non-Msys2 Cygwin.
+That's good.
+I'm curious about the
+`conf-mingw-w64-pkgconf-x86_64` package. It
+wasn't needed when installing
+`depexts` with Cygwin, so it's probably specific to Msys2, which means it can
+probably give us a hint as to the proper way to specify Msys2-specific
+`depexts`, which we'll need to do for our pinned `conf-ao` package (I was only
+guessing how to add its new `depexts` initially).
+
+`conf-mingw-w64-pkgconf-x86_64` is probably a dependency of `conf-pkg-config` on
+Msys2, so I'll start by looking at `conf-pkg-config`'s metadata and then look at
+the metadata for `conf-mingw-w64-pkgconf-x86_64`.
 
 ```
 PS C:\Users\s\conf-ao> opam show --raw conf-pkg-config
@@ -905,7 +940,8 @@ for `conf-ao` is in fact:
 ["mingw-w64-x86_64-libao"] {os = "win32" & os-distribution = "msys2"}
 ```
 
-Moment of truth (again):
+After updating the local copy of `conf-ao` with the above `depext` and
+re-pinning it I tried installing `conf-ao` again:
 ```
 PS C:\Users\s\conf-ao> opam install conf-ao
 
@@ -968,11 +1004,11 @@ Done.
 Success! And the fact that `conf-ao` installed successfully meant that
 `conf-ao`'s build command which uses `pkgconf` to check whether the `ao` library
 is visible also ran successfully, so we're hopefully in a good place to link
-against `ao` when building llama, which will be the next step.
+against `ao` when building `llama`, which will be the next step.
 
 ## Making Noise
 
-Let's try building and running an example from the llama synthesizer library.
+Let's try building and running an example from the `llama` synthesizer library.
 
 Get the code:
 ```
@@ -1006,8 +1042,8 @@ llama_tests is now pinned to git+file://C:/Users/s/llama#main (version dev)
 ```
 
 That error is because the `llama_tests` library is unreleased while all the
-other packages are released. Opam phones home while pinning to work out which
-versions of packages to pin (it uses the latest released version of each
+other packages are released. Opam phones home while pinning packages to work out which
+versions to pin (it uses the latest released version of each
 released package and "dev" for unreleased packages from the look of things).
 That's not ideal here though because the unreleased `llama_tests` package is
 looking for a version of `llama_midi` of its same version and failing to find it
@@ -1052,9 +1088,9 @@ llama_tests.dev        (uninstalled)  git    git+file://C:/Users/s/llama#main
 ```
 
 Looks good, and also we can see that our custom `conf-ao` is there which is
-expected. One potential issue is that the llama packages are fetched with `git`
+expected. One potential issue is that the `llama` packages are fetched with `git`
 rather than `rsync`, which might bite us later if we modify the local files
-in the llama project without committing the results. We can avoid this by not
+in the `llama` project without committing the results. We can avoid this by not
 installing any of these local packages with Opam, and instead just installing
 their dependencies and then building the project with Dune.
 
@@ -1136,9 +1172,12 @@ Similar to `conf-pkg-config`, we see the dependency on an additional
 `conf-mingw-w64-*` metapackage under some conditions. Here though it's
 `os-distribution != "cygwinports"` rather than `os-distribution = "msys2"` which
 makes me wonder if this would cause a problem on a regular Cygwin installation,
-where `os-distribution != "cygwin"`.
+where `os-distribution = "cygwin"`. That would cause the `os-distribution != "cygwinports"`
+to be true which seems to select `conf-mingw-w64-*` packages, but my intuition
+is that those packages should only be selected on Msys2. There's too much
+else going on to also investigate that now and maybe my hunch is wrong anyway.
 
-My dependencies failed to install:
+There's a new problem: `llama`'s dependencies failed to install:
 ```
 #=== ERROR while compiling topkg.1.0.8 ========================================#
 # context     2.3.0 | win32/x86_64 | ocaml.5.3.0 | https://opam.ocaml.org#11859fd62a66b5e319a415e807797407068a7c13
@@ -1161,8 +1200,9 @@ According to its description it's in maintenance mode and should no longer be
 used. It's got 165 reverse dependencies so the fact that it doesn't build on
 Windows (or maybe just when using Msys2 or maybe just on my machine) is a little
 concerning however for our purposes here it's only used to build `tsdl` which is
-only needed for the interactive examples. It would still be nice to get it
-working here. Consider it a stretch goal.
+only needed for the interactive components of `llama`. It would still be nice to
+get it working but my priority is getting the sound to work, so consider fixing
+`topkg` to be a stretch goal.
 
 For now, let's just install the dependencies needed for non-interactive
 synthesizer demos:
@@ -1194,28 +1234,27 @@ library and to access the sound card.
 Most of what went wrong during this process could conceivably be called "user
 error" though the fact that I have 5 years of OCaml programming behind me
 and still hit some pretty major footguns with Opam maybe suggests some aspects
-of its UX could be improved. Still some things were actually broken in this
-process:
+of its UX could be improved. Still some things were actually broken:
  - `conf-ao` is hardcoded to run `pkg-config` despite the executable being named
    `pkgconf` in some cases, and has no depext for Msys2. The workaround was to
-   pin `conf-ao` and fix the problem in a local copy of the package.
+   pin `conf-ao` and fix its problems in a local copy of the package.
  - Opam couldn't find the `rsync` executable in the Msys2 environment despite
    being configured to use an Msys2 environment where `rsync` was installed. The
    workaround was to manually add `C:\msys64\usr\bin` to PATH.
  - `topkg` failed to build. The workaround was to only use the non-interactive
    components of my project, as `topkg` is only necessary to compile the SDL bindings
-   which are only needed for interactive synthesizer demos.
+   which are only needed for interactive synthesizer features.
 
 The parts of Opam's UX that I evidently still struggle with relate to working
 with local packages and pins.
 Looking back at the "user errors" in this post, a couple of times I tried to pin
-an opam file a couple of times which led to bizarre errors (
+an opam file led to bizarre errors (
 `Unknown archive type: C:\Users\s\AppData\Local\Temp\opam-4184-d29c4e\conf-ao.opam`)
 and unexpected results (recursively copying my home directory inside itself
 until I told it to stop). Opam pins are associated with package sources in the
 form of a directory, git repo, or archive file - not with opam files themselves.
 What's confusing when working with packages like `conf-ao` is that these
-packages _don't have sources_. They are "meta" packages that just exist to
+packages _don't have sources_. They are metapackages that just exist to
 collect some dependencies on other Opam packages or external dependencies, but
 they have no source code or other files to fetch during installation. I've
 learnt that the correct thing to do is put the opam file I want to pin inside a
@@ -1223,7 +1262,7 @@ directory and then pin that directory.
 
 The other pinning-related mistake I made was pinning a project containing
 multiple packages where some but not all of the packages had been released. This
-leads to the non-released packages being pinned at version "dev" while the
+led to the non-released packages being pinned at version "dev" while the
 released packages are pinned to the latest released version of those packages.
 If the unreleased package depends on a released package, chances are it won't be
 able to resolve the dependency because it will try to find a version of the
@@ -1231,31 +1270,34 @@ released package with version "dev". I've learnt that for such projects one must
 run `opam pin . --with-version=dev`. Possibly that should be the default
 behaviour or at least Opam should warn when some but not all of the packages in
 a project are released.
+I've complained about this exact behaviour
+[before](@/blog/frustrating-interactions-with-the-ocaml-ecosystem-while-developing-a-synthesizer-library/index.md#if-some-but-not-all-of-the-interdependent-packages-in-a-project-are-released-opam-can-t-solve-the-project-s-dependencies)
+but I still make this mistake all the time.
 
 I have gotten used to Opam's quirks and am no longer too phased when things go
 wrong. And on Windows in particular I had quite low expectations of the OCaml
 ecosystem since it's historically been infamously hard to get working. This is
-why I'm so pleasantly surprised it was this easy to get generated audio playing
+why I'm pleasantly surprised it was this easy to get generated audio playing
 on Windows with OCaml, despite spending over a day on it at this point. The fact
-that Opam can be installed through WinGet, and it takes care of setting up all
+that Opam can be installed through WinGet now, and that it takes care of setting up all
 the external dependencies with Msys2 (or Cygwin) for you during initialization
 is very slick. It's definitely come a long way since the last time I tried to
 use OCaml on Windows in earnest.
 
 That said many of the problems I had with Opam in this post were not
 Windows-related. The problems with pinning are things I had encountered before
-so I could recognize them and employ workarounds. I've adopted a defensive approach to
-working with Opam where I expect the unexpected and often explicitly
-verify that it did what I want such as always running `opam pin list` after `opam
-pin .` and using `opam show --raw` to check that pinning a package has taken
-effect if I'm changing a pinned package's metadata.
-I don't believe "user error" is an apt term to use here. The error is not with
-the user it's with the usability of the tools.
+on Unix so I could recognize them and employ workarounds. I've adopted a
+defensive approach to working with Opam where I expect the unexpected and often
+explicitly verify that it did what I want such as always running `opam pin list`
+after `opam pin` and using `opam show --raw` to check that pinning a package
+has taken effect if I'm changing a pinned package's metadata. I don't believe
+"user error" is an apt term to use here. The error is not with the user it's
+with the usability of the tool.
 
-## Bonus goal: Fixing topkg
+## Stretch Goal: Fixing topkg
 
-I set aside 2 days to get llama working on Windows and it's only been a day and
-a half, so let's see if we can't get topkg to build and then run the graphical
+I set aside 2 days to get `llama` working on Windows and it's only been a day and
+a half, so let's see if we can't get `topkg` to build and then run the graphical
 interactive synthesizer demos which that would enable.
 
 We'll start by grabbing the source code for topkg. Opam has a handy feature for
@@ -1309,14 +1351,15 @@ The following actions will be performed:
 Opam wants to remove or downgrade lots of packages including the compiler
 itself. That seems a bit drastic so let's see if there's a way to avoid doing
 that. After all `topkg.1.0.8` was part of the package solution Opam found when
-building llama's dependencies and `ocaml.5.3.0` was sufficient in that solution.
+building `llama`'s dependencies and `ocaml.5.3.0` was sufficient in that solution.
+It's odd that it wouldn't also be sufficient here.
 The opam files in `topkg`'s source archive look like they should be compatible
 with `ocaml.5.3.0` so I really have no idea why Opam wanted to downgrade
 everything.
 
 Regardless, we don't actually need to install `topkg` while pinning it. It's
 pinned now so that should be sufficient for the local copy to be compiled as a
-dependency of llama. Let's see if that's correct:
+dependency of `llama`. Let's see if that's correct:
 ```
 PS C:\Users\s\llama> opam install . --deps-only
 [llama_core.dev] synchronised (no changes)
@@ -1359,7 +1402,8 @@ Looks good, especially this line:
 ```
 
 To debug this problem it will help to have a command we can run to quickly
-reproduce it. Running the package's build command does the trick:
+reproduce it. Running the `topkg`'s build command, copied from its opam file,
+causes the same error as we see when installing `topkg` as a dependency:
 ```
 PS C:\Users\s\topkg.1.0.8> opam exec ocaml -- .\pkg\pkg.ml build --pkg-name topkg --dev-pkg true
 Exception: Fl_package_base.No_such_package ("findlib", "").
@@ -1408,17 +1452,21 @@ package "top" (
 ```
 
 Ok this suggests that the problem is with `topkg` itself and not with my
-environment. I tried installing llama's dependencies with Opam on Linux and
+environment. I tried installing `llama`'s dependencies with Opam on Linux and
 `topkg` built fine, suggesting that the problem is specific to Windows. A likely
 hypothesis is that it's related to differences with how file paths work between
 the Unix world and Windows, since this is a common point of pain for running
-OCaml programs on Windows in my experience.
+OCaml programs on Windows in my experience. The main two differences that tend
+to cause problems are that the path separator is `\` on Windows and `/` on Unix,
+and that Windows paths begin with `C:` while `:` is conventionally used to
+delimit multiple paths when they appear in strings on Unix systems (Windows
+tends to use `;` for this instead to avoid confusion around the colon in `C:`).
 
 Next step was to instrument `topkg` with debug printouts to better understand
 where the error was happening, but pretty quickly I realized that the problem
 was happening before any code in `topkg` could run.
 
-Here's a simplified version of `pkg/pkg.ml` that still exhibits the problem:
+Here's a simplified version of `pkg/pkg.ml` from the `topkg` package that still exhibits the problem:
 ```ocaml
 #!/usr/bin/env ocaml
 #use "topfind"
@@ -1479,10 +1527,10 @@ ocamldoc="ocamldoc.opt"
 
 The `path` field looks suspicious, since the paths on Windows begin with `C:`,
 but it looks like a colon character is also being used to separate the two paths.
-On Windows its common to use a semicolon to separate paths, rather than a colon
+Recall that on Windows it's common to use a semicolon to separate paths, rather than a colon
 as is typically seen on Unix. As an experiment I manually replaced the colon
 with a semicolon in `findlib.conf` and suddenly I could successfully build
-`topkg` both on its own and as a dependency for llama:
+`topkg` both on its own and as a dependency for `llama`:
 ```
 PS C:\Users\s\llama> opam install . --deps-only
 [llama_core.dev] synchronised (no changes)
@@ -1504,7 +1552,14 @@ Proceed with ∗ 2 installations? [y/n] y
 Done.
 ```
 
-And we should be able to run a graphical example:
+So the problem wasn't with `topkg` after all but rather with `ocamlfind`. The
+`ocamlfind` package is a bit old-school, building with a `configure` script
+and `Makefile`. I'm guessing somewhere in there it fails to detect that it's
+running on Windows, at least in Msys2 environments, and uses the wrong path
+delimiter for paths in `findlib.conf`.
+
+With that problem adequately worked around we should finally be able to run a
+graphical example:
 ```
 PS C:\Users\s\llama> dune exec .\examples\interactive.exe
 File "examples/dune", line 44, characters 14-25:
@@ -1518,6 +1573,10 @@ collect2.exe: error: ld returned 1 exit status
 File "caml_startup", line 1:
 Error: Error during linking (exit code 2)
 ```
+
+Not quite yet!
+
+## Fixing the linker error
 
 Linker errors like this usually mean that we're not linking against a certain
 shared library, in this case whichever shared library would define the symbol
@@ -1563,7 +1622,7 @@ that:
 (link_flags -cclib "-LC:/msys64/mingw64/bin/../lib -lmingw32 -mwindows -lSDL2main -lSDL2")
 ```
 
-And the error message changed:
+And the error message changed which is often a sign of progress:
 ```
 PS C:\Users\s\llama> dune build .\examples\interactive.exe
 File "examples/dune", line 44, characters 14-25:
@@ -1645,13 +1704,16 @@ Error: Error during linking (exit code 2)
 Getting rid of the `-mwindows` argument just gets us back to the original linker
 error, so I assume it's important.
 
-Reading more about `wMinMain` and it looks like I actually need to define that
-function myself. The linker was looking for `wWinMain` as the entry point to the
-program called by the C runtime's initialization code. Perhaps OCaml assumes
-that the entry point will be named `WinMain` which seems to be the entry point
-for windows C programs that don't accept unicode arguments whereas `wWinMain` is
-used when programs _do_ accept unicode arguments. For some reason depending on
-SDL seems to require that the entry point be `wWinMain`.
+Reading more about `wMinMain` and it looks like I was wrong assuming that we
+need to pass additional linker flags to tell the linker which shared library to
+look in. Rather, the linker was looking for `wWinMain` as the entry point to the
+program called by the C runtime's initialization code. I have to define it
+myself. Perhaps OCaml assumes that the entry point will be named `WinMain` which
+seems to be the entry point for Windows C programs that don't accept unicode
+arguments whereas `wWinMain` is used when programs _do_ accept unicode
+arguments (I think the "w" stands for "wide" as in "wide character" since
+unicode characters can be wider than a byte). For some reason depending on SDL
+seems to require that the entry point be `wWinMain`. I don't understand why.
 
 Following [these
 instructions](https://dune.readthedocs.io/en/latest/howto/override-default-entrypoint.html)
@@ -1687,8 +1749,9 @@ PS C:\Users\s\llama> dune exec .\examples\interactive.exe
 Done: 49% (96/194, 98 left) (jobs: 0)Hello
 ```
 
-Nice, the linker error is gone. Now I just need to change the C code to call
-into the original OCaml code:
+Nice, the linker error is gone. Obviously this just prints "Hello" and exits
+without actually calling into any OCaml code. Now I just need to change the C
+code to call into the original OCaml code:
 ```c
 #include <wchar.h>
 #include <stdio.h>
@@ -1722,16 +1785,16 @@ PS C:\Users\s\llama> $LastExitCode
 
 Converting to a 32-bit unsigned int assuming 2's complement this is `0xC0000005`
 which corresponds to an "Access Violation" which is similar to a segmentation
-fault in the Unix world.
+fault in the Unix world, so probably I'm doing something wrong with pointers.
 
-For inspiration I took a look at the real OCaml main function defined
+For inspiration I took a look at the real OCaml `main` function defined
 [here](https://github.com/ocaml/ocaml/blob/trunk/runtime/main.c).
 There's some Windows-specific parts that I was missing which I added.
 I also realized I was using the wrong type for my `wWinMain` function so I
-changed its arguments. This meant I needed to convert the Windows way of
-representing command-line arguments into the Unix-style argv which OCaml
-presumably expects. Instead I just generated a fake value for argv while I test
-the rest of the setup. Here's the C program I ended up with:
+changed its arguments based on some Microsoft documentation I found. This meant
+I needed to convert the Windows way of representing command-line arguments into
+the Unix-style `argv` which OCaml presumably expects. I was running out of time so
+instead I just generated a fake value for `argv`. Here's the C program I ended up with:
 ```C
 #include <wchar.h>
 #include <stdio.h>
@@ -1756,14 +1819,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 }
 ```
 
-And finally that got it working:
+And finally it works!
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/vS2qgKDK7y4?si=FNlN2OBef58aj_Nw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-Well it mostly works now. There's about a second of input latency which isn't
+Well it mostly works. There's about a second of input latency which isn't
 there when I run it on Linux or MacOS, but at least it can now open a window and
 get input from the keyboard and mouse.
 
-That brings us to the end of the 2 day period I've allocated for working on
-this project. Clearly it's not ready for use in "production" on Windows but at
-least I now know that it's technically possible.
+That brings us to the end of the 2-day period I've allocated for working on
+this project. Clearly `llama` is not ready for use in "production" on Windows but at
+least I now know that it's technically possible to make it work. All the
+problems I worked around the past 2 days are not problems with `llama` itself
+but various other packages in the OCaml ecosystem (at least `conf-ao` calling the wrong
+`pkg-config` executable and missing Msys2 `depexts` and `ocamlfind` using the
+wrong path delimiters on Windows). I'll gradually work on upstreaming fixes to
+these problems but in the meantime I'll be playing my synthesizer on Unix
+machines only.
