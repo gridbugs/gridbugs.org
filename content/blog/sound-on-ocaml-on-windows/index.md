@@ -12,6 +12,8 @@ og_image = "banner.jpg"
 
 ![Close up of a modular synthesizer](banner.jpg)
 
+_I got my OCaml music synthesizer working on Windows. Here's all the things that went wrong in the process._
+
 This post will chronicle my attempt to use OCaml to play generated audio
 samples on a Windows PC. This is part of my work on the [llama synthesizer
 library](https://github.com/gridbugs/llama/), where I've been rewriting the
