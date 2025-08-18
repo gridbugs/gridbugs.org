@@ -1,12 +1,14 @@
-# This assumes zola 0.19.1
+# This assumes zola 0.21.1
 base_url = "https://www.gridbugs.org"
 title = "gridbugs"
+author = "Stephen Sherratt"
 compile_sass = true
 generate_feeds = true
 feed_filenames = ["atom.xml", "rss.xml"]
 taxonomies = [
     { name = "tags" },
 ]
+generate_robots_txt = true
 
 [markdown]
 highlight_code = true
