@@ -1,5 +1,5 @@
 +++
-title = "Fixing My Old OS Assignment with Machine Code Hacks"
+title = "Fixing my Old OS Assignment with Machine Code Hacks"
 date = 2025-08-24
 path = "fixing-my-old-os-assignment-with-machine-code-hacks"
 
@@ -1053,4 +1053,4 @@ left) gives a good note length. That is I replaced the second instruction with
 error to come up with a good sounding beat length.
 
 Here's the result:
-
+<iframe width="560" height="315" src="https://www.youtube.com/embed/s_51do9YbHw?si=Fpm21KF1jjAWMK0y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
