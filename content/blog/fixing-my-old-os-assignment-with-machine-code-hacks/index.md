@@ -14,7 +14,7 @@ Back in 2012 I took an Operating Systems course, the main assessment of which
 was a 12 week pair assignment implementing a user-level OS personality for the
 [seL4 microkernel](https://sel4.systems/). I recently got the urge to boot up
 our little OS. I saved the contents of my university computer system home directory
-before I graduated so I still had a copy of the code, and
+before I graduated so I still have a copy of the code, and
 fortunately I didn't `make clean` the last time I worked on it so the bootable
 (at least in theory!) disk image is still in the project directory.
 
@@ -97,8 +97,9 @@ $ grep -rni 'ttyUSB0'
 nslu2-util/nslu2.c:67:  char defport[] = "/dev/ttyUSB0";
 ```
 
-The `nslu2-util` program is a tiny command-line utility for start, stopping, and
-resetting the slug. There was a `Makefile` and running `make` gave me a `nslu2`
+The `nslu2-util` program is a command-line utility for start, stopping,
+and resetting the slug. Students in the OS course were given a copy of the tool.
+It's a tiny C project with a `Makefile` and running `make` built an `nslu2`
 executable:
 ```
 $ ./nslu2 -h
@@ -114,7 +115,7 @@ Terminal ready
 
 Getting garbage text over a serial port usually means the baudrate is wrong.
 The default baudrate was 9600. Trying 115200 instead and resetting the slug
-gives a more coherent message:
+and no I can read the output:
 ```
 $ picocom -b 115200 /dev/ttyUSB0
 ...
@@ -147,14 +148,14 @@ load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin;go
 
 I don't remember interacting with RedBoot as a student, so presumably that boot
 script would cause our project to boot. That script would have been set up by
-the people running the OS course; it would be different on a brand new slug.
+the people running the OS course; it would be different or absent on a brand new slug.
 
 The line above is also interesting:
 ```
 == Executing boot script in 2.000 seconds - enter ^C to abort
 ```
 
-Resetting the slug and hitting ctrl+c within 2 seconds of seeing that runs an
+Resetting the slug and hitting ctrl+c within 2 seconds of seeing that starts an
 interactive shell. Luckily this shell accepts a `help` command. I'll paste the
 entire output here in case it's helpful to someone in the future:
 ```
@@ -209,15 +210,15 @@ Display (hex dump) a range of memory
    x -b <location> [-l <length>] [-s] [-1|2|4]
 ```
 
-This tells us that the default boot script is running `load` to download the OS
-image over the network and then `go` to boot it. This unlocked a memory of
+This tells us that the default boot script is running the `load` command to download the OS
+image over the network and then the `go` command to boot it. This unlocked a memory of
 running some software (I forget exactly what) on my laptop to serve the OS image
 over the network and plugging the slug directly into my laptop with an Ethernet
 cable. Based on the `load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin`
-command, in this setup my laptop presumably had the IP address `192.168.168.1`,
+command, in this setup my laptop would have had the IP address `192.168.168.1`,
 and the bootable OS image was in a file named `bootimg.bin`.
 
-Searching my old home directory for `bootimg.bin`:
+Searching my old home directory for a `bootimg.bin` and fortunately I still have one:
 ```
 $  find . -name bootimg.bin
 ./aos/aoshg/images/bootimg.bin
@@ -250,7 +251,7 @@ Default server: 0.0.0.0, DNS server IP: 0.0.0.0
 I chose `192.168.1.22` arbitrarily among the unused IP addresses on my home
 network. After this change I could `ping` that address from my computer, and
 also use RedBoot's own `ping` command to ping my computer (whose address is
-`192.168.1.7`:
+`192.168.1.7`):
 ```
 RedBoot> ping -h 192.168.1.7
 Network PING - from 192.168.1.22 to 192.168.1.7
@@ -274,10 +275,11 @@ that the `-m` option accepts `TFTP` or `HTTP`. There doesn't seem to be a way to
 specify the port number. For some reason this caused me to prefer
 [TFTP](https://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol), possibly
 because I'm so used to HTTP servers running on ports besides the default (80)
-when running websites locally. I actually implemented a [simple send-only TFTP
-server](https://crates.io/crates/tftp-ro) a few years ago when I got frustrated
-that all the TFTP servers I could find wouldn't let me just serve files out of
-the current directory, so that's what I'll be using here.
+when running websites locally, but not so for TFTP. I actually implemented a
+[simple send-only TFTP server](https://crates.io/crates/tftp-ro) a few years
+ago when I got frustrated that all the TFTP servers I could find wouldn't let
+me just serve files out of the current directory, so that's what I'll be using
+here.
 
 To install it:
 ```
@@ -297,9 +299,9 @@ RedBoot> load -r -v -b 0x00100000 -h 192.168.1.7 -m TFTP bootimg.bin
 Can't load 'bootimg.bin': operation timed out
 ```
 
-I'm not sure if this is a bug or performance issue with my TFTP server. My
+I'm not sure if this is a bug or performance issue with my TFTP server but my
 quick fix was to compress the image. RedBoot's `load` command takes a flag `-d`
-which decompresses the image assuming its compressed with gzip.
+which decompresses the image assuming it's compressed with gzip.
 
 So I compressed the image:
 ```
@@ -313,7 +315,7 @@ Raw file loaded 0x00100000-0x0017bfff, assumed entry at 0x00100000
 ```
 
 Success! RedBoot remembers that we loaded that image starting at address
-`0x00100000`, so we can now run `go` to start executing at that address:
+`0x00100000`, so we can now run the command `go` to start executing at that address:
 ```
 RedBoot> go
 ELF-loader image started:   paddr=[0x00100000..0x0017c000]
@@ -453,10 +455,11 @@ seL4 root server abortedDebug halt syscall from user thread 0xf0063e00
 halting...
 ```
 
-This is debug output from the OS project which is very exciting.
-It looks like its failing an assertion after unsuccessfully attempting to
+This is debug output from our OS project which is pretty exciting. It's running!
+It looks like it's failing an assertion after unsuccessfully attempting to
 connect to the network. It looks like it has the same IP addresses hard-coded
-into it as the initial boot script, so can't connect to my home network.
+into it as the initial boot script, so can't connect to my home network, and the code
+is written in such a way that doesn't let it proceed to boot without network access.
 
 We'll get to fixing this, but first let's talk about the goal of this endeavour.
 
@@ -467,12 +470,12 @@ particular bit in a register that can be toggled at a given frequency to buzz at
 that frequency. I wrote this code in mid 2012 and so the obvious song to play
 according to 20 year old me was Call Me Maybe by Carly Rae Jepsen. I remember
 implementing a device driver with a unix-style "everything's a file" interface,
-where reading from `/dev/maybe` would lock up the OS while it buzzed the hottest
-song of 2012.
+where opening the file `/dev/maybe` would lock up the OS while it buzzed the
+hottest song of 2012.
 
 Unfortunately it appears the snapshot of the project I stored on the university
 server was not its final form. I did most of the work for this project on a
-netbook (remember netbooks?) which has sadly been lost to the ages. The
+netbook (remember netbooks?!) which has sadly been lost to the ages. The
 implementation of `/dev/maybe` is not in this version, but it still has the
 logic to play the song and print the lyrics to the terminal:
 ```c
@@ -518,21 +521,21 @@ void call_me_maybe(int beat_len) {
 ```
 
 Rather than playing the song by reading a file, this version of the project
-would play it immediately after booting if a certain flag was set:
+would play it immediately after booting if a certain compile-time flag was set:
 ```
     if (I_JUST_MET_YOU) {
         call_me_maybe(500000);
     }
 ```
 
-Unfortunately:
+However the flag was not set:
 ```c
 #define I_JUST_MET_YOU 0
 ```
 
 The C compiler was probably smart enough to elide the entire call to
 `call_me_maybe` since that condition is never true. Fortunately the presence of
-the song's lyrics in the image tells us that the `call_me_maybe` function did
+the song's lyrics in the bootable image tells us that the `call_me_maybe` function did
 make it into the image despite never being called:
 ```
 $ strings bootimg.bin | grep Hey
@@ -551,11 +554,11 @@ Well...
 
 I can't build the project. I have the source code, and luckily I have a mostly
 working bootable image. I also have the object files for each source file which
-were built with debug symbols. But there's no way to change the source code and
-rebuild the image to incorporate those changes.
+were built with debug symbols. But I don't have the software necessary to
+change the source code and rebuild the image to incorporate those changes.
 
 And I refuse to do the kind of archaeology that would be required to get a
-32-bit ARM toolchain and seL4 build tools circa 2012 running on a modern OS.
+32-bit ARM compiler toolchain and seL4 build scripts circa 2012 running on a modern OS.
 Getting all the tools working was hard enough back in 2012.
 
 In order to get past the failing assertion we need the OS to choose an IP
@@ -576,7 +579,7 @@ $ strings bootimg.bin | grep '192\.168'
 ```
 
 To change them to suitable addresses, one must simplify _modify the binary
-directly_. I don't own a [magnetized needle](https://xkcd.com/378/) so instead
+directly_! I don't own a [magnetized needle](https://xkcd.com/378/) so instead
 I'll use the tool `hexedit`.
 
 When you run `hexedit bootimg.bin` it shows you the hexadecimal and ASCII
@@ -602,7 +605,31 @@ representations of the binary data in the image file:
 ```
 
 To find the addresses, search for sequence of hexadecimal digits representing
-the ASCII encoding of `192` (0x313932):
+the ASCII encoding of part of the address.
+
+Here's an ASCII table so you can play along at home:
+```
+Dec Hex    Dec Hex    Dec Hex  Dec Hex  Dec Hex  Dec Hex   Dec Hex   Dec Hex
+  0 00 NUL  16 10 DLE  32 20    48 30 0  64 40 @  80 50 P   96 60 `  112 70 p
+  1 01 SOH  17 11 DC1  33 21 !  49 31 1  65 41 A  81 51 Q   97 61 a  113 71 q
+  2 02 STX  18 12 DC2  34 22 "  50 32 2  66 42 B  82 52 R   98 62 b  114 72 r
+  3 03 ETX  19 13 DC3  35 23 #  51 33 3  67 43 C  83 53 S   99 63 c  115 73 s
+  4 04 EOT  20 14 DC4  36 24 $  52 34 4  68 44 D  84 54 T  100 64 d  116 74 t
+  5 05 ENQ  21 15 NAK  37 25 %  53 35 5  69 45 E  85 55 U  101 65 e  117 75 u
+  6 06 ACK  22 16 SYN  38 26 &  54 36 6  70 46 F  86 56 V  102 66 f  118 76 v
+  7 07 BEL  23 17 ETB  39 27 '  55 37 7  71 47 G  87 57 W  103 67 g  119 77 w
+  8 08 BS   24 18 CAN  40 28 (  56 38 8  72 48 H  88 58 X  104 68 h  120 78 x
+  9 09 HT   25 19 EM   41 29 )  57 39 9  73 49 I  89 59 Y  105 69 i  121 79 y
+ 10 0A LF   26 1A SUB  42 2A *  58 3A :  74 4A J  90 5A Z  106 6A j  122 7A z
+ 11 0B VT   27 1B ESC  43 2B +  59 3B ;  75 4B K  91 5B [  107 6B k  123 7B {
+ 12 0C FF   28 1C FS   44 2C ,  60 3C <  76 4C L  92 5C \  108 6C l  124 7C |
+ 13 0D CR   29 1D GS   45 2D -  61 3D =  77 4D M  93 5D ]  109 6D m  125 7D }
+ 14 0E SO   30 1E RS   46 2E .  62 3E >  78 4E N  94 5E ^  110 6E n  126 7E ~
+ 15 0F SI   31 1F US   47 2F /  63 3F ?  79 4F O  95 5F _  111 6F o  127 7F DEL
+```
+
+For example to find `192`, search for `0x313932`:
+
 <pre><code><span>0005F5E0   30 00 00 00  4E 65 74 77  6F 72 6B 20  4D 61 73 6B  0...Network Mask
 </span><span>0005F5F0   00 00 00 00  <span style="background-color:red">31 39 32 2E  31 36 38 2E  31 36 38 2E</span>  ....<span style="background-color:red">192.168.168.</span>
 </span><span>0005F600   <span style="background-color:red">31</span> 00 00 00  47 61 74 65  77 61 79 20  49 50 20 41  <span style="background-color:red">1</span>...Gateway IP A
@@ -614,14 +641,23 @@ the ASCII encoding of `192` (0x313932):
 </span></code></pre>
 
 
-The ASCII representation of the data confirms that we're in the right place. I
-changed the local and gateway addresses to `192.168.1.25` and `192.168.1.1`
+The ASCII representation of the data confirms that we're in the right place.
+
+The game is that all the changes to the binary must be made by updating values in-place.
+It's not possible to insert new bytes between existing bytes, nor to remove bytes.
+This is because parts of the code will refer to other parts of the code and
+static data (like these IP addresses) by their relative offset from one
+another. If we insert or remove bytes then that will change the relative
+position of all following bytes, causing references to no longer point to the
+correct place.
+
+I changed the local and gateway addresses to `192.168.1.25` and `192.168.1.1`
 respectively, again choosing an arbitrary unused valid address for the local
-address and my router's address as the gateway address. These strings are
-(luckily!) shorter than the original addresses so they'll fit in the allocated
-space. I overwrote the remaining characters of the original strings with 0s as
-these as null-terminated C strings (so technically I just needed to put a single
-0 byte immediately after each new value).
+address and my router's address as the gateway address. The new address are
+made up of fewer characters than the original addresses so they'll fit in the
+allocated space. I overwrote the remaining characters of the original strings
+with 0s as these as null-terminated C strings (so technically I just needed to
+put a single 0 byte immediately after the end of each string).
 
 <pre><code><span>0005F5E0   30 00 00 00  4E 65 74 77  6F 72 6B 20  4D 61 73 6B  0...Network Mask
 </span><span>0005F5F0   00 00 00 00  <span style="background-color:red">31 39 32 2E  31 36 38 2E  31 2E 31</span> 00  ....<span style="background-color:red">192.168.1.1</span>.
@@ -758,15 +794,15 @@ address. This is determined at runtime by how memory is mapped by the page
 table. The logic for setting this up exists somewhere in the project, but trying
 to determine which virtual address maps to a particular offset into the bootable
 image without the ability to instrument the code or any debugging tooling sounds
-unreliable.
+unpleasant.
 
-No matter what approach I eventually take it would be good to know where in the
+No matter what approach I eventually take, I want t know where in the
 binary image `call_me_maybe` is located. To do this we'll benefit from some
 slightly more sophisticated tools. It will be helpful to be able to use the
 debug symbols in object files to learn which sequences of instructions in the
 binary correspond to which functions in the source code. Short of setting up an
-ARM toolchain, I found the `objdump` implementation that comes with LLVM
-(specifically the `llvm` derivation from nixpgs) can disassemble the object
+ARM toolchain, I found that the `objdump` implementation that comes with LLVM
+(specifically the `llvm` derivation from nixpkgs) can disassemble the object
 files in the project well enough, despite them having been compiled for a
 foreign architecture (I'm using the x86_64 llvm package and these files were
 compiled for 32-bit ARM).
@@ -835,8 +871,8 @@ build/arm/nslu2/sos/src/buzzer.o`. The relevant part of the output is:
 This shows function names (`buzzer_init`, `tone`, `call_me_maybe`), the offset
 and encoding of each instruction, and the more human readable assembly
 code corresponding to that instruction. The human readable instructions produced
-by this tool look highly suspect, so I quickly learnt to ignore them and just
-focus on the machine code (e.g. the first instruction of `buzzer_init` is `e3 a0 23 3a `).
+by this tool look highly suspect to me and I quickly learnt to ignore them and just
+focus on the machine code (e.g. the first instruction of `buzzer_init` is `e3 a0 23 3a`).
 
 I ended up relying heavily on an [online ARM
 (dis)assembler](https://shell-storm.org/online/Online-Assembler-and-Disassembler)
@@ -844,7 +880,7 @@ for decoding and eventually encoding instructions.
 
 As a sanity check, I disassembled the `buzzer_init` function since it's short.
 The concatenation of the machine code of its 4 instructions (copied from the
-output of `llvm-objdump` above is:
+output of `llvm-objdump` above) is:
 ```
 e3 a0 23 3a e5 9f 30 04 e5 83 20 00 e1 2f ff 1e
 ```
@@ -878,12 +914,12 @@ instructions for the slug's processor architecture.
 
 Observing the instruction offsets in the object file as analyzed by
 `llvm-objdump`, all the functions are consecutive. This invites the question as
-to whether they are consecutive, and with the same relative offset in the binary
+to whether they are also consecutive with the same relative offset in the binary
 image.
 
 Choosing a prefix of a function's machine code (taken from the output of
 `llvm-objdump`) which is long enough to be unique
-in the binary image, and searching for it with `hexedit`, one locate that
+in the binary image, and searching for it with `hexedit`, I could locate that
 function in the binary image. I've highlighted the machine code for
 `buzzer_init`, `tone`, and the beginning of `call_me_maybe` in red, green, and
 blue respectively in the following output from `hexedit`:
@@ -908,9 +944,18 @@ blue respectively in the following output from `hexedit`:
 </span><span>
 </span></code></pre>
 
+Cross referencing this with the `objdump` output it becomes clear that the
+layout of this part of bootable image is the same as the object file
+`buzzer.o`. The location in memory of the buzzer functions relative to each
+other will be the same as in the object file.
+
 Staring at this for a while I had the idea of rather than working out how to
-call `call_me_maybe`, I could modify the `buzzer_init` function to jump to the
-beginning of `call_me_maybe` instead of returning. ARM assembly has a `b`
+call `call_me_maybe` as a function, I could modify the `buzzer_init` function to jump directly to the
+beginning of `call_me_maybe` instead of returning. When the `main` function
+calls `buzzer_init`, that would then cause the song to play immediately rather
+than requiring a separate call to `call_me_maybe`.
+
+ARM assembly has a `b`
 instruction which jumps to a nearby address specified by a relative offset. So
 if we're replacing the final instruction of `buzzer_init` to jump to the
 beginning of `call_me_maybe`, that's a relative offset of `0xE4 - 0x60 = 0x84`.
@@ -960,7 +1005,7 @@ Loading first process.  Trying to set up a page table!
 Hacker voice: _I'm in._
 
 We're successfully jumping into the `call_me_maybe` function as evidence by the
-printouts, but it's not playing any sound yet. Here's the code again for
+printouts, but it's not playing any sound yet. Here's the C code again for
 convenience:
 ```c
 void call_me_maybe(int beat_len) {
@@ -1004,10 +1049,12 @@ void call_me_maybe(int beat_len) {
 }
 ```
 
-Normally this function gets passed an argument determining the duration of each
-beat. But now that this function isn't technically being called but jumped into,
-whatever register stores this value isn't being initialized to anything in
+Normally this function gets passed a `beat_len` argument determining the duration of each
+beat. But now that this function isn't being called but rather _jumped into_,
+whatever processor register stores the beat length isn't being initialized to anything in
 particular. Its value will be whatever it was before jumping into this function.
+Probably this values is very low, possibly 0, so the buzzes are too short to be heard.
+
 Let's take al look at the disassembly of the beginning of `call_me_maybe`:
 ```
 0x0000000000000000:  E9 2D 40 F8    push  {r3, r4, r5, r6, r7, lr}
@@ -1039,18 +1086,24 @@ Let's take al look at the disassembly of the beginning of `call_me_maybe`:
 
 Looking at this code my guess is that the register `r0` is being used to pass the first
 argument to functions. Thus the second line `mov   r6, r0` is saving the beat
-length (`call_me_maybe`'s first argument) to `r6` before using `r0` for some other
+length (`call_me_maybe`'s first and only argument) to `r6` before using `r0` for some other
 purpose. To increase the beat length we need to replace this second instruction
 with an instruction that stores a higher value in `r6`. This has to be done with
 a single instruction, since the first instruction of this function is important
 in maintaining the function calling convention, and the third instruction is
-necessary for the function's logic.
+necessary for the function's logic, and remember we can't insert or remove bytes -
+only update them in place.
 
-There are several ways to do this, but I found that taking the current value of
-`r6` at that point in the program and doubling it (by shifting it one bit to the
-left) gives a good note length. That is I replaced the second instruction with
-`lsl r6, r6, #1` which assembles to `E1 A0 60 86`. I use a process of trial end
-error to come up with a good sounding beat length.
+I found that the original value of `r6` before the second instruction set it to
+`r0` was non-zero, and replacing the `mov r6, r0` with an instruction that does nothing
+(such as `mov r0, r0`) caused the song to play, although too fast. But that
+means this approach is definitely going to work!
+
+Rather than doing nothing, I need the second instruction to increase the
+existing value of `r6` by some amount. There are several approaches we could
+take, but I found that simply doubling its value by shifting it by one bit to
+the left gives a good note length. That is I replaced the second instruction
+with `lsl r6, r6, #1` which assembles to `E1 A0 60 86`.
 
 Here's the result:
 <iframe width="560" height="315" src="https://www.youtube.com/embed/s_51do9YbHw?si=Fpm21KF1jjAWMK0y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
