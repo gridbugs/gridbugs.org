@@ -32,7 +32,7 @@ affectionately referred to as the Slug, today was that day.
 Plugging it into power and switching it on illuminated the power indicator LED.
 There's no screen or input devices, so all interaction will be via an
 aftermarket USB serial port. In the image below the USB serial port is the
-left-most port which was clearly made by some kind of power tool.
+left-most port which was clearly made by some kind of tool.
 
 ![Back of the slug showing the aftermarket serial port](back.jpg)
 
