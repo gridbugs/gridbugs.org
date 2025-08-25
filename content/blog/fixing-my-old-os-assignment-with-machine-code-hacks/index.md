@@ -1123,3 +1123,32 @@ with `lsl r6, r6, #1` which assembles to `E1 A0 60 86`.
 
 Here's the result:
 <iframe width="560" height="315" src="https://www.youtube.com/embed/s_51do9YbHw?si=Fpm21KF1jjAWMK0y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+What strikes me about this project is that I worked on it in a time before I
+started compulsively uploading all the code I wrote to a code forge like github.
+This was for a university assignment so perhaps there was a policy against
+that sort of thing. At this time github was still relatively new and I wasn't
+very familiar with version control, so it sometimes seemed too complex to be
+worth using it for every project.
+
+Nowadays I can't imagine a workflow that doesn't involve regular
+commits to a version control system and it's so easy to push all my code to
+github that I doubt I'll ever lose access to code I wrote since 2015 or so.
+I horde everything in the off chance that it will be useful or at least
+interesting to someone in the future.
+
+Since this assignment was group work we did use version control to manage
+changes. My copy of the source still contains version control metadata and I can
+see we used my assignment partner's user account on the university server as our
+centralized repository, and I doubt that's archived anywhere.
+The last commit in my copy of the project is from midway through the semester.
+Fortunately the copy I made on my account was taken after I added the Easter
+egg.
+
+```
+changeset:   41:1329df276e9a
+parent:      35:29e1993e26ba
+user:        Stephen Sherratt <ssteve@cse.unsw.edu.au>
+date:        Sun Jul 29 16:25:22 2012 +1000
+summary:     wrote function that plays Call Me Maybe
+```
