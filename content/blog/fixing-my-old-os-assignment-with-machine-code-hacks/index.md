@@ -32,11 +32,11 @@ affectionately referred to as the Slug, today was that day.
 Plugging it into power and switching it on illuminated the power indicator LED.
 There's no screen or input devices, so all interaction will be via an
 aftermarket USB serial port. In the image below the USB serial port is the
-left-most port which was clearly made by some kind of tool.
+left-most port which was clearly made by a power tool.
 
 ![Back of the slug showing the aftermarket serial port](back.jpg)
 
-Plugging a USB cable into my computer, and the serial device shows up in the
+Plugging it into my computer with a USB cable causes the serial device to show up in the
 output of `dmesg`:
 ```
 [138157.363235] usb 1-5: new full-speed USB device number 18 using xhci_hcd
@@ -97,7 +97,7 @@ $ grep -rni 'ttyUSB0'
 nslu2-util/nslu2.c:67:  char defport[] = "/dev/ttyUSB0";
 ```
 
-The `nslu2-util` program is a command-line utility for start, stopping,
+The `nslu2-util` program is a command-line utility for starting, stopping,
 and resetting the slug. Students in the OS course were given a copy of the tool.
 It's a tiny C project with a `Makefile` and running `make` built an `nslu2`
 executable:
@@ -114,8 +114,8 @@ Terminal ready
 ```
 
 Getting garbage text over a serial port usually means the baudrate is wrong.
-The default baudrate was 9600. Trying 115200 instead and resetting the slug
-and no I can read the output:
+The default baudrate was 9600. After trying 115200 instead and resetting the slug
+I could read the output:
 ```
 $ picocom -b 115200 /dev/ttyUSB0
 ...
@@ -146,9 +146,10 @@ The printout indicates that the slug is running a default boot script:
 load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin;go
 ```
 
-I don't remember interacting with RedBoot as a student, so presumably that boot
-script would cause our project to boot. That script would have been set up by
-the people running the OS course; it would be different or absent on a brand new slug.
+I don't remember interacting with RedBoot as a student, this command must have
+once caused our OS project to start running. That script would have been set up by the
+people running the OS course; it would be different or absent on a brand new
+slug.
 
 The line above is also interesting:
 ```
@@ -271,7 +272,7 @@ Load a file
 
 I found some better documentation
 [online](https://doc.ecoscentric.com/ref/download-command.html) which explained
-that the `-m` option accepts `TFTP` or `HTTP`. There doesn't seem to be a way to
+that the `-m` option accepts `TFTP` or `HTTP`. There's no way to
 specify the port number. For some reason this caused me to prefer
 [TFTP](https://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol), possibly
 because I'm so used to HTTP servers running on ports besides the default (80)
@@ -456,8 +457,8 @@ halting...
 ```
 
 This is debug output from our OS project which is pretty exciting. It's running!
-It looks like it's failing an assertion after unsuccessfully attempting to
-connect to the network. It looks like it has the same IP addresses hard-coded
+It's failing an assertion after unsuccessfully attempting to
+connect to the network. It has the same IP addresses hard-coded
 into it as the initial boot script, so can't connect to my home network, and the code
 is written in such a way that doesn't let it proceed to boot without network access.
 
@@ -465,13 +466,13 @@ We'll get to fixing this, but first let's talk about the goal of this endeavour.
 
 ## Call Me Maybe
 
-I built an Easter egg into the OS. The slug has a buzzer, and there's a
-particular bit in a register that can be toggled at a given frequency to buzz at
-that frequency. I wrote this code in mid 2012 and so the obvious song to play
-according to 20 year old me was Call Me Maybe by Carly Rae Jepsen. I remember
-implementing a device driver with a unix-style "everything's a file" interface,
-where opening the file `/dev/maybe` would lock up the OS while it buzzed the
-hottest song of 2012.
+I built an [Easter egg](https://en.wikipedia.org/wiki/Easter_egg_(media)) into
+the OS. The slug has a buzzer, and there's a particular bit in a hardware register that
+can be toggled at a given frequency to buzz at that frequency. I wrote this
+code in mid 2012 and so the obvious song to play according to 20 year old me
+was [Call Me Maybe by Carly Rae Jepsen](https://www.youtube.com/watch?v=fWNaR-rxAic). I remember implementing a device driver
+with a unix-style "everything's a file" interface, where opening the file
+`/dev/maybe` would lock up the OS while it buzzed the hottest song of 2012.
 
 Unfortunately it appears the snapshot of the project I stored on the university
 server was not its final form. I did most of the work for this project on a
@@ -545,7 +546,7 @@ Hey I just met you
 So once the network issue is fixed, my goal is going to be getting Call Me Maybe
 to play on the buzzer of my slug.
 
-_Why don't you just change it to `#define I_JUST_MET_YOU 1`?_
+_Why don't you just call the `call_me_maybe` function?_
 
 Well...
 
@@ -578,12 +579,13 @@ $ strings bootimg.bin | grep '192\.168'
 192.168.168.2
 ```
 
-To change them to suitable addresses, one must simplify _modify the binary
+To change them to suitable addresses, one can simply _modify the binary
 directly_! I don't own a [magnetized needle](https://xkcd.com/378/) so instead
 I'll use the tool `hexedit`.
 
-When you run `hexedit bootimg.bin` it shows you the hexadecimal and ASCII
-representations of the binary data in the image file:
+The `hexedit` tool lets you print and modify the raw bytes in any type of file.
+When you run `hexedit bootimg.bin` it prints the hexadecimal and ASCII
+representations of the binary data in the file:
 ```
 000000B0   E5 9F 03 24  E5 9F 13 24  E5 9F 23 24  EB 00 04 97  ...$...$..#$....
 000000C0   E5 9F 03 20  EB 00 00 F6  E3 50 00 00  0A 00 00 02  ... .....P......
@@ -604,7 +606,7 @@ representations of the binary data in the image file:
 -**  bootimg.bin       --0x0/0x7C000--0%---------------------------------------
 ```
 
-To find the addresses, search for sequence of hexadecimal digits representing
+To find the IP addresses, we'll be changing, search for a sequence of hexadecimal digits representing
 the ASCII encoding of part of the address.
 
 Here's an ASCII table so you can play along at home:
@@ -643,7 +645,7 @@ For example to find `192`, search for `0x313932`:
 
 The ASCII representation of the data confirms that we're in the right place.
 
-The game is that all the changes to the binary must be made by updating values in-place.
+The game is that all the changes to the binary file must be made by updating values in-place.
 It's not possible to insert new bytes between existing bytes, nor to remove bytes.
 This is because parts of the code will refer to other parts of the code and
 static data (like these IP addresses) by their relative offset from one
@@ -653,7 +655,7 @@ correct place.
 
 I changed the local and gateway addresses to `192.168.1.25` and `192.168.1.1`
 respectively, again choosing an arbitrary unused valid address for the local
-address and my router's address as the gateway address. The new address are
+address and my router's address as the gateway address. The new addresses are
 made up of fewer characters than the original addresses so they'll fit in the
 allocated space. I overwrote the remaining characters of the original strings
 with 0s as these as null-terminated C strings (so technically I just needed to
@@ -757,7 +759,7 @@ Debug halt syscall from user thread 0xf0063e00
 halting...
 ```
 
-It still crashes but that's ok. Remember this is a snapshot of the project when
+It still crashes eventually but that's ok. Remember this is a snapshot of the project when
 it was half finished. What matters is that it prints the line:
 ```
 SOS entering syscall loop
@@ -791,12 +793,12 @@ So now we just need to call the `call_me_maybe` function.
 
 To call a function we need to know its address. Specifically its _virtual_
 address. This is determined at runtime by how memory is mapped by the page
-table. The logic for setting this up exists somewhere in the project, but trying
+table. The logic for setting up the page table up exists somewhere in the project, but trying
 to determine which virtual address maps to a particular offset into the bootable
 image without the ability to instrument the code or any debugging tooling sounds
 unpleasant.
 
-No matter what approach I eventually take, I want t know where in the
+No matter what approach I eventually take, I want to know where in the
 binary image `call_me_maybe` is located. To do this we'll benefit from some
 slightly more sophisticated tools. It will be helpful to be able to use the
 debug symbols in object files to learn which sequences of instructions in the
@@ -1049,60 +1051,74 @@ void call_me_maybe(int beat_len) {
 }
 ```
 
-Normally this function gets passed a `beat_len` argument determining the duration of each
-beat. But now that this function isn't being called but rather _jumped into_,
+Normally this function gets passed a `beat_len` argument specifying the duration of each
+beat in microseconds. But now that this function isn't being called but rather _jumped into_,
 whatever processor register stores the beat length isn't being initialized to anything in
 particular. Its value will be whatever it was before jumping into this function.
-Probably this values is very low, possibly 0, so the buzzes are too short to be heard.
+Probably this values is very low, possibly 0, so the buzzes are too short to be
+heard, hence the silence. More evidence for this theory is that all the song
+lyrics are printed immediately, rather than with a noticeable delay in between.
 
-Let's take al look at the disassembly of the beginning of `call_me_maybe`:
+Let's take a look at the disassembly of the beginning of `call_me_maybe` which I've manually annotated:
 ```
 0x0000000000000000:  E9 2D 40 F8    push  {r3, r4, r5, r6, r7, lr}
-0x0000000000000004:  E1 A0 60 00    mov   r6, r0
+0x0000000000000004:  E1 A0 60 00    mov   r6, r0      }- save the beat_len arg in r6
 0x0000000000000008:  E5 9F 01 98    ldr   r0, [pc, #0x198]
-0x000000000000000c:  EB 00 16 16    bl    #0x586c
-0x0000000000000010:  E1 A0 00 06    mov   r0, r6
-0x0000000000000014:  EB FF FF C0    bl    #0xffffff1c
-0x0000000000000018:  E3 A0 0F 62    mov   r0, #0x188  }- corresponds to note G4
-0x000000000000001c:  E1 A0 10 06    mov   r1, r6
-0x0000000000000020:  EB FF FF D7    bl    #0xffffff84
+0x000000000000000c:  EB 00 16 16    bl    #0x586c     }- call printf
+0x0000000000000010:  E1 A0 00 06    mov   r0, r6      }- arg for udelay
+0x0000000000000014:  EB FF FF C0    bl    #0xffffff1c }- call udelay
+0x0000000000000018:  E3 A0 0F 62    mov   r0, #0x188  }- first arg for tone (note G4)
+0x000000000000001c:  E1 A0 10 06    mov   r1, r6      }- second arg for tone (beat_len)
+0x0000000000000020:  EB FF FF D7    bl    #0xffffff84 }- call tone
 0x0000000000000024:  E2 86 70 03    add   r7, r6, #3
 0x0000000000000028:  E3 56 00 00    cmp   r6, #0
 0x000000000000002c:  A1 A0 70 06    movge r7, r6
 0x0000000000000030:  E1 A0 71 47    asr   r7, r7, #2
-0x0000000000000034:  E3 A0 00 F6    mov   r0, #0xf6   }- corresponds to note B3
+0x0000000000000034:  E3 A0 00 F6    mov   r0, #0xf6   }- first arg for tone (note B3)
 0x0000000000000038:  E1 A0 10 07    mov   r1, r7
-0x000000000000003c:  EB FF FF D0    bl    #0xffffff84
+0x000000000000003c:  EB FF FF D0    bl    #0xffffff84 }- call tone
 0x0000000000000040:  E0 86 4F A6    add   r4, r6, r6, lsr #31
 0x0000000000000044:  E1 A0 40 C4    asr   r4, r4, #1
 0x0000000000000048:  E3 A0 5F 49    mov   r5, #0x124  }
-0x000000000000004c:  E2 85 50 01    add   r5, r5, #1  }- corresponds to note D4
+0x000000000000004c:  E2 85 50 01    add   r5, r5, #1  }- first arg for tone (note D4)
 0x0000000000000050:  E1 A0 00 05    mov   r0, r5      }
 0x0000000000000054:  E1 A0 10 04    mov   r1, r4
-0x0000000000000058:  EB FF FF C9    bl    #0xffffff84
-0x000000000000005c:  E3 A0 0F 62    mov   r0, #0x188  }- corresponds to note G4
+0x0000000000000058:  EB FF FF C9    bl    #0xffffff84 }- call tone
+0x000000000000005c:  E3 A0 0F 62    mov   r0, #0x188  }- first arg for tone (note G4)
 0x0000000000000060:  E1 A0 10 07    mov   r1, r7
 ```
 
-Looking at this code my guess is that the register `r0` is being used to pass the first
-argument to functions. Thus the second line `mov   r6, r0` is saving the beat
+It appears `r0` is being used to pass the first
+argument to functions (and `r1` is used to pass the second argument).
+
+To build some confidence in this hypothesis, look at the signature for the `tone` function:
+```c
+void tone(int frequency, int time);
+```
+
+Throughout the assembly of `call_me_maybe` we see `r0` being set to a
+representation of the note frequency and `r1` being passed the note duration right before each `bl #0xffffff84`
+instruction, which looks like calls to the `tone` function.
+
+The second line `mov   r6, r0` is saving the beat
 length (`call_me_maybe`'s first and only argument) to `r6` before using `r0` for some other
-purpose. To increase the beat length we need to replace this second instruction
+purpose (to pass the argument to `printf`). To increase the beat length we need to replace this second instruction
 with an instruction that stores a higher value in `r6`. This has to be done with
 a single instruction, since the first instruction of this function is important
-in maintaining the function calling convention, and the third instruction is
-necessary for the function's logic, and remember we can't insert or remove bytes -
+in maintaining the function calling convention (otherwise the OS would crash
+when `call_me_maybe` returned), and the third instruction is necessary for
+printing "Hey I just met you". And remember we can't insert or remove bytes -
 only update them in place.
 
-I found that the original value of `r6` before the second instruction set it to
-`r0` was non-zero, and replacing the `mov r6, r0` with an instruction that does nothing
-(such as `mov r0, r0`) caused the song to play, although too fast. But that
-means this approach is definitely going to work!
+I found that the original value of `r6` (before the second instruction set it to
+the contents of `r0`) was non-zero, as replacing the `mov r6, r0` with an instruction that does nothing
+(such as `mov r0, r0`) caused the song to play, albeit too fast. But that
+indicates this approach will definitely work!
 
 Rather than doing nothing, I need the second instruction to increase the
-existing value of `r6` by some amount. There are several approaches we could
-take, but I found that simply doubling its value by shifting it by one bit to
-the left gives a good note length. That is I replaced the second instruction
+existing value of `r6` by some amount. There are several approaches I could have
+taken, but I found that simply doubling its value by shifting it by one bit to
+the left gives a suitable beat length. I replaced the second instruction
 with `lsl r6, r6, #1` which assembles to `E1 A0 60 86`.
 
 Here's the result:
