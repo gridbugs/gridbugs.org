@@ -10,8 +10,14 @@ tags = ["ocaml"]
 [Alice](https://github.com/alicecaml/alice) is an experimental OCaml build
 system emphasizing accessibility. It's still very much a work in progress and
 nowhere near ready for regular use. Currently it can build multi-file OCaml
-projects to executables and libraries. Its UI is inspired by cargo. Here's a
-tiny demo:
+projects to executables and libraries. Its UI is inspired by cargo.
+
+I'm one of the core Dune developers for my day job. Dune is a mature and widely
+used OCaml build system which it difficult to make large structural changes to
+its UI and packaging philosophy. Alice is an experiment exploring the design
+space of OCaml build systems when these constraints are lifted.
+
+Here's a tiny demo:
 
 ```
 $ alice new hello
@@ -46,7 +52,8 @@ major priority for the project. Instead I'll design a packaging system
 prioritizing easy of publishing and maintenance with as low cognitive load as
 possible, and then see how opam compatibility can fit into that picture.
 
-The name comes from an Australian kids song.
+The name comes from an [Australian children's
+song](https://www.youtube.com/watch?v=XM7Jnetdf0I)..
 
 My next two goals for the project are Windows support and basic package
 management.
