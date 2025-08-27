@@ -49,7 +49,7 @@ There's currently no packaging story and packages cannot yet depend on one
 another. It would be nice to one day support depending on opam packages but this
 is not going to be the default package format and opam compatibility isn't a
 major priority for the project. Instead I'll design a packaging system
-prioritizing easy of publishing and maintenance with as low cognitive load as
+prioritizing ease of publishing and maintenance with as low cognitive load as
 possible, and then see how opam compatibility can fit into that picture.
 
 The name comes from an [Australian children's
