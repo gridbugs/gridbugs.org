@@ -295,13 +295,12 @@ re-downloaded so I'm not sure if the cache is even enabled (but then why the
 cache errors when I was on a different drive?).
 
 Anyway incremental builds don't suffer the same performance issues so I'll move
-on for now. The goal of this project isn't to debug Dune performance issues with
-package management on Windows.
+on. The goal of this project isn't to debug Dune performance issues on Windows.
 
 Now that I have Alice building on Windows the next step is to make sure
-`ocamlformat` and `ocamllsp` work and integrate into my editor. I built binary
-versions of these tools for Windows in preparation for today's work but I didn't
-test them yet. Here goes.
+`ocamlformat` and `ocamllsp` work and integrate them into my editor. I built
+binary versions of these tools for Windows in preparation for today's work but I
+didn't test them yet.
 
 I'm going to be using Neovim with the same
 [configuration](https://github.com/gridbugs/dotfiles/tree/main/nvim) as I use
@@ -318,11 +317,31 @@ has no concept of Windows at all, and running that command on my machine prints
 
 When Alice installs tools it creates a "root" which is a directory resembling a
 typical Unix filesystem root, with subdirectories like `bin` and `share`. This
-lets it include things like manual pages when installing tools. Over time I
-expect multiple different versions of the compiler to be supported (though
-currently `5.3.1+relocatable` is the only one). Similar to `rustup` I want to
-make it possible to change the global root that is considered "active" by
-running a command `alice tools change`. This creates a symlink in at
-`~/.alice/current` pointing to (say) `~/.alice/roots/5.3.1+relocatable`.
+lets it include things like manual pages when installing tools as well as the
+tools themselves. Over time I expect multiple different versions of the compiler
+to be supported (though currently `5.3.1+relocatable` is the only one). Similar
+to [`rustup`](https://rustup.rs/) I want to make it possible to change the
+global root that is considered "active" by running the command `alice tools
+change`. This creates a symlink at `~/.alice/current` pointing to (say)
+`~/.alice/roots/5.3.1+relocatable`.
 
-The problem on Windows is that creating a symlink requires admin permissions.
+The problem is that creating a symlink on Windows requires admin permissions.
+My solution is to copy the selected root into `~/.alice/current` instead.
+
+Now it works:
+```
+PS D:\src\alice> alice tools get
+Fetching ocaml.5.3.1+relocatable...Done!
+Unpacking ocaml.5.3.1+relocatable...Done!
+Successfully installed ocaml.5.3.1+relocatable!
+
+Fetching ocamllsp.1.22.0...Done!
+Unpacking ocamllsp.1.22.0...Done!
+Successfully installed ocamllsp.1.22.0!
+
+Fetching ocamlformat.0.27.0...Done!
+Unpacking ocamlformat.0.27.0...Done!
+Successfully installed ocamlformat.0.27.0!
+
+No current root was found so making 5.3.1+relocatable the current root.
+```
