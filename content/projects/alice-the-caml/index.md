@@ -4,7 +4,7 @@ date = 2025-08-26
 path = "alice-the-caml"
 
 [taxonomies]
-tags = ["ocaml"]
+tags = ["ocaml", "alice"]
 +++
 
 [Alice](https://github.com/alicecaml/alice) is an experimental OCaml build
