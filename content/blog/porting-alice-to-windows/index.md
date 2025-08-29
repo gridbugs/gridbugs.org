@@ -10,6 +10,9 @@ tags = ["ocaml", "windows", "alice"]
 og_image = "bliss.jpg"
 +++
 
+![A grassy hill with a blue sky containing a single cloud. The closest thing to
+the Windows XP Bliss wallpaper within walking distance of my home.](banner.jpg)
+
 [Alice](https://github.com/alicecaml/alice) is my toy OCaml build system
 project where I ask "What if [Cargo](https://doc.rust-lang.org/stable/cargo/)
 but for OCaml?". My main priority when designing Alice is accessibility but
@@ -344,4 +347,204 @@ Unpacking ocamlformat.0.27.0...Done!
 Successfully installed ocamlformat.0.27.0!
 
 No current root was found so making 5.3.1+relocatable the current root.
+```
+
+Even though that command installed the same version of the tools I'm already
+using, I updated my `$env:PATH` variable to include `$HOME\.alice\current\bin`,
+so now I have:
+```
+PS D:\src\alice> Get-Command ocamlopt
+
+CommandType     Name          Version    Source
+-----------     ----          -------    ------
+Application     ocamlopt.exe  0.0.0.0    C:\Users\steph\.alice\current\bin\ocamlopt.exe
+```
+
+Next up let's see if it's possible to create a new project using Alice on
+Windows:
+```
+PS D:\tmp> alice new foo
+Created new executable project in D:\tmp\foo
+
+PS D:\tmp> find foo
+foo
+foo/.gitignore
+foo/Alice.toml
+foo/src
+foo/src/main.ml
+```
+
+Can we build it?
+```
+PS D:\tmp\foo> alice build
+Program "ocamldep.opt" not found!
+```
+
+I do have `ocamldep.opt` installed as part of the OCaml compiler toolchain
+however I suspect the `.exe` extension is causing the problem:
+```
+PS D:\tmp\foo> Get-Command ocamldep.opt
+
+CommandType Name             Version Source
+----------- ----             ------- ------
+Application ocamldep.opt.exe 0.0.0.0 C:\Users\steph\.alice\current\bin\ocamldep.opt.exe
+```
+
+I updated Alice to include the `.exe` on Windows. I also needed to update the
+invocation of `ocamlopt.opt` to `ocamlopt.opt.exe`. After this change
+`alice build` could run successfully.
+
+```
+PS D:\tmp\foo> alice build
+PS D:\tmp\foo> ls .\build\
+
+
+    Directory: D:\tmp\foo\build
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        2025-08-29     10:25        3134570 foo.exe
+-a----        2025-08-29     10:25            180 main.cmi
+-a----        2025-08-29     10:25            196 main.cmx
+-a----        2025-08-29     10:18             38 main.ml
+-a----        2025-08-29     10:25           1226 main.o
+
+PS D:\tmp\foo> .\build\foo.exe
+Hello, World!
+```
+
+Alice has some commands for cleaning and running a project too:
+```
+PS D:\tmp\foo> alice clean
+PS D:\tmp\foo> alice run
+```
+
+Need to add some more printouts so it's more clearer when a command completes
+successfully. In the case of `alice run` something did go wrong since it didn't
+print "Hello, World!". When I press enter again I see "Hello, World!" print at
+the next prompt:
+```
+PS D:\tmp\foo> alice run
+PS D:\tmp\foo> Hello, World!
+```
+
+Alice runs programs with `Unix.execv`. Here's its documentation:
+
+> `execv prog args` execute the program in file `prog`, with the arguments `args`, and the current process environment. Note that the first argument, `args.(0)`, is by convention the filename of the program being executed, just like `Sys.argv.(0)`. These `execv*` functions never return: on success, the current program is replaced by the new one.
+>
+> On Windows: the CRT simply spawns a new process and exits the current one. This will have unwanted consequences if e.g. another process is waiting on the current one. Using `create_process` or one of the `open_process_*` functions instead is recommended.
+>
+> ***@raise*** `Unix_error` on failure
+
+As the docs suggest I replaced `Unix.execv` with `Unix.create_process`.
+
+```
+PS D:\tmp\foo> alice run
+Hello, World!
+```
+
+Next I want to test `alice dot` which prints the graphviz dot sourcecode for the
+build graph:
+
+```
+PS D:\tmp\foo> alice dot
+digraph {
+  "foo" -> {"main.cmx", "main.o"}
+  "main.cmx" -> {"main.ml"}
+  "main.o" -> {"main.ml"}
+}
+```
+
+The `.exe` is missing from the executable name. Windows obviously allows file
+extensions like `.exe` to be omitted under some conditions since `alice run` was
+able to execute `foo.exe` without its extension. It would still be better to
+include the file extension here and in any other debug output printed by Alice.
+Another place where the extension is missing is from the build commands
+themselves. Rerunning the build with verbose logging:
+```
+PS D:\tmp\foo> alice build -vv
+[DEBUG] copying source file: main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -c main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -o foo main.cmx
+```
+
+The OCaml compiler is clearly able to add the appropriate extension even though
+it was omitted from `-o foo` but it would still be better to update the build
+rules so that on Windows they use the correct extension for executable files.
+
+```
+PS D:\tmp\foo> alice build -vv
+[DEBUG] copying source file: main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -c main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -o foo.exe main.cmx
+
+PS D:\tmp\foo> alice dot
+digraph {
+  "foo.exe" -> {"main.cmx", "main.o"}
+  "main.cmx" -> {"main.ml"}
+  "main.o" -> {"main.ml"}
+}
+```
+
+Just for fun here's a render of the graph made with `alice dot | dot -Tsvg > graph.svg`
+showing dependencies between build artifacts and source files.
+
+![A directed graph with nodes labeled with file names and edges representing build dependencies](graph.svg)
+
+I added a second source file and interface to exercise Alice on a slightly less
+trivial case:
+```
+PS D:\tmp\foo> alice build -vv
+[DEBUG] copying source file: foo.mli
+[DEBUG] running build command: ocamlopt.opt.exe -g -c foo.mli
+[DEBUG] copying source file: foo.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -c foo.ml
+[DEBUG] copying source file: main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -c main.ml
+[DEBUG] running build command: ocamlopt.opt.exe -g -o foo.exe foo.cmx main.cmx
+```
+
+![A directed graph with nodes labeled with file names and edges representing build dependencies](graph2.svg)
+
+I did a little more work not directly relating to supporting windows but which
+will make it easier for Alice to find the OCaml compiler, assuming the toolchain
+was installed by Alice. If Alice would run an external program (such as the
+OCaml compiler) and the program isn't in the user's `PATH` variable then Alice
+will run the program from the current root (like `~/.alice/current`). This
+will make Alice easier to set up since it removes the need to add
+`~/.alice/current/bin` to `PATH`.
+
+With all these changes, here's how to get started on Windows with Alice. You'll
+need a C compiler such as LLVM installed in order for the OCaml compiler to work
+correctly, but no installation of OCaml or opam is necessary. Alice is highly
+experimental and far from ready for use developing real OCaml software.
+
+Makes a pretty slick demo though.
+```
+PS C:\Users\steph> alice tools get
+  Fetching ocaml.5.3.1+relocatable...
+ Unpacking ocaml.5.3.1+relocatable...
+
+Successfully installed ocaml.5.3.1+relocatable!
+
+  Fetching ocamllsp.1.22.0...
+ Unpacking ocamllsp.1.22.0...
+
+Successfully installed ocamllsp.1.22.0!
+
+  Fetching ocamlformat.0.27.0...
+ Unpacking ocamlformat.0.27.0...
+
+Successfully installed ocamlformat.0.27.0!
+
+PS C:\Users\steph> alice new hello
+  Creating new executable package "hello" in C:\Users\steph\hello
+
+PS C:\Users\steph> cd hello
+PS C:\Users\steph\hello> alice run
+ Compiling hello v0.1.0
+   Running C:\Users\steph\hello\build\hello.exe
+
+Hello, World!
 ```
