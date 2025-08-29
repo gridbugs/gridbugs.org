@@ -1,13 +1,13 @@
 +++
-title = "Porting Alice to Windows"
+title = "Porting my Toy OCaml Build System to Windows"
 date = 2025-08-28
-path = "porting-alice-to-windows"
+path = "porting-my-toy-ocaml-build-system-to-windows"
 
 [taxonomies]
 tags = ["ocaml", "windows", "alice"]
 
 [extra]
-og_image = "bliss.jpg"
+og_image = "screenshot.png"
 +++
 
 ![A grassy hill with a blue sky containing a single cloud. The closest thing to
@@ -20,7 +20,7 @@ perhaps a more suitable term would be _inclusivity_ as my goal is for the tool
 to be usable by as many people as possible. Alice is still in its infancy and is
 currently used by _nobody_ but if the day comes when it becomes a viable tool
 for building OCaml software I would hate to systematically exclude a potential
-    user base because of baked-in assumptions made early in its design.
+user base because of baked-in assumptions made early in its design.
 
 I do most of my development on Linux and macOS which means I'm likely to
 make design decisions favouring those systems, possibly at the expense of
@@ -42,16 +42,26 @@ a tool, who is _really_ being excluded?
 Today I'm going to port Alice to Windows.
 
 To prepare for this work I've compiled a relocatable OCaml compiler toolchain for
-Windows. Opam does work
+Windows based on [David Allsopp](https://www.dra27.uk/blog/)'s patches to allow
+the compiler to be moved after its initial installation. See [this talk from
+ICFP 2022](https://www.youtube.com/watch?v=5JDSUCx-tPw) for more info. Without
+this work every user would need to compile the OCaml compiler on their machine before
+using it. It's important to me that a user of Alice can get started writing
+OCaml as quickly as possible with no hurdles. Building the compiler from source can
+take over 10 minutes and I don't want users' first experience of Alice to be
+waiting such a long time. I don't think I would have started working on Alice
+at all if distributing a pre-compiled relocatable compiler wasn't an option.
+
+Technically I could have used opam to bootstrap my development environment as it works
 [perfectly fine](@/blog/sound-on-ocaml-on-windows/index.md#trying-again-with-msys2)
 on Windows but one cool feature of Alice is that it can download pre-compiled
 development tools for you. Alice can't build itself (yet!) but I still want to
-eat my own dogfood when I can, and so I want to test out the prebuilt toolchain
+eat my own dogfood when I can, and so I'm testing out the prebuilt toolchain
 while developing Alice. I haven't updated Alice to be able to install the
 dev tools prebuilt for Windows yet, but I have a handy
 [shell script](https://github.com/alicecaml/alice/blob/main/boot/x86_64-windows.sh)
 that sets up a development environment for working on Alice using the same tools
-as Alice would install if it was already built. Classic bootstrapping problem.
+as Alice would install if it _was_ already built. Classic bootstrapping problem.
 
 I'm using powershell and I have [msys2](https://www.msys2.org/) installed so
 some commands will look very Unix-y. Alice itself will work fine on Windows once
@@ -140,15 +150,17 @@ Hint: (lock_dir (solve_for_platforms ((arch x86_64) (os win32))))
 Hint: ...and then rerun 'dune pkg lock'
 ```
 
-I've seen this error before while building `ocamlformat`. Alice has its own
-little opam repository which allows it to use the pre-compiled OCaml toolchain.
-The pre-compiled OCaml toolchain has a version which is not released on the main
-opam repository which means the `ocaml-system` package can't be used, so I
-needed to make new version of `ocaml-system` matching the version of the
-pre-compiled toolchain (`5.3.1+relocatable`). My version of the `ocaml-system`
-package originally had some logic preventing its installation on Windows (copied
-from the upstream `ocaml-system` package), but that logic turned out to be
-unnecessary for my use case so I just
+I've seen this error before while building `ocamlformat`. Alice has [its own
+little opam repository](https://github.com/alicecaml/alice-opam-repo) which
+allows it to use the pre-compiled relocatable OCaml toolchain. The relocatable
+OCaml toolchain has a version which is not released on the main opam repository
+which means the `ocaml-system` package can't be used, so I needed to make a new
+version of `ocaml-system` matching the version of the pre-compiled toolchain
+(`5.3.1+relocatable`). I did this months ago when first getting Alice working
+on Linux and macOS but the version of the `ocaml-system` package originally had
+some logic preventing its installation on Windows (copied from the upstream
+`ocaml-system` package), but that logic turned out to be unnecessary for my use
+case so I just
 [deleted it](https://github.com/alicecaml/alice-opam-repo/commit/781db10863f3b7a3507842e88d0d3beeebd264ad).
 However I did so recently and that change hasn't made its way into Alice yet.
 Making that change to Alice was
@@ -286,10 +298,10 @@ cache, and I see that rebuilding the project causes dependencies to be
 downloaded again which also suggests a cache problem. As an experiment I deleted
 the Dune cache from my Mac (a 2020 Macbook Air) and rebuilt Alice there, and from a
 cold cache it took about a minute compared to 10 seconds building from scratch
-on my Mac from a warm cache, so the caching issue likely has a big impact but
-it's clearly not the full story.
+on my Mac from a warm cache, so the caching issue on Windows probably has an
+impact on the build time but it's clearly not the full story.
 
-I tried copying the project into my user account which _is_ on an SSD, and the
+I tried copying the project into my Windows user account which _is_ on an SSD, and the
 same partition as Dune's cache. Rebuilding from a clean project with a cold
 cache took almost 9 minutes this time but there were no cache errors. I think
 this rules out the explanation that my spinning disk is the problem. Rebuilding
@@ -297,8 +309,9 @@ from a clean project a second time still caused the dependencies to be
 re-downloaded so I'm not sure if the cache is even enabled (but then why the
 cache errors when I was on a different drive?).
 
-Anyway incremental builds don't suffer the same performance issues so I'll move
-on. The goal of this project isn't to debug Dune performance issues on Windows.
+Anyway incremental builds are still pretty fast and that's
+all I'll be needing today so I'll move on. The goal of this project isn't to
+debug Dune performance issues on Windows.
 
 Now that I have Alice building on Windows the next step is to make sure
 `ocamlformat` and `ocamllsp` work and integrate them into my editor. I built
@@ -321,9 +334,9 @@ has no concept of Windows at all, and running that command on my machine prints
 When Alice installs tools it creates a "root" which is a directory resembling a
 typical Unix filesystem root, with subdirectories like `bin` and `share`. This
 lets it include things like manual pages when installing tools as well as the
-tools themselves. Over time I expect multiple different versions of the compiler
-to be supported (though currently `5.3.1+relocatable` is the only one). Similar
-to [`rustup`](https://rustup.rs/) I want to make it possible to change the
+tools themselves. Over time I expect to support multiple different versions of the compiler
+though currently `5.3.1+relocatable` is the only supported version. Similar
+to [`rustup`](https://rustup.rs/) it's possible to change the
 global root that is considered "active" by running the command `alice tools
 change`. This creates a symlink at `~/.alice/current` pointing to (say)
 `~/.alice/roots/5.3.1+relocatable`.
@@ -350,7 +363,7 @@ No current root was found so making 5.3.1+relocatable the current root.
 ```
 
 Even though that command installed the same version of the tools I'm already
-using, I updated my `$env:PATH` variable to include `$HOME\.alice\current\bin`,
+using, I updated my `PATH` variable to include `$HOME\.alice\current\bin`,
 so now I have:
 ```
 PS D:\src\alice> Get-Command ocamlopt
@@ -420,8 +433,8 @@ PS D:\tmp\foo> alice clean
 PS D:\tmp\foo> alice run
 ```
 
-Need to add some more printouts so it's more clearer when a command completes
-successfully. In the case of `alice run` something did go wrong since it didn't
+Need to add some more printouts so it's more clear when a command completes
+successfully! In the case of `alice run` something did go wrong since it didn't
 print "Hello, World!". When I press enter again I see "Hello, World!" print at
 the next prompt:
 ```
@@ -507,7 +520,7 @@ PS D:\tmp\foo> alice build -vv
 
 ![A directed graph with nodes labeled with file names and edges representing build dependencies](graph2.svg)
 
-I did a little more work not directly relating to supporting windows but which
+I did a little more work not directly relating to supporting Windows but which
 will make it easier for Alice to find the OCaml compiler, assuming the toolchain
 was installed by Alice. If Alice would run an external program (such as the
 OCaml compiler) and the program isn't in the user's `PATH` variable then Alice
@@ -515,36 +528,16 @@ will run the program from the current root (like `~/.alice/current`). This
 will make Alice easier to set up since it removes the need to add
 `~/.alice/current/bin` to `PATH`.
 
-With all these changes, here's how to get started on Windows with Alice. You'll
-need a C compiler such as LLVM installed in order for the OCaml compiler to work
-correctly, but no installation of OCaml or opam is necessary. Alice is highly
-experimental and far from ready for use developing real OCaml software.
+And now Alice works on Windows!
 
-Makes a pretty slick demo though.
-```
-PS C:\Users\steph> alice tools get
-  Fetching ocaml.5.3.1+relocatable...
- Unpacking ocaml.5.3.1+relocatable...
+You need to be in Powershell rather than CMD.exe, and you'll need a C compiler
+like LLVM installed an in your `PATH` for the OCaml compiler to work
+correctly. After that, as long as `alice.exe` is in your `PATH`, just run
+run `alice tools get` to install the OCaml compiler and dev tools, `alice new <NAME>`
+to make a new project, and `alice run` from within the new project's directory
+to run the project.
 
-Successfully installed ocaml.5.3.1+relocatable!
+![A screenshot of a powershell session with the commands get started with Alice](screenshot.png)
 
-  Fetching ocamllsp.1.22.0...
- Unpacking ocamllsp.1.22.0...
-
-Successfully installed ocamllsp.1.22.0!
-
-  Fetching ocamlformat.0.27.0...
- Unpacking ocamlformat.0.27.0...
-
-Successfully installed ocamlformat.0.27.0!
-
-PS C:\Users\steph> alice new hello
-  Creating new executable package "hello" in C:\Users\steph\hello
-
-PS C:\Users\steph> cd hello
-PS C:\Users\steph\hello> alice run
- Compiling hello v0.1.0
-   Running C:\Users\steph\hello\build\hello.exe
-
-Hello, World!
-```
+Alice is highly experimental and far from ready for everyday use. The next step
+will be allowing Alice packages to depend on each other.
