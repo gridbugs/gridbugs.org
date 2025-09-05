@@ -26,17 +26,9 @@
 
           cargoHash = "sha256-K2wdq61FVVG9wJF+UcRZyZ2YSEw3iavboAGkzCcTGkU=";
 
-          nativeBuildInputs = [ pkgs.pkg-config ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-              pkgs.darwin.apple_sdk.frameworks.CoreServices
-              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-            ];
+          nativeBuildInputs = [ pkgs.pkg-config ];
 
-          buildInputs = [ pkgs.openssl pkgs.zlib ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-              pkgs.darwin.apple_sdk.frameworks.CoreServices
-              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
-            ];
+          buildInputs = [ pkgs.openssl pkgs.zlib ];
         };
       in with pkgs; {
         devShell = mkShell { buildInputs = [ zola ffmpeg imagemagick ]; };
