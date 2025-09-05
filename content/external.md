@@ -13,7 +13,7 @@ I've given a few recorded talks at the Sydney Rust meetup:
 - [Making a roguelike in 7 days in Rust](https://youtu.be/RNjbgCsFtHA?t=0)
 - [Escaping State-Machine Hell with a Pseudo-Synchronous DSL](https://youtu.be/ewNU9zYktBE?t=0)
 
-Back when I worked on microkernels CSIRO I wrote a blog post about debugging an interesting issue with some embedded C code: [Debugging Stories: Stack alignment matters](https://research.csiro.au/tsblog/debugging-stories-stack-alignment-matters/)
+Back when I worked on microkernels at CSIRO I wrote a blog post about debugging an interesting issue with some embedded C code: [Debugging Stories: Stack alignment matters](https://research.csiro.au/tsblog/debugging-stories-stack-alignment-matters/)
 
 I also have a [youtube channel](https://www.youtube.com/@gridbugstv) where I post synthesizer demos and some live coding.
 
