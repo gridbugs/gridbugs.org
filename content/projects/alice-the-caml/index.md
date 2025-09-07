@@ -53,7 +53,7 @@ prioritizing ease of publishing and maintenance with as low cognitive load as
 possible, and then see how opam compatibility can fit into that picture.
 
 The name comes from an [Australian children's
-song](https://www.youtube.com/watch?v=XM7Jnetdf0I)..
+song](https://www.youtube.com/watch?v=XM7Jnetdf0I).
 
 My next two goals for the project are Windows support and basic package
 management.
