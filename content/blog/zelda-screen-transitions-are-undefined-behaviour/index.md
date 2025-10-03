@@ -16,9 +16,6 @@ og_image = "title.png"
     image-rendering: crisp-edges;
     image-rendering: pixelated;
 }
-.short-table tr {
-    line-height: 4px;
-}
 </style>
 
 The vertical scrolling effect in the original "The Legend of Zelda" relies on
@@ -262,7 +259,7 @@ to scroll together.
 <img src="short-text-scroll-name-table.webp" style="width:50%;height:50%">
 </div>
 
-<table class="short-table">
+<table>
 <tr><th>Frame</th><th>Sub-Frame</th><th>Component</th><th>Value</th></tr>
 <tr><td>0</td><td>VBlank</td><td>Y</td><td>110</td></tr>
 <tr><td>1</td><td>VBlank</td><td>Y</td><td>110</td></tr>
@@ -295,7 +292,7 @@ while the PPU is drawing the last line of pixels before the scroll should happen
 <img src="short-horizontal-scroll-name-table.webp" style="width:50%;height:50%">
 </div>
 
-<table class="short-table">
+<table>
 <tr><th>Frame</th><th>Sub-Frame</th><th>Component</th><th>Value</th></tr>
 <tr><td>0</td><td>Pixel Row 63</td><td>X</td><td>72</td></tr>
 <tr><td>1</td><td>Pixel Row 63</td><td>X</td><td>76</td></tr>
@@ -361,7 +358,7 @@ during this row.
 <img src="short-vertical-scroll-name-table.webp" style="width:50%;height:50%">
 </div>
 
-<table class="short-table">
+<table>
 <tr><th>Frame</th><th>Sub-Frame</th><th>Address</th></tr>
 <tr><td>0</td><td>Pixel Row 63</td><td>0x2280</td></tr>
 <tr><td>1</td><td>Pixel Row 63</td><td>0x2280</td></tr>
