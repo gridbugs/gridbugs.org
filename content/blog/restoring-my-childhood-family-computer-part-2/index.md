@@ -1,5 +1,5 @@
 +++
-title = "Restoring my Childhood Family Computer: Part 2"
+title = "Restoring my Childhood Family Computer Part 2: Wasps!"
 date = 2024-10-28
 path = "restoring-my-childhood-family-computer-part-2"
 

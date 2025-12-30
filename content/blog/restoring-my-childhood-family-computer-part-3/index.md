@@ -1,5 +1,5 @@
 +++
-title = "Restoring my Childhood Family Computer: Part 3"
+title = "Restoring my Childhood Family Computer Part 3: Chime"
 date = 2024-11-03
 path = "restoring-my-childhood-family-computer-part-3"
 
@@ -84,3 +84,5 @@ CRT without first needing to fix or replace the hard drive.
 
 I also want to try replacing the hard drive with a known-good drive to see if
 the weird noise continues.
+
+Part 4 is [here](@/blog/restoring-my-childhood-family-computer-part-4/index.md).

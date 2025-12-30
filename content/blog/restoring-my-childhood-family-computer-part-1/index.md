@@ -1,5 +1,5 @@
 +++
-title = "Restoring my Childhood Family Computer: Part 1"
+title = "Restoring my Childhood Family Computer Part 1: Rust"
 date = 2024-10-26
 path = "restoring-my-childhood-family-computer-part-1"
 
