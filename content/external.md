@@ -7,6 +7,10 @@ template = "page.html"
 
 Here are some other places you can find me on the internet in addition to the links at the bottom of each page.
 
+[Here](https://www.alicecaml.org)'s the website for my experimental OCaml build system Alice.
+
+[Here](https://www.purpleearthhypothesis.com)'s a website going into more detail about my synthesizer projects.
+
 I've given a few recorded talks at the Sydney Rust meetup:
 
 - [Writing NES assembly programs in a Rust DSL](https://youtu.be/hs-MrEoOX5Y?t=0)
