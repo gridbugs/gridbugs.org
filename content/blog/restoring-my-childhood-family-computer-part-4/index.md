@@ -7,7 +7,7 @@ path = "restoring-my-childhood-family-computer-part-4"
 tags = ["retrocomputing", "electronics"]
 
 [extra]
-og_image = "boot-success.png"
+og_image = "macintosh-hd.png"
 +++
 
 ![Close-up of the logo on the front of my Macintosh LC575](banner.jpg)
