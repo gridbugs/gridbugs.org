@@ -6,5 +6,5 @@ description = "I post about game development, experiments with retro hardware, a
 # Hi, I'm Steve
 
 Welcome to my website! I'm interested in game development and
-synthesizers and retro hardware and emulation and going outside and
+[synthesizers](https://www.purpleearthhypothesis.com) and retro hardware and emulation and going outside and
 some other things.

@@ -78,3 +78,5 @@ Commands:
   help      Print documentation for a subcommand.
   internal  Internal commands.
 ```
+
+Read more on [Alice's website](https://www.alicecaml.org)!
