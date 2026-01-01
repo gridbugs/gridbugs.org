@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 6 - AI and Combat">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-12T17:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 6 - AI and Combat
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-5&#x2F;" aria-label="Previous">
+	  Previous: Part 5 - Placing NPCs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-7&#x2F;" aria-label="Next">
+	  Next: Part 7 - User Interface
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 6 - AI and Combat
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-12T17:00:00+10:00">
+    July 12, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll imbue NPCs with artificial intelligence, and make it possible
+for them to deal and receive damage.</p>
+<p>By the end of this part, the game will look like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-6/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5-end">part-5-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#command-line-options-for-debugging">Command-Line Options for Debugging</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#npc-pathfinding">NPC Pathfinding</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#npc-line-of-sight">NPC Line of Sight</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#npc-memory">NPC Memory</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#combat">Combat</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/#hide-previously-seen-npcs">Hide Previously-seen NPCs</a></li>
+</ul>
+<h2 id="command-line-options-for-debugging"><a class="zola-anchor" href="#command-line-options-for-debugging" aria-label="Anchor link for: command-line-options-for-debugging">Command-Line Options for Debugging</a></h2>
+<p>Before adding AI to the game, let’s make it easier to test.
+Once NPCs can move on their own, it will be useful to have a way to let NPCs take their turns
+without needing to move the player. To this end, we’ll add a “wait” command, triggered by the space bar:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">wait_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39; &#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">wait_player</span><span>(),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>            },
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The dungeon is procedurally generated. If we spot some unexpected behaviour which is dependent on a particular level
+layout, it would be useful if we could rerun the game with the same level.
+We’ll seed the RNG with a randomly-chosen integer, and print this integer out when the game starts.
+Then, we’ll add a command-line argument that lets us specify and RNG seed to use instead.</p>
+<p>We’ll add one more command-line argument which tells the game to run in “omniscient mode”, where the entire map is
+always visible. This will let us investigate the behaviour of NPCs which are out of the player’s field of view.</p>
+<p>With these 2 changes in place, we’ll be able to run the game with:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>cargo run -- --debug-omniscient
+</span></code></pre>
+<p>…and see:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RNG Seed: 820464076793322760
+</span></code></pre>
+<p>…on its standard output (for example). When I run this I get a level that looks like:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/screenshot-omniscient.png" alt="screenshot-omniscient.png" /></p>
+<p>Now I can rerun the game with the command:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>cargo run -- --debug-omniscient --rng-seed=820464076793322760
+</span></code></pre>
+<p>…and the level will be the same, as it was generated with the same RNG seed.
+This will help debug any issues by reproducing the circumstances under which they arose.</p>
+<p>Here’s the code for adding both the RNG seed argument, and omniscient mode.</p>
+<p>Add a <code>VisibilityAlgorithm</code> type, and an argument to <code>VisibilityGrid::update</code> for choosing which algorithm to use.
+In the <code>Omniscient</code> case, just mark every cell as visible.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// visibility.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>VisibilityAlgorithm {
+</span><span>    Shadowcast,
+</span><span>    Omniscient,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>VisibilityGrid {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        player_coord: Coord,
+</span><span>        world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World,
+</span><span>        shadowcast_context: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>shadowcast::Context&lt;</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>&gt;,
+</span><span>        algorithm: VisibilityAlgorithm,
+</span><span>    ) {
+</span><span>        self.count </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> algorithm {
+</span><span>            VisibilityAlgorithm::Omniscient </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.grid.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>                    cell.last_seen </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.count;
+</span><span>                }
+</span><span>            }
+</span><span>            VisibilityAlgorithm::Shadowcast </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> count </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.count;
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= &amp;mut </span><span>self.grid;
+</span><span>                shadowcast_context.</span><span style="color:#62a35c;">for_each_visible</span><span>(
+</span><span>                    player_coord,
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Visibility,
+</span><span>                    world,
+</span><span>                    </span><span style="color:#0086b3;">VISION_DISTANCE</span><span>,
+</span><span>                    </span><span style="color:#0086b3;">255</span><span>,
+</span><span>                    |coord, _visible_directions, _visibility| {
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord);
+</span><span>                        cell.last_seen </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> count;
+</span><span>                    },
+</span><span>                );
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Two changes in <code>game.rs</code>. Pass the visibility algorithm through to <code>self.visibility_grid.update</code>,
+and take an <code>rng_seed</code> in the constructor, which is used to initialize the <code>Isaac64Rng</code> instead
+of initializing it with <code>Isaac64Rng::from_entropy</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::visibility::{CellVisibility, VisibilityAlgorithm, VisibilityGrid};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        initial_visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> rng </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Isaac64Rng::seed_from_u64(rng_seed);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(initial_visibility_algorithm);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update_visibility</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, visibility_algorithm: VisibilityAlgorithm) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .world
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.visibility_grid.</span><span style="color:#62a35c;">update</span><span>(
+</span><span>            player_coord,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.shadowcast_context,
+</span><span>            visibility_algorithm,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>In <code>app.rs</code>, just pass the new arguments down to <code>GameState</code>’s methods, and store the visibility algorithm in a field of <code>AppData</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::visibility::{CellVisibility, VisibilityAlgorithm};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    game_state: GameState,
+</span><span>    visibility_algorithm: VisibilityAlgorithm,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            game_state: GameState::new(screen_size, rng_seed, visibility_algorithm),
+</span><span>            visibility_algorithm,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(self.visibility_algorithm);
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            data: AppData::new(screen_size, rng_seed, visibility_algorithm),
+</span><span>            view: AppView::new(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>These examples will use the crate <a href="https://crates.io/crates/meap">meap</a> to parse arguments.</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">meap </span><span>= </span><span style="color:#183691;">&quot;0.4&quot;
+</span></code></pre>
+<p>Update <code>main.rs</code> to parse command line arguments and pass the visibility algorithm and RNG seed to <code>App::new</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// main.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use</span><span> meap;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Args {
+</span><span>    rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>    visibility_algorithm: VisibilityAlgorithm,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Args {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parser</span><span>() -&gt; impl meap::Parser&lt;Item = </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>&gt; {
+</span><span>        meap::let_map</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>{
+</span><span>                rng_seed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>opt_opt::&lt;</span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;(</span><span style="color:#183691;">&quot;INT&quot;</span><span>, </span><span style="color:#183691;">&#39;r&#39;</span><span>).</span><span style="color:#62a35c;">name</span><span>(</span><span style="color:#183691;">&quot;rng-seed&quot;</span><span>).</span><span style="color:#62a35c;">desc</span><span>(</span><span style="color:#183691;">&quot;seed for random number generator&quot;</span><span>)
+</span><span>                    .</span><span style="color:#62a35c;">with_default_lazy</span><span>(</span><span style="color:#183691;">&quot;randomly chosen seed&quot;</span><span>, || rand::thread_rng().</span><span style="color:#62a35c;">gen</span><span>());
+</span><span>                visibility_algorithm </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">flag</span><span>(</span><span style="color:#183691;">&quot;debug-omniscient&quot;</span><span>).</span><span style="color:#62a35c;">some_if</span><span>(VisibilityAlgorithm::Omniscient)
+</span><span>                    .</span><span style="color:#62a35c;">with_default_general</span><span>(VisibilityAlgorithm::Shadowcast);
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ rng_seed, visibility_algorithm }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>meap::Parser;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Args {
+</span><span>        rng_seed,
+</span><span>        visibility_algorithm,
+</span><span>    } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Args::parser().</span><span style="color:#62a35c;">with_help_default</span><span>().</span><span style="color:#62a35c;">parse_env_or_exit</span><span>();
+</span><span>    println!(</span><span style="color:#183691;">&quot;RNG Seed: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, rng_seed);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>App::new(screen_size, rng_seed, visibility_algorithm);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>If you used the <code>simon</code> library for argument parsing, the <code>with_help_default()</code> method called above allows you to pass a <code>--help</code>
+argument to see usage instructions:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ cargo run -- --help
+</span><span>Usage: target/debug/chargrid-roguelike-tutorial-2020 [OPTIONS]
+</span><span>
+</span><span>Options:
+</span><span>    [-r, --rng-seed INT]     seed for random number generator (Default: randomly chosen seed)
+</span><span>    [--debug-omniscient]
+</span><span>    [-h, --help]             print help message
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.0">part-6.0</a></p>
+<h2 id="npc-pathfinding"><a class="zola-anchor" href="#npc-pathfinding" aria-label="Anchor link for: npc-pathfinding">NPC Pathfinding</a></h2>
+<p>Let’s add some rudimentary AI to NPCs. In order for pathfinding to work, we’ll need a way of finding out which areas
+of the map can be traversed by an NPC. Add the following to <code>world.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">can_npc_enter_ignoring_other_npcs</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">layers_at</span><span>(coord)
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|layers| layers.feature.</span><span style="color:#62a35c;">is_none</span><span>())
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">false</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">can_npc_enter</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">layers_at</span><span>(coord)
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|layers| {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> contains_npc </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> layers
+</span><span>                    .character
+</span><span>                    .</span><span style="color:#62a35c;">map</span><span>(|entity| self.components.npc_type.</span><span style="color:#62a35c;">contains</span><span>(entity))
+</span><span>                    .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">false</span><span>);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> contains_feature </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> layers.feature.</span><span style="color:#62a35c;">is_some</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">!</span><span>(contains_npc </span><span style="font-weight:bold;color:#a71d5d;">||</span><span> contains_feature)
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">false</span><span>)
+</span><span>    }
+</span><span>
+</span><span>}
+</span></code></pre>
+<p>NPCs can enter a cell if it doesn’t contain a feature or another NPC. It will also turn out convenient to be able to
+check whether an NPC can enter a cell, <em>ignoring</em> the rule about NPCs not being able to walk on top of each other.</p>
+<p>To help with pathfinding, expose one more method in <code>World</code> that returns the coordinate of an entity:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">entity_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;Coord&gt; {
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">coord_of</span><span>(entity)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>While you’re here, remove the <code>npc_type</code> method from <code>World</code>. We won’t be needing it anymore.</p>
+<p>To do the heavy lifting of pathfinding, we’ll use a library:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">grid_search_cardinal </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;
+</span></code></pre>
+<p>The general idea for pathfinding is the following: Each time the player moves, populate a grid (called a “distance map”) with the distance from
+each NPC-traversable cell to the player. On an NPC’s turn, it will consider its local region of this grid, and move in the direction
+which minimises its distance to the player. Note that an NPC may look further than 1 cell away when deciding which
+direction to move, and thus make a decision to step into a cell which increases its distance from the player <em>on the way to</em>
+a cell which is nearer to the player.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/pathfinding.png" alt="pathfinding.png" /></p>
+<p>The diagram above shows a grid where each floor cell is annotated with its distance from the player.
+The grey cells are walls, and thus have no distance annotation.
+The @ represents the player, and W,X,Y,Z represent NPCs. The red-shaded area is all the traversable
+cells within 3 cells of Z. On its turn, Z will move along a path on the way to one of cells which are 2
+away from the player. The first step along this path will <em>increase</em> Z’s distance from the player (from 3 to 4).</p>
+<p>I’ve written more on the topic of pathfinding on a grid in <a href="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/">a previous post</a>.</p>
+<p>Make a new file called <code>behaviour.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// behaviour.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::World;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>direction::CardinalDirection;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>entity_table::Entity;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>grid_search_cardinal::{
+</span><span>    distance_map::{
+</span><span>        DistanceMap, PopulateContext </span><span style="font-weight:bold;color:#a71d5d;">as</span><span> DistanceMapPopulateContext,
+</span><span>        SearchContext </span><span style="font-weight:bold;color:#a71d5d;">as</span><span> DistanceMapSearchContext,
+</span><span>    },
+</span><span>    CanEnter,
+</span><span>};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>BehaviourContext {
+</span><span>    distance_map_to_player: DistanceMap,
+</span><span>    distance_map_populate_context: DistanceMapPopulateContext,
+</span><span>    distance_map_search_context: DistanceMapSearchContext,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>BehaviourContext {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            distance_map_to_player: DistanceMap::new(size),
+</span><span>            distance_map_populate_context: DistanceMapPopulateContext::default(),
+</span><span>            distance_map_search_context: DistanceMapSearchContext::new(size),
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, player: Entity, world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>NpcCanEnterIgnoringOtherNpcs&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>            world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> World,
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; CanEnter </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>NpcCanEnterIgnoringOtherNpcs&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">can_enter</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>                self.world.</span><span style="color:#62a35c;">can_npc_enter_ignoring_other_npcs</span><span>(coord)
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">entity_coord</span><span>(player).</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">MAX_APPROACH_DISTANCE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">20</span><span>;
+</span><span>        self.distance_map_populate_context.</span><span style="color:#62a35c;">add</span><span>(player_coord);
+</span><span>        self.distance_map_populate_context.</span><span style="color:#62a35c;">populate_approach</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>NpcCanEnterIgnoringOtherNpcs { world },
+</span><span>            </span><span style="color:#0086b3;">MAX_APPROACH_DISTANCE</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.distance_map_to_player,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>BehaviourContext</code> type will contain all the re-usable state required for pathfinding.
+The field <code>distance_map_to_player</code> is the grid which will contain the distance from each cell to the player.
+The other 2 fields - <code>distance_map_populate_context</code> and <code>distance_map_search_context</code> contain re-usable
+state for updating the distances in the distance map, and choosing a path through a distance map, respectively.</p>
+<p>The <code>BehaviourContext::update</code> method updates the distance map such that each cell contains the distance to the player.</p>
+<p>Note the <code>NpcCanEnterIgnoringOtherNpcs</code> type, which implements the trait <code>grid_search_cardinal::CanEnter</code>.
+The <code>grid_search_cardinal</code> library assumes nothing about the representation of the world, and uses
+the <code>CanEnter</code> trait to tell it whether a particular cell of the world is traversable.
+When populating the distance map, NPC-occupied cells are treated as traversable. This is because all NPCs share
+the distance map, and it isn’t re-computed each time an NPC moves (only when the player moves).</p>
+<p>Also note the <code>MAX_APPROACH_DISTANCE</code> constant. We won’t populate the entire distance map each time the player moves -
+only the area within 20 cells of the player. This is an optimization which limits the time spent populating the distance
+map. NPCs more than 20 cells from the player won’t be able to approach the player, but this won’t really affect gameplay.</p>
+<p>Now add the following to <code>behaviour.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// behaviour.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>NpcAction {
+</span><span>    Wait,
+</span><span>    Move(CardinalDirection),
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Agent {}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Agent {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{}
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">act</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        entity: Entity,
+</span><span>        world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World,
+</span><span>        behaviour_context: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> BehaviourContext,
+</span><span>    ) -&gt; NpcAction {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>NpcCanEnter&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>            world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> World,
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; CanEnter </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>NpcCanEnter&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">can_enter</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>                self.world.</span><span style="color:#62a35c;">can_npc_enter</span><span>(coord)
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">entity_coord</span><span>(entity).</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;npc has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SEARCH_DISTANCE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">5</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> behaviour_context.distance_map_search_context.</span><span style="color:#62a35c;">search_first</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>NpcCanEnter { world },
+</span><span>            npc_coord,
+</span><span>            </span><span style="color:#0086b3;">SEARCH_DISTANCE</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>behaviour_context.distance_map_to_player,
+</span><span>        ) {
+</span><span>            </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>NpcAction::Wait,
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>NpcAction::Move(direction),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Start by enumerating all the different actions an NPC can take in <code>NpcAction</code>. Define an <code>Agent</code> type which will currently be empty.</p>
+<p>The method <code>Agent::act</code> chooses an action for an NPC to take. Note a second implementation of <code>CanEnter</code> here.
+Since we’re not actually choosing the direction an NPC will walk (if any), it’s now necessary to account for the fact
+that NPCs can’t move through one another, so we should route the current NPC around the other NPCs.
+Recall that <code>World::can_npc_enter</code> only considers a cell to be traversable if it contains neither a wall, nor an NPC.</p>
+<p>The call to <code>behaviour_context.distance_map_search_context.search_first</code> chooses a direction for the NPC to move.
+It will move in the direction of the first step along a path which will take it to the reachable cell nearest to the
+player, within <code>SEARCH_DISTANCE</code> of the NPC. The lower <code>SEARCH_DISTANCE</code>, the less inclined an NPC will be to walk around
+other NPCs to reach the player.</p>
+<p>Add a <code>BehaviourContext</code> to <code>GameState</code>, and update <code>ai_state</code> to be a <code>ComponentTable&lt;Agent&gt;</code> instead of
+a <code>ComponentTable&lt;()&gt;</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::behaviour::{Agent, BehaviourContext, NpcAction};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    ...
+</span><span>    ai_state: ComponentTable&lt;Agent&gt;,
+</span><span>    behaviour_context: BehaviourContext,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        initial_visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> behaviour_context </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>BehaviourContext::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            behaviour_context,
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update <code>GameState::ai_turn</code> to call <code>Agent::act</code> so NPCs actually move on their turns:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.behaviour_context
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(self.player_entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, agent) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_action </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> agent.</span><span style="color:#62a35c;">act</span><span>(entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.behaviour_context);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> npc_action {
+</span><span>                NpcAction::Wait </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>                NpcAction::Move(direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.world.</span><span style="color:#62a35c;">maybe_move_character</span><span>(entity, direction),
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And update <code>world.rs</code> to return a <code>ComponentTable&lt;Agent&gt;</code> in its <code>Populate</code> struct:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::behaviour::Agent;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Populate {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>player_entity: Entity,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>ai_state: ComponentTable&lt;Agent&gt;,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> ai_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ComponentTable::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                TerrainTile::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">spawn_npc</span><span>(coord, npc_type);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                    ai_state.</span><span style="color:#62a35c;">insert</span><span>(entity, Agent::new());
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        Populate {
+</span><span>            player_entity: player_entity.</span><span style="color:#62a35c;">unwrap</span><span>(),
+</span><span>            ai_state,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Don’t forget to add <code>mod behaviour;</code> to <code>main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">mod </span><span>behaviour;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Run this with <code>--debug-omniscient</code> and observe pathfinding in action.
+Since there’s still no combat system, expect to find yourself trapped in a corner
+surrounded by NPCs!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/surrounded.png" alt="surrounded.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.1">part-6.1</a></p>
+<h2 id="npc-line-of-sight"><a class="zola-anchor" href="#npc-line-of-sight" aria-label="Anchor link for: npc-line-of-sight">NPC Line of Sight</a></h2>
+<p>To make the game more realistic, we’ll require that NPCs must be able to see the player in order to move towards them.
+Start by adding a method to <code>World</code> for testing whether an NPC can see through the cell at a given coordinate.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">can_npc_see_through_cell</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">layers_at</span><span>(coord)
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|layers| layers.feature.</span><span style="color:#62a35c;">is_none</span><span>())
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">false</span><span>)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now we could go and run the shadowcast filed-of-view algorithm for each NPC, but that would be expensive.
+Instead, we only need to test if the (straight) line segment between each NPC and the player can be traversed
+without visiting a cell which the NPC can’t see through.</p>
+<p>To help talk about lines rasterized onto grids, grab a library:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">line_2d </span><span>= </span><span style="color:#183691;">&quot;0.5&quot;
+</span></code></pre>
+<p>Add a function for testing NPC line of sight to <code>behaviour.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// behaviour.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>line_2d::LineSegment;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>shadowcast::{vision_distance, VisionDistance};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">npc_has_line_of_sight</span><span>(src: Coord, dst: Coord, world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NPC_VISION_DISTANCE_SQUARED</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">100</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NPC_VISION_DISTANCE</span><span>: vision_distance::Circle </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>        vision_distance::Circle::new_squared(</span><span style="color:#0086b3;">NPC_VISION_DISTANCE_SQUARED</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> src </span><span style="font-weight:bold;color:#a71d5d;">==</span><span> dst {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">true</span><span>;
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>LineSegment::new(src, dst).</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> src_to_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">-</span><span> src;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span style="color:#0086b3;">NPC_VISION_DISTANCE</span><span>.</span><span style="color:#62a35c;">in_range</span><span>(src_to_coord) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">false</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>world.</span><span style="color:#62a35c;">can_npc_see_through_cell</span><span>(coord) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">false</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="color:#0086b3;">true
+</span><span>}
+</span></code></pre>
+<p>Add a <code>player: Entity</code> argument to <code>Agent::act</code>, and then call our new function to test whether the NPC can
+see the player. For now, just have the NPC wait on their turn if they can’t see the player.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Agent {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">act</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        entity: Entity,
+</span><span>        player: Entity,
+</span><span>        world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World,
+</span><span>        behaviour_context: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> BehaviourContext,
+</span><span>    ) -&gt; NpcAction {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span style="color:#62a35c;">npc_has_line_of_sight</span><span>(npc_coord, player_coord, world) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>NpcAction::Wait;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update the call of <code>Agent::act</code> in <code>game.rs</code> to pass the player:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Game {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.behaviour_context
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(self.player_entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, agent) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_action </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> agent.</span><span style="color:#62a35c;">act</span><span>(
+</span><span>                entity,
+</span><span>                self.player_entity,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.behaviour_context,
+</span><span>            );
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> npc_action {
+</span><span>                NpcAction::Wait </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>                NpcAction::Move(direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.world.</span><span style="color:#62a35c;">maybe_move_character</span><span>(entity, direction),
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Run the game with omniscience and confirm that as soon as there stops being line of sight between
+you and an NPC following you, the NPC freezes.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.2">part-6.2</a></p>
+<h2 id="npc-memory"><a class="zola-anchor" href="#npc-memory" aria-label="Anchor link for: npc-memory">NPC Memory</a></h2>
+<p>That’s still not super realistic. In real life orcs and trolls would keep following you after you left
+their line of sight. To simulate NPCs remembering where they last saw you, let’s have NPCs continue to
+follow you for a couple of turns after losing line of sight. The goal of this section is to demonstrate
+how the AI of each NPC can be stateful. We could make the state more complicated, to say, have NPCs move
+to the location where they last saw the player, but that’s out of the scope of this tutorial.</p>
+<p>The only state each NPC needs in order to follow the player for a number of turns after losing sight,
+is a single counter storing the number of turns since the NPC saw the player:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// behaviour.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Agent {
+</span><span>    turns_since_last_saw_player: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Agent {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            turns_since_last_saw_player: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>::</span><span style="color:#0086b3;">MAX</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update the counter on each NPC’s turn, and use the value in the counter to determine whether
+the NPC moves on their turn.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Agent {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">act</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        entity: Entity,
+</span><span>        player: Entity,
+</span><span>        world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World,
+</span><span>        behaviour_context: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> BehaviourContext,
+</span><span>    ) -&gt; NpcAction {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#62a35c;">npc_has_line_of_sight</span><span>(npc_coord, player_coord, world) {
+</span><span>            self.turns_since_last_saw_player </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            self.turns_since_last_saw_player </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.turns_since_last_saw_player.</span><span style="color:#62a35c;">saturating_add</span><span>(</span><span style="color:#0086b3;">1</span><span>);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">MAX_TURNS_TO_CHASE_PLAYER_AFTER_LOSING_SIGHT</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">3</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.turns_since_last_saw_player </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">MAX_TURNS_TO_CHASE_PLAYER_AFTER_LOSING_SIGHT </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>NpcAction::Wait;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.3">part-6.3</a></p>
+<h2 id="combat"><a class="zola-anchor" href="#combat" aria-label="Anchor link for: combat">Combat</a></h2>
+<p>To implement combat, start by defining a <code>HitPoints</code> component, and adding
+hit points to the player and NPC entities.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>HitPoints {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>current: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>max: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>HitPoints {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_full</span><span>(max: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ current: max, max }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        tile: Tile,
+</span><span>        npc_type: NpcType,
+</span><span>        hit_points: HitPoints,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.components
+</span><span>            .hit_points
+</span><span>            .</span><span style="color:#62a35c;">insert</span><span>(entity, HitPoints::new_full(</span><span style="color:#0086b3;">20</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_npc</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord, npc_type: NpcType) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> hit_points </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> npc_type {
+</span><span>            NpcType::Orc </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>HitPoints::new_full(</span><span style="color:#0086b3;">2</span><span>),
+</span><span>            NpcType::Troll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>HitPoints::new_full(</span><span style="color:#0086b3;">6</span><span>),
+</span><span>        };
+</span><span>        self.components.hit_points.</span><span style="color:#62a35c;">insert</span><span>(entity, hit_points);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>For now we’ll just support bump combat. That is, when a character would move,
+if the destination of the move is occupied by an enemy of the moving character,
+instead of moving, an attack occurs.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_character</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, character_entity: Entity, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_character_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_character_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>()) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_character_coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(dest_character_entity) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">contains</span><span>(character_entity);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                    self.components.npc_type.</span><span style="color:#62a35c;">contains</span><span>(dest_character_entity);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span> dest_character_is_npc {
+</span><span>                    self.</span><span style="color:#62a35c;">character_bump_attack</span><span>(dest_character_entity);
+</span><span>                }
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                self.spatial_table
+</span><span>                    .</span><span style="color:#62a35c;">update_coord</span><span>(character_entity, new_character_coord)
+</span><span>                    .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_bump_attack</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, victim: Entity) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">DAMAGE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(hit_points) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.hit_points.</span><span style="color:#62a35c;">get_mut</span><span>(victim) {
+</span><span>            hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> hit_points.current.</span><span style="color:#62a35c;">saturating_sub</span><span>(</span><span style="color:#0086b3;">DAMAGE</span><span>);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>                self.</span><span style="color:#62a35c;">character_die</span><span>(victim);
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>For now, all attacks deal a single point of damage.
+The code above contains a call to <code>self.character_die(victim)</code>,
+which we haven’t implemented yet. Let’s make it so that when a character dies,
+it is replaced by a corpse.</p>
+<p>Define tile types for corpses, and add a layer to the spatial table for storing corpse location.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    PlayerCorpse,
+</span><span>    NpcCorpse(NpcType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>spatial_table::declare_layers_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    layers {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        corpse: Corpse,
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now we can implement the <code>character_die</code> method:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_die</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(occpied_by_entity) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update_layer</span><span>(entity, Layer::Corpse)
+</span><span>            .</span><span style="color:#62a35c;">err</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|e| e.</span><span style="color:#62a35c;">unwrap_occupied_by</span><span>())
+</span><span>        {
+</span><span>            </span><span style="font-style:italic;color:#969896;">// If a character dies on a cell which contains a corpse, remove the existing corpse
+</span><span>            </span><span style="font-style:italic;color:#969896;">// from existence and replace it with the character&#39;s corpse.
+</span><span>            self.</span><span style="color:#62a35c;">remove_entity</span><span>(occpied_by_entity);
+</span><span>            self.spatial_table
+</span><span>                .</span><span style="color:#62a35c;">update_layer</span><span>(entity, Layer::Corpse)
+</span><span>                .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> current_tile </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.tile.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> corpse_tile </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> current_tile {
+</span><span>            Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Tile::PlayerCorpse,
+</span><span>            Tile::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Tile::NpcCorpse(</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>npc_type),
+</span><span>            other </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>panic!(</span><span style="color:#183691;">&quot;unexpected tile on character {:?}&quot;</span><span>, other),
+</span><span>        };
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, corpse_tile);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">remove_entity</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) {
+</span><span>        self.components.</span><span style="color:#62a35c;">remove_entity</span><span>(entity);
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">remove</span><span>(entity);
+</span><span>        self.entity_allocator.</span><span style="color:#62a35c;">free</span><span>(entity);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Expose a method of <code>World</code> called <code>is_living_character</code> which lets us check whether an
+entity refers to a living character:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">is_living_character</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">layer_of</span><span>(entity) </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(Layer::Character)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>In <code>game.rs</code>, before all the NPCs take their turn, remove dead NPCs from <code>ai_state</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.behaviour_context
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(self.player_entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dead_entities </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .ai_state
+</span><span>            .</span><span style="color:#62a35c;">entities</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>entity| </span><span style="font-weight:bold;color:#a71d5d;">!</span><span>self.world.</span><span style="color:#62a35c;">is_living_character</span><span>(entity))
+</span><span>            .collect::&lt;</span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;&gt;();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> dead_entity </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> dead_entities {
+</span><span>            self.ai_state.</span><span style="color:#62a35c;">remove</span><span>(dead_entity);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, agent) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note that the call to <code>collect</code> above will allocate if there are any dead characters
+to remove from <code>ai_state</code>. This would be easy to optimize away by adding a field
+to <code>GameState</code> which gets populated with all dead entities each turn, but it didn’t
+seem worth it.</p>
+<p>Expose a method <code>is_player_alive</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">is_player_alive</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.world.</span><span style="color:#62a35c;">is_living_character</span><span>(self.player_entity)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now in <code>app.rs</code> there are two things that need to change.</p>
+<p>First, prevent the player from moving if they are dead:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>self.game_state.</span><span style="color:#62a35c;">is_player_alive</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Second, update the rendering logic to handle corpse tiles.
+This is a small refactor which moves common colour definitions into its own module.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rgb24::Rgb24;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">PLAYER</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">ORC</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">TROLL</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">PLAYER</span><span>),
+</span><span>        Tile::PlayerCorpse </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">PLAYER</span><span>),
+</span><span>        Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>)),
+</span><span>        Tile::Npc(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;o&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">ORC</span><span>),
+</span><span>        Tile::Npc(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;T&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">TROLL</span><span>),
+</span><span>        Tile::NpcCorpse(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">ORC</span><span>),
+</span><span>        Tile::NpcCorpse(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">TROLL</span><span>),
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">previously_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>        Tile::PlayerCorpse </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>        Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        Tile::Npc(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;o&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::Npc(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;T&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::NpcCorpse(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::NpcCorpse(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;%&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update the depth calculation to account for the new corpse layer:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= ...</span><span>;
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; -</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Corpse) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">2</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Character) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">3</span><span>,
+</span><span>            };
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(entity_to_render.location.coord, depth, view_cell, context);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And that’s it. NPCs and the player can kill one another, and leave behind corpses.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.4">part-6.4</a></p>
+<h2 id="hide-previously-seen-npcs"><a class="zola-anchor" href="#hide-previously-seen-npcs" aria-label="Anchor link for: hide-previously-seen-npcs">Hide Previously-seen NPCs</a></h2>
+<p>Now that NPCs can move around on their own, it’s possible for an NPC which is out of the player’s field of view to move.
+At the moment, there’s nothing preventing the game from rendering the movements of an NPC which isn’t currently visible
+(it will still be greyed-out of course). We <em>could</em> have the game keep track of the most-recently-seen contents of each
+cell, so it could continue to render a moved NPC at its original location. In the interest of simplicity however, let’s
+just change rendering code so the only previously-visible things we render are walls and floor:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">previously_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>ViewCell::new(),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6.5">part-6.5</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-5&#x2F;" aria-label="Previous">
+	  Previous: Part 5 - Placing NPCs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-7&#x2F;" aria-label="Next">
+	  Next: Part 7 - User Interface
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

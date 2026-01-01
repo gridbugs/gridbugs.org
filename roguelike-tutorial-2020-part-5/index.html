@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 5 - Placing NPCs">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-02T22:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 5 - Placing NPCs
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-4&#x2F;" aria-label="Previous">
+	  Previous: Part 4 - Field of View
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-6&#x2F;" aria-label="Next">
+	  Next: Part 6 - AI and Combat
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 5 - Placing NPCs
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-02T22:00:00+10:00">
+    July 02, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll populate the dungeon with enemies.
+There won’t be any AI or combat. That will come later.</p>
+<p>By the end of this part, the game will look like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-5/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4-end">part-4-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/#add-npcs-to-game-state">Add NPCs to Game State</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/#place-npcs-in-rooms">Place NPCs in Rooms</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/#basic-npc-interaction">Basic NPC Interaction</a></li>
+</ul>
+<h2 id="add-npcs-to-game-state"><a class="zola-anchor" href="#add-npcs-to-game-state" aria-label="Anchor link for: add-npcs-to-game-state">Add NPCs to Game State</a></h2>
+<p>Start by making it possible to represent the presence of NPCs in the game state.
+Add an enum type with variants for each npc type.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>NpcType {
+</span><span>    Orc,
+</span><span>    Troll,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>NpcType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Orc </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;orc&quot;</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Troll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;troll&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a variant to <code>Tile</code> so we can render NPCs.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    Player,
+</span><span>    Floor,
+</span><span>    Wall,
+</span><span>    Npc(NpcType),
+</span><span>}
+</span></code></pre>
+<p>Add a component so game entities can be marked as NPCs, and track which type of NPC an entity is:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        tile: Tile,
+</span><span>        npc_type: NpcType,
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a method to <code>World</code> for spawning a new NPC.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_npc</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord, npc_type: NpcType) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Character),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Npc(npc_type));
+</span><span>        self.components.npc_type.</span><span style="color:#62a35c;">insert</span><span>(entity, npc_type);
+</span><span>        entity
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>In <code>terrain.rs</code> add a <code>TerrainTile</code> variant so we can add NPCs during dungeon generation.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::NpcType;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>TerrainTile {
+</span><span>    Player,
+</span><span>    Floor,
+</span><span>    Wall,
+</span><span>    Npc(NpcType),
+</span><span>}
+</span></code></pre>
+<p>And back in <code>world.rs</code>, handle the <code>TerrainTile::Npc</code> case inside <code>World::populate</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                TerrainTile::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">spawn_npc</span><span>(coord, npc_type);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>}
+</span></code></pre>
+<p>In the rendering logic inside <code>app.rs</code>, handle the case for <code>Tile::Npc</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Npc(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;o&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        Tile::Npc(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;T&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>)),
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">previously_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Npc(NpcType::Orc) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;o&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::Npc(NpcType::Troll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;T&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>)),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The game engine can now represent NPCs, but we aren’t adding any NPCs to the generated dungeon yet.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.0">part-5.0</a></p>
+<h2 id="place-npcs-in-rooms"><a class="zola-anchor" href="#place-npcs-in-rooms" aria-label="Anchor link for: place-npcs-in-rooms">Place NPCs in Rooms</a></h2>
+<p>Start by adding a function that populates a room with NPCs.
+Each time an NPC is placed, there’ll be an 80% chance of placing an orc, and a 20% chance of placing a troll.
+We’ll need some more traits from the <code>rand</code> library to be in scope.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
+</span></code></pre>
+<p>Now for the method that populates a room with NPCs.
+It’s expected that this method is called <em>after</em> the player character has been added.
+It first enumerates all the coordinates of cells in the room which contain floor tiles,
+then randomly selects <code>n</code> of them to replace with NPC tiles.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` randomly chosen NPCs at random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_npcs</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_type </span><span style="font-weight:bold;color:#a71d5d;">= if</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">100</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span style="color:#0086b3;">80 </span><span>{
+</span><span>                NpcType::Orc
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                NpcType::Troll
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Npc(npc_type));
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now update <code>generate_dungeon</code> to call <code>place_npcs</code> on each room.
+Use an array to control the probability distribution of NPCs per room.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid::new_copy(size, </span><span style="color:#0086b3;">None</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> room_centres </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NPCS_PER_ROOM_DISTRIBUTION</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>] </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">3</span><span>, </span><span style="color:#0086b3;">3</span><span>, </span><span style="color:#0086b3;">4</span><span>];
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Attempt to add a room a constant number of times
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_ATTEMPTS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">100</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Make a random room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Room::choose(size, rng);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Carve out the room unless it overlaps with an existing room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room.</span><span style="color:#62a35c;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>grid) {
+</span><span>            room.</span><span style="color:#62a35c;">carve_out</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid);
+</span><span>
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room_centre </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> room.</span><span style="color:#62a35c;">centre</span><span>();
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add the player to the centre of the room if it&#39;s the first room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room_centres.</span><span style="color:#62a35c;">is_empty</span><span>() {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(room_centre) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Player);
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Build up a list of all room centres for use in constructing corridors
+</span><span>            room_centres.</span><span style="color:#62a35c;">push</span><span>(room_centre);
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add npcs to the room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>num_npcs </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">NPCS_PER_ROOM_DISTRIBUTION</span><span>.</span><span style="color:#62a35c;">choose</span><span>(rng).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            room.</span><span style="color:#62a35c;">place_npcs</span><span>(num_npcs, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid, rng);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Add corridors connecting every adjacent pair of room centres
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> window </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> room_centres.</span><span style="color:#62a35c;">windows</span><span>(</span><span style="color:#0086b3;">2</span><span>) {
+</span><span>        </span><span style="color:#62a35c;">carve_corridor</span><span>(window[</span><span style="color:#0086b3;">0</span><span>], window[</span><span style="color:#0086b3;">1</span><span>], </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid);
+</span><span>    }
+</span><span>
+</span><span>    grid.</span><span style="color:#62a35c;">map</span><span>(|t| t.</span><span style="color:#62a35c;">unwrap_or</span><span>(TerrainTile::Wall))
+</span><span>}
+</span></code></pre>
+<p>Run this, and you’ll find yourself in a populated dungeon!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.1">part-5.1</a></p>
+<h2 id="basic-npc-interaction"><a class="zola-anchor" href="#basic-npc-interaction" aria-label="Anchor link for: basic-npc-interaction">Basic NPC Interaction</a></h2>
+<p>We’re not quite done yet. Let’s add a basic level of interactivity - printing a message
+each time the player bumps into an NPC, and placeholder logic for NPC AI.</p>
+<p>Update <code>World::maybe_move_character</code> to print a message when the player bumps into a character.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_character</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, character_entity: Entity, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_player_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>()) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_player_coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(character) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(character) {
+</span><span>                    println!(</span><span style="color:#183691;">&quot;You harmlessly bump into the </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">.&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>());
+</span><span>                }
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                self.spatial_table
+</span><span>                    .</span><span style="color:#62a35c;">update_coord</span><span>(character_entity, new_player_coord)
+</span><span>                    .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Run the game and walk into an orc. The game will print “You harmlessly bump into the orc.”
+For now this will just go to the program’s standard output (the terminal).
+In a later part we’ll add a message log to the game’s UI.</p>
+<p>Now to set the scene for AI. Add a <code>ComponentTable</code> directly to <code>GameState</code> for mapping each NPC’s
+entity to its AI state (currently the AI state will just be a <code>()</code>).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>entity_table::ComponentTable;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    world: World,
+</span><span>    player_entity: Entity,
+</span><span>    shadowcast_context: shadowcast::Context&lt;</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>&gt;,
+</span><span>    visibility_grid: VisibilityGrid,
+</span><span>    ai_state: ComponentTable&lt;()&gt;,
+</span><span>}
+</span></code></pre>
+<p>Why add <code>ai_state</code> to <code>GameState</code> and not to the <code>Components</code> struct in <code>world.rs</code>?
+When the NPCs take their turn, we’ll iterate over the AI state of each entity,
+taking a mutable reference to each one in turn. The NPC will make a decision of which
+action to take based on its AI state, and the current state of the world.
+If <code>ai_state</code> was part of <code>world</code>, taking a mutable reference to <code>ai_state</code> would
+borrow the <code>world</code>, and we wouldn’t be able to query the rest of world when deciding what
+action an NPC will take.</p>
+<p>To initialise <code>ai_state</code>, have the <code>World::populate</code> method create a <code>ComponentTable&lt;()&gt;</code>
+with an entry for each NPC it creates:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>entity_table::{ComponentTable, Entity, EntityAllocator};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Populate {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>player_entity: Entity,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>ai_state: ComponentTable&lt;()&gt;,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> terrain </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>terrain::generate_dungeon(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>(), rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> player_entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> ai_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ComponentTable::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                TerrainTile::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">spawn_npc</span><span>(coord, npc_type);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                    ai_state.</span><span style="color:#62a35c;">insert</span><span>(entity, ());
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        Populate {
+</span><span>            player_entity: player_entity.</span><span style="color:#62a35c;">unwrap</span><span>(),
+</span><span>            ai_state,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>When constructing a new <code>GameState</code>, initialize the <code>ai_state</code> field with the corresponding
+field of <code>Populate</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate {
+</span><span>            player_entity,
+</span><span>            ai_state,
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            world,
+</span><span>            player_entity,
+</span><span>            shadowcast_context,
+</span><span>            visibility_grid,
+</span><span>            ai_state,
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now add a new method to <code>GameState</code> called <code>ai_turn</code> which iterates over all the entries
+in <code>ai_state</code> and prints a message. Later on we’ll replace this with having the AI
+choose an action for the NPC to take.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">maybe_move_character</span><span>(self.player_entity, direction);
+</span><span>        self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, ()) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">npc_type</span><span>(entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            println!(</span><span style="color:#183691;">&quot;The </span><span style="color:#0086b3;">{}</span><span style="color:#183691;"> ponders its existence.&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>());
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now that the basic framework for AI is set up, it will be easier to add AI in a future part.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-5.2">part-5.2</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-6/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-4&#x2F;" aria-label="Previous">
+	  Previous: Part 4 - Field of View
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-6&#x2F;" aria-label="Next">
+	  Next: Part 6 - AI and Combat
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Modifying Entity Component System for Turn-Based Games">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/modifying-entity-component-system-for-turn-based-games/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/modifying-entity-component-system-for-turn-based-games/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2017-04-01T19:28:01+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Modifying Entity Component System for Turn-Based Games
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Modifying Entity Component System for Turn-Based Games</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2017-04-01T19:28:01+10:00">
+    April 01, 2017
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  
+</p>
+
+
+  
+
+<p>This article describes my modifications to the
+<a href="https://en.wikipedia.org/wiki/Entity%E2%80%93component%E2%80%93system">Entity Component System (ECS)</a>
+architecture pattern to better support a turn-based game loop.
+This involves implementing game logic in <strong>actions</strong> which describe
+changes to the game’s state, and <strong>rules</strong> which prevent certain actions, and
+trigger additional reactions. The combination of actions and rules replace the
+traditional idea of <strong>systems</strong>.</p>
+<p>I implemented these changes in the engine I used for my 7DRL: <a href="https://gridbugs.itch.io/apocalypse-post">Apocalypse
+Post</a>.</p>
+<h2 id="entity-component-systems"><a class="zola-anchor" href="#entity-component-systems" aria-label="Anchor link for: entity-component-systems">Entity Component Systems</a></h2>
+<p><strong>Entities</strong> are objects in the game world. Each entity has a collection of
+<strong>components</strong> that define what that entity is. A component is a piece of typed
+data. All the data making up the game state is in the form of components, each
+belonging to exactly one entity. Some example components:</p>
+<ul>
+<li>a <strong>position</strong> which stores the location of an entity</li>
+<li>a <strong>velocity</strong> which stores the speed and direction in which an entity is
+moving</li>
+<li>a <strong>solid</strong> flag, which denotes an entity as being solid for the purposes of
+collision detection</li>
+<li>a <strong>tile</strong> which tells the renderer how to draw a component</li>
+<li>a <strong>controlled</strong> flag which denotes that this entity is controlled by the
+player</li>
+</ul>
+<p>All game logic is implemented in the form of <strong>systems</strong>. Each system is
+interested in a particular set of components. Typically, systems are described
+as running continuously, or having periodic ticks, where they iterate over all
+the entities that possess its interested set of components, and performing some
+system-specific operation. Some example systems:</p>
+<ul>
+<li><strong>movement:</strong> For each entity with a <strong>position</strong> and <strong>velocity</strong>, move the entity by
+changing its <strong>position</strong> based on its <strong>velocity</strong>.</li>
+<li><strong>collision:</strong> For each entity with a <strong>position</strong>, <strong>velocity</strong> and <strong>solid</strong>, if it
+attempted to move through another entity with <strong>solid</strong>, apply some collision
+resolution policy.</li>
+<li><strong>input:</strong> If a button is currently pressed, corresponding to some
+game control, apply the effect of that control to each entity with a
+<strong>controlled</strong> component.</li>
+<li><strong>renderer:</strong> For each entity with a <strong>position</strong> and a <strong>tile</strong>, draw the
+image described by the entity’s <strong>tile</strong> at a location on the screen based on
+the entity’s <strong>position</strong>.</li>
+</ul>
+<h2 id="game-loops"><a class="zola-anchor" href="#game-loops" aria-label="Anchor link for: game-loops">Game Loops</a></h2>
+<p>Here’s a straw-person implementation for the game loop of an ECS game engine.</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#a71d5d;">function </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>(game_state) {
+</span><span>    forever {
+</span><span>
+</span><span>        time_delta </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="font-weight:bold;color:#795da3;">wait_for_frame</span><span>();
+</span><span>
+</span><span>        for each system </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>systems {
+</span><span>            system.</span><span style="font-weight:bold;color:#795da3;">tick</span><span>(game_state, time_delta);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>This is perhaps an over-simplification, though most of the literature I’ve read
+about ECS describes something resembling that game loop. I claim that this game
+loop is more suited for real-time games than turn-based games.</p>
+<p>In a real-time
+game, you must constantly re-render the scene so the player can see changes to
+the game’s state. At any point, the player may press button, and the game state
+must update immediately. Physics is constantly being enforced, non-player
+characters are
+constantly determining what to do next, animations are always being played.
+Everything notionally happens at once, all the time, so the idea of a periodic
+tick makes sense.</p>
+<p>In a turn-based game, each character (player or non-player) acts on their turn.
+Typically, they perform a single action, which may have some follow-on actions,
+and then it’s the next player’s turn. The scene only needs to be rendered after
+the state of the game has changed.</p>
+<p>For my game, I wanted to have a game loop resembling:</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#a71d5d;">function </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>(game_state) {
+</span><span>    forever {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">/* Figure out whose turn it is. */
+</span><span>        current_character </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>schedule.</span><span style="font-weight:bold;color:#795da3;">get_next_character</span><span>();
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">/* The character declares an action they will take.
+</span><span style="font-style:italic;color:#969896;">         * This blocks waiting for input if it&#39;s the player&#39;s turn.
+</span><span style="font-style:italic;color:#969896;">         * Otherwise the AI for the character is invoked. */
+</span><span>        action </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_character.</span><span style="font-weight:bold;color:#795da3;">determine_action</span><span>();
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">/* If the rules permit the action... */
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>rules.</span><span style="font-weight:bold;color:#795da3;">permit</span><span>(action) {
+</span><span>            </span><span style="font-style:italic;color:#969896;">/* ...then actually do the action. */
+</span><span>            game_state.</span><span style="font-weight:bold;color:#795da3;">commit</span><span>(action);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">/* Schedule the character&#39;s next turn. */
+</span><span>        schedule.</span><span style="font-weight:bold;color:#795da3;">insert</span><span>(current_character);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">/* Finally, render the scene. */
+</span><span>        renderer.</span><span style="font-weight:bold;color:#795da3;">render</span><span>(game_state);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Again, this is over-simplified. The key points are:</p>
+<ul>
+<li>I want the ability to block waiting for input player’s turn, rather than
+periodically sampling input. The motivation for this is power-saving.</li>
+<li>I only want to re-draw the scene when necessary, rather than periodically.
+This is also to save power.</li>
+<li>I want the ability to reason about the outcome of an action before it is
+committed.</li>
+</ul>
+<p>These goals are incompatible with the idea of <strong>systems</strong> as they are typically
+described in ECS literature. In my engine, I implement game logic in
+<strong>actions</strong>, which describe changes to the game state, and <strong>rules</strong>, which
+describe restrictions on which actions can be committed, as well as follow-on
+action which happen in response to certain actions. In the remainder of this
+post, I’ll describe how actions and rules work.</p>
+<h2 id="storing-data-entities-and-components"><a class="zola-anchor" href="#storing-data-entities-and-components" aria-label="Anchor link for: storing-data-entities-and-components">Storing Data: Entities and Components</a></h2>
+<p>These are unchanged from the traditional ECS pattern, but I’ll introduce my
+implementation of them to simplify the explanation of new concepts later.</p>
+<p>I consider two kinds of component:</p>
+<ul>
+<li><strong>Data Components</strong> store typed data about an entity.</li>
+<li><strong>Flag Components</strong> store no data, but their presence in an entity is
+meaningful.</li>
+</ul>
+<p>An entity is represented by a unique identifier - namely, a 64-bit integer.
+For each type of component, there is a single data structure which stores
+values of that component for all entities. For data components, values are
+stored in a hash table, keyed by entity id. If an entity has a particular data
+component, that component’s value will be stored against the entity’s id in that
+component’s hash table. For each flag component, there is a
+set of entity ids, such that if an entity’s id is in the set, then that entity
+is considered to have that component.</p>
+<p>Here’s an example entity store:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>
+</span><span style="font-weight:bold;color:#a71d5d;">type </span><span>EntityId </span><span style="font-weight:bold;color:#a71d5d;">= u64</span><span>;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>EntityStore {
+</span><span>    position: HashMap&lt;EntityId, (</span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>)&gt;,
+</span><span>    door_state: HashMap&lt;EntityId, DoorState&gt;,
+</span><span>    tile: HashMap&lt;EntityId, TileType&gt;,
+</span><span>    solid: HashSet&lt;EntityId&gt;,
+</span><span>    can_open_doors: HashSet&lt;EntityId&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// supporting types
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>DoorState {
+</span><span>    Open,
+</span><span>    Closed,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>TileType {
+</span><span>    OpenDoor,
+</span><span>    ClosedDoor,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// getters
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>EntityStore {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">get_position</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, id: EntityId) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;(</span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>)&gt; {
+</span><span>        self.position.</span><span style="color:#62a35c;">get</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>id).</span><span style="color:#62a35c;">map</span><span>(|v| </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>v)
+</span><span>    }
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each data component
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">contains_solid</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, id: EntityId) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.solid.</span><span style="color:#62a35c;">contains</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>id)
+</span><span>    }
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each flag component
+</span><span>}
+</span></code></pre>
+<h2 id="mutating-data-actions"><a class="zola-anchor" href="#mutating-data-actions" aria-label="Anchor link for: mutating-data-actions">Mutating Data: Actions</a></h2>
+<p>An action describes a change to the game state. There are a small number of
+ways the game state can be changed:</p>
+<ul>
+<li>the value of an entity’s data component can be set (added or changed)</li>
+<li>an entity can gain a new flag component</li>
+<li>an entity can lose a component</li>
+</ul>
+<p>Note that the first two types of change both correspond to an entry being added
+to a component store. Also note that I only talk about components -
+not entities. There is no global list of entities, and no explicit way to add or
+remove entities. Adding an entity is equivalent to adding some components with
+the new entity’s id. Removing an entity is equivalent to removing the entries
+from all component stores with the entity’s id.</p>
+<p>An action is represented by an <code>EntityStore</code> (defined above), storing all
+component values being added or changed by the action. Additionally, for each
+component type, an action has a set of entity id’s that are losing that
+component.</p>
+<p>Example implementation:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>RemovedComponents {
+</span><span>    position: HashSet&lt;EntityId&gt;,
+</span><span>    tile: HashSet&lt;EntityId&gt;,
+</span><span>    door_state: HashSet&lt;EntityId&gt;,
+</span><span>    tile: HashSet&lt;EntityId&gt;,
+</span><span>    solid: HashSet&lt;EntityId&gt;,
+</span><span>    can_open_doors: HashSet&lt;EntityId&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Action {
+</span><span>    additions: EnityStore,
+</span><span>    removals: RemovedComponents,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Action {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">remove_position</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, id: EntityId) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each component
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">insert_position</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, id: EntityID,
+</span><span>                           value: (isize, isize)) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each data component
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">insert_solid</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, id: EntityId) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each flag component
+</span><span>}
+</span></code></pre>
+<p>The engine also needs a way to commit actions:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// applies `action` to `state`, clearing `action` in the process
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">commit_action</span><span>(state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> EntityStore, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Action) {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// removals
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> id </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.removals.position.</span><span style="color:#62a35c;">drain</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>) {
+</span><span>        state.position.</span><span style="color:#62a35c;">remove</span><span>(id);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each component type
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// data insertions
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(id, value) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.insertions.position.</span><span style="color:#62a35c;">drain</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>) {
+</span><span>        state.position.</span><span style="color:#62a35c;">insert</span><span>(id, value);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each data component type
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// flag insertions
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> id </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> actions.insertions.solid.</span><span style="color:#62a35c;">drain</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>) {
+</span><span>        state.solid.</span><span style="color:#62a35c;">insert</span><span>(id);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// repeated for each flag component type
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Here are some example actions. Each is expressed as an “action constructor” function which populates
+an empty action.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">move_character</span><span>(character_id: EntityId, direction: Direction,
+</span><span>        state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Action) {
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> current_position </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> state.</span><span style="color:#62a35c;">get_position</span><span>(character_id)
+</span><span>        .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;Attempt to move entity with no position&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_position </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> current_position </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">unit_vector</span><span>();
+</span><span>
+</span><span>    action.</span><span style="color:#62a35c;">insert_position</span><span>(character_id, new_position);
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">open_door</span><span>(door_id: EntityId, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Action) {
+</span><span>
+</span><span>    action.</span><span style="color:#62a35c;">remove_solid</span><span>(door_id);
+</span><span>    action.</span><span style="color:#62a35c;">insert_tile</span><span>(door_id, TileType::OpenDoor);
+</span><span>    action.</span><span style="color:#62a35c;">insert_door_state</span><span>(door_id, DoorState::Open);
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">close_door</span><span>(door_id: EntityId, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Action) {
+</span><span>
+</span><span>    action.</span><span style="color:#62a35c;">insert_solid</span><span>(door_id);
+</span><span>    action.</span><span style="color:#62a35c;">insert_tile</span><span>(door_id, TileType::ClosedDoor);
+</span><span>    action.</span><span style="color:#62a35c;">insert_door_state</span><span>(door_id, DoorState::Closed);
+</span><span>}
+</span></code></pre>
+<p>Note how none of the functions above modify the game’s state directly, but
+rather construct an <code>Action</code> which describes how the state will be modified.</p>
+<p>It will be convenient to be able to talk about the type of an action without
+instantiating it:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">enum </span><span>ActionType {
+</span><span>    MoveCharacter(EntityId, Direction),
+</span><span>    OpenDoor(EntityId),
+</span><span>    CloseDoor(EntityId),
+</span><span>}
+</span></code></pre>
+<p>Given an <code>ActionType</code>, a <code>&amp;EntityStore</code>, and a <code>&amp;mut Action</code>, it’s possible to
+call the appropriate action constructor with all its arguments:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">create_action</span><span>(action_type: ActionType, state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Action) {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// `action` is assumed to be initially empty
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> action_type {
+</span><span>        MoveCharacter(entity_id, direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>            </span><span style="color:#62a35c;">move_character</span><span>(entity_id, direction, state, action);
+</span><span>        }
+</span><span>        OpenDoor(entity_id) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>            </span><span style="color:#62a35c;">open_door</span><span>(entity_id, state, action);
+</span><span>        }
+</span><span>        CloseDoor(entity_id) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>            </span><span style="color:#62a35c;">close_door</span><span>(entity_id, state, action);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="game-logic-rules"><a class="zola-anchor" href="#game-logic-rules" aria-label="Anchor link for: game-logic-rules">Game Logic: Rules</a></h2>
+<p>A game can have many rules. Each rules contains some logic that examines the
+current state of the game, and an action, and decides:</p>
+<ul>
+<li>whether the action is allowed to occur</li>
+<li>which additional actions should occur</li>
+<li>whether additional rules should be checked</li>
+</ul>
+<p>Here’s an example that encodes the mechanic where bumping into a
+closed door will open the door.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">enum </span><span>ActionStatus {
+</span><span>    Accept,
+</span><span>    Reject,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>RuleStatus {
+</span><span>    KeepChecking,
+</span><span>    StopChecking,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">bump_open_doors</span><span>(action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Action, state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore,
+</span><span>                   reactions: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;ActionType&gt;)
+</span><span>                   -&gt; (ActionStatus, RuleStatus) {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// loop through all positions set by the action
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(id, position) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.insertions.position.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Only proceed if this entity can actually open doors
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>state.</span><span style="color:#62a35c;">contains_can_open_doors</span><span>(id) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">continue</span><span>;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// I promise I&#39;ll explain this below!
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(door_id) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">GET_DOOR_IN_CELL</span><span>(position) {
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// if the entity would move into a cell with a door...
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...open the door...
+</span><span>            reactions.</span><span style="color:#62a35c;">push</span><span>(ActionType::OpenDoor(door_id));
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...and prevent the move from occuring.
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Reject, RuleStatus::StopChecking);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// no doors were bumped, so check other rules
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Accept, RuleStatus::KeepChecking);
+</span><span>}
+</span></code></pre>
+<p>The first unusual thing one might notice is the fact that the rule loops over
+all the entities that moved. Since actions can contain an arbitrary number of
+changed components, this is required in case multiple entities move in an action.
+Since an action can either be accepted or rejected, if multiple entities attempt
+to move, and one of the moves is invalid, the action will still be rejected.
+Having fine-grained actions (where each action represents a small change) allows
+rules to be more powerful, without having to worry about “collateral damage”,
+where some valid parts of an action don’t go ahead because of other invalid
+parts of the same action.</p>
+<p>The next thing to note is that the rule doesn’t just open the door there and
+then. Instead, it queues up an action that will open the door. This will be an
+action just like any other, and will go through the same rule-checking, so
+there’s a possibility that the door won’t open, such as if the door is locked.</p>
+<p>Now, what’s going on with that <code>GET_DOOR_IN_CELL</code> function. So far I haven’t
+talked at all about reasoning about individual cells - only individual entities
+or components. The <code>EntityStore</code> described earlier has no notion of cells, and
+could be used for non grid-based games. All my applications of this engine so
+far <em>have</em> been for games on a 2d grid, and most rules want to talk about
+properties of cells, as well as properties of entities. To enable this, I use a
+spatial hash, which I’ll introduce now, and elaborate more on rules later.</p>
+<h2 id="spatial-hashing-interlude"><a class="zola-anchor" href="#spatial-hashing-interlude" aria-label="Anchor link for: spatial-hashing-interlude">Spatial Hashing Interlude</a></h2>
+<p>In games where the world is represented as a grid, it’s useful to be able to
+reason about entire cells in the grid. At the very least, it would be nice to
+easily iterate through a list of entities in a particular cell. I also want to,
+have properties of cells based on aggregating over components of the entities
+in the cell. For example, if a cell contains at least one entity which has the
+<strong>solid</strong> component, I want that cell to be considered solid.</p>
+<p>There’s nothing too exciting about implementing a 2d grid of cells. Suffice it
+to say I have a type <code>SpatialHashTable</code> with the following interface:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>SpatialHashTable {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Update the spatial hash table with an action that&#39;s about
+</span><span>    </span><span style="font-style:italic;color:#969896;">// to be applied. In order for the spatial hash table to
+</span><span>    </span><span style="font-style:italic;color:#969896;">// accurately reflect the state of its corresponding
+</span><span>    </span><span style="font-style:italic;color:#969896;">// EntityStore, this method must be called each time an
+</span><span>    </span><span style="font-style:italic;color:#969896;">// action is committed to said EntityStore.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">update</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Action) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns a particular cell in the spatial hash table which
+</span><span>    </span><span style="font-style:italic;color:#969896;">// can be queried further.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">get</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, x: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, y: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>SpatialHashCell { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>}
+</span></code></pre>
+<p>The cells are more interesting. Each cell maintains a set containing the ids of
+all entities in the cell. When an entity moves, the
+entity id set of the source cell and destination cell must be updated.
+Additionally, for aggregate values, each time an entity moves or the component
+relevant to the aggregate changes, the aggregate value must be updated.</p>
+<p>There are different ways to aggregate properties of cells, with different use
+cases. This post will cover two different aggregates:</p>
+<ul>
+<li>Booleans that are true if there is at least one entity with a
+certain component in a cell. The cell will maintain a count
+of the number of entities with the component.</li>
+<li>Sets that store the ids of all the entities in a cell with a given
+component.</li>
+</ul>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>SpatialHashCell {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// all the entities in this cell
+</span><span>    entities: HashSet&lt;EntityId&gt;,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// keep track of the number of solid entities in this cell
+</span><span>    solid: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// maintain a set of entities with the `door_state` component
+</span><span>    </span><span style="font-style:italic;color:#969896;">// in this cell
+</span><span>    door_state: HashSet&lt;EntityId&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>SpatialHashCell {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// returns true iff there is at least one solid entity
+</span><span>    </span><span style="font-style:italic;color:#969896;">// in this cell
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">is_solid</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.solid </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// returns the id of an arbitrarily chosen entity
+</span><span>    </span><span style="font-style:italic;color:#969896;">// in this cell with the `door_state` component
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">any_door_state</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;EntityId&gt; {
+</span><span>        self.door_state.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">next</span><span>().</span><span style="color:#62a35c;">map</span><span>(|s| </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>s)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>One may question the sense of allowing multiple entities with the <strong>door_state</strong>
+component to exist in a single cell. There are unlikely to be any realistic
+scenarios where there are multiple doors with the same position. However, the
+simplest way to implement the entity store is allow it to store any combinations
+of entities, and implement higher-level policy to be elsewhere (e.g. in actions
+or rules).</p>
+<h2 id="back-to-rules"><a class="zola-anchor" href="#back-to-rules" aria-label="Anchor link for: back-to-rules">Back to Rules</a></h2>
+<p>Rules now take an additional argument: a <code>SpatialHashTable</code>!</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">bump_open_doors</span><span>(action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Action, state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore,
+</span><span>                   spatial_hash: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>SpatialHashTable, </span><span style="font-style:italic;color:#969896;">// &lt;-- NEW!
+</span><span>                   reactions: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;ActionType&gt;)
+</span><span>                   -&gt; (ActionStatus, RuleStatus) {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// loop through all positions set by the action
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(id, position) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.insertions.position.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Only proceed if this entity can actually open doors
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>state.</span><span style="color:#62a35c;">contains_can_open_doors</span><span>(id) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">continue</span><span>;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// NEW!
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(door_id) </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            spatial_hash.</span><span style="color:#62a35c;">get</span><span>(position).</span><span style="color:#62a35c;">any_door_state</span><span>() {
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// if the entity would move into a cell with a door...
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...open the door...
+</span><span>            reactions.</span><span style="color:#62a35c;">push</span><span>(ActionType::OpenDoor(door_id));
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...and prevent the move from occuring.
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Reject, RuleStatus::StopChecking);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// no doors were bumped, so check other rules
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Accept, RuleStatus::KeepChecking);
+</span><span>}
+</span></code></pre>
+<p>How should we handle an action that moves an entity, and gives it the ability to
+open doors at the same time? Suppose a character that could not open doors
+gained the ability to open doors, and moved into a cell containing a door, as a
+single action. I’d like the door to open in response.</p>
+<p>Note that the check <code>if !state.contains_can_open_doors(id) {</code>
+queries the current state of the game only. Since the character currently
+can’t open doors, this check will prevent the door from being opened.</p>
+<p>I could add an additional check that examines the action, to see if the entity
+moving into a door is about to gain the ability to open doors, but this feels
+cumbersome. Instead, I want a way to talk about the state of the game after an
+action has been committed, without actually committing the action.</p>
+<p>Since the game state and actions are both described in terms of components, I
+can turn a reference to a game state and a reference to an action into something
+that looks like the state of the game following the action:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>EntityStoreAfterAction&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    entity_store: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> EntityStore,
+</span><span>    action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> Action,
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// the same getters as an EntityStore
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; EntityStoreAfterAction&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">get_position</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, id: EntityId) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;(</span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">isize</span><span>)&gt; {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// if the component is being inserted, return it
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(value) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.action.insertions.</span><span style="color:#62a35c;">get_position</span><span>(id) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(value);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// if the component is being removed, prevent the original
+</span><span>        </span><span style="font-style:italic;color:#969896;">// value from being returned
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.action.removals.position.</span><span style="color:#62a35c;">contains</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>id) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">None</span><span>;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// return the original value
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>self.entity_store.</span><span style="color:#62a35c;">get_position</span><span>(id);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>An <code>EntityStoreAfterAction</code> looks like an <code>EntityStore</code>! They both implement the
+same query interface, but <code>EntityStoreAfterAction</code> lets us query the future.</p>
+<p>Modifying the rule to use <code>EntityStoreAfterAction</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">bump_open_doors</span><span>(action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Action, state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore,
+</span><span>                   spatial_hash: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>SpatialHashTable,
+</span><span>                   reactions: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;ActionType&gt;)
+</span><span>                   -&gt; (ActionStatus, RuleStatus) {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// NEW!
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> future_state </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> EntityStoreAfterAction {
+</span><span>        entity_store: state,
+</span><span>        action: action,
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// loop through all positions set by the action
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(id, position) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.insertions.position.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Only proceed if this entity can actually open doors
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>future_state.</span><span style="color:#62a35c;">contains_can_open_doors</span><span>(id) { </span><span style="font-style:italic;color:#969896;">// &lt;-- CHANGED!
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">continue</span><span>;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(door_id) </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            spatial_hash.</span><span style="color:#62a35c;">get</span><span>(position).</span><span style="color:#62a35c;">any_door_state</span><span>() {
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// if the entity would move into a cell with a door...
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...open the door...
+</span><span>            reactions.</span><span style="color:#62a35c;">push</span><span>(ActionType::OpenDoor(door_id));
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// ...and prevent the move from occuring.
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Reject, RuleStatus::StopChecking);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// no doors were bumped, so check other rules
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Accept, RuleStatus::KeepChecking);
+</span><span>}
+</span></code></pre>
+<p>The order in which rules are checked effects their outcome. For example,
+consider the following collision rule, that states that solid entities cannot
+move through other solid entities.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">collision</span><span>(action: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Action, state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>EntityStore,
+</span><span>             spatial_hash: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>SpatialHashTable,
+</span><span>             reactions: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;ActionType&gt;)
+</span><span>             -&gt; (ActionStatus, RuleStatus) {
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> future_state </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> EntityStoreAfterAction {
+</span><span>        entity_store: state,
+</span><span>        action: action,
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(id, position) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> action.insertions.position.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>future_state.</span><span style="color:#62a35c;">contains_solid</span><span>(id) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">continue</span><span>;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> spatial_hash.</span><span style="color:#62a35c;">get</span><span>(position).</span><span style="color:#62a35c;">is_solid</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Reject, RuleStatus::StopChecking);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(ActionStatus::Accept, RuleStatus::KeepChecking);
+</span><span>}
+</span></code></pre>
+<p>Since closed doors are solid, if the <code>collision</code> rule was checked before the
+<code>bump_open_doors</code> rule, the action would be rejected and we’d stop checking
+rules, so the logic that opens doors would never run. Thus, <code>bump_open_doors</code>
+should be checked before <code>collision</code>.</p>
+<h2 id="putting-it-all-together"><a class="zola-anchor" href="#putting-it-all-together" aria-label="Anchor link for: putting-it-all-together">Putting it all together</a></h2>
+<p>This is roughly how my game loop works:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>// the type of a rule function (e.g. collision)
+</span><span>type RuleFn = ...;
+</span><span>
+</span><span>// knows which entity&#39;s turn it is
+</span><span>struct TurnSchedule { ... };
+</span><span>
+</span><span>struct Game {
+</span><span>    // All entities and components in the game world.
+</span><span>    state: EntityStore,
+</span><span>
+</span><span>    // List of rules in the order they will be checked.
+</span><span>    rules: Vec&lt;RuleFn&gt;,
+</span><span>
+</span><span>    // Used to determine whose turn it is.
+</span><span>    schedule: TurnSchedule,
+</span><span>
+</span><span>    // It turns out you only need to have a single action
+</span><span>    // instantiated at a time. Store this as part of the
+</span><span>    // game to remove the overhead of creating a new
+</span><span>    // action each time we need one.
+</span><span>    action: Action,
+</span><span>
+</span><span>    // A queue of actions waiting to be processed in the
+</span><span>    // current turn.
+</span><span>    pending_actions: VecDeque&lt;ActionType&gt;,
+</span><span>
+</span><span>    // Rules have the ability to enqueue follow-on actions,
+</span><span>    // which will also be processed by rules. The follow-on
+</span><span>    // actions enqueued by a rule as it checks an action
+</span><span>    // are only added to pending_actions if the action being
+</span><span>    // checked gets accepted. Follow-on actions are
+</span><span>    // temporarily stored here, and added to pending_actions
+</span><span>    // if the current action is accepted.
+</span><span>    //
+</span><span>    // There is a separate queue for actions enqueued by
+</span><span>    // accepting rules and rejecting rules. This allows
+</span><span>    // accepting rules to enqueue actions that will only
+</span><span>    // occur if the action ends up getting accepted.
+</span><span>    follon_on_accepted: VecDequeue&lt;ActionType&gt;,
+</span><span>    follon_on_rejected: VecDequeue&lt;ActionType&gt;,
+</span><span>    follon_on_current: VecDequeue&lt;ActionType&gt;,
+</span><span>}
+</span><span>
+</span><span>impl Game {
+</span><span>
+</span><span>    fn game_loop(&amp;mut self) {
+</span><span>        loop {
+</span><span>            // Figure out whose turn it is.
+</span><span>            let entity_id: EntityId =
+</span><span>                self.schedule.next_turn();
+</span><span>
+</span><span>            // The current entity decides an action.
+</span><span>            // This waits for player input if it&#39;s
+</span><span>            // the player&#39;s turn, and invokes the AI
+</span><span>            // if it&#39;s an NPC&#39;s turn.
+</span><span>            // The details of choosing an action are
+</span><span>            // out of scope.
+</span><span>            let action_type: ActionType =
+</span><span>                CHOOSE_ACTION(&amp;self.state, entity_id);
+</span><span>
+</span><span>            // Equeue the action for processing
+</span><span>            self.pending_actions.push_back(action_type);
+</span><span>
+</span><span>            // Check rules, and handle any follow-on
+</span><span>            // actions.
+</span><span>            self.process_actions();
+</span><span>
+</span><span>            // Allow the entity to take another turn
+</span><span>            // at some point in the future.
+</span><span>            self.schedule.insert(entity_id);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    fn process_actions(&amp;mut self) {
+</span><span>
+</span><span>        // Repeat until there are no pending actions.
+</span><span>        while let Some(action_type) =
+</span><span>            self.pending_actions.pop_front() {
+</span><span>
+</span><span>            // Populate self.action based on the
+</span><span>            // value of action_type.
+</span><span>            self.action.instantiate_from(action_type,
+</span><span>                                         &amp;self.state);
+</span><span>
+</span><span>            let mut accepted = true;
+</span><span>
+</span><span>            // For each rule
+</span><span>            for rule in self.rules.iter() {
+</span><span>
+</span><span>                // Check the rule
+</span><span>                let (action_status, rule_status) =
+</span><span>                    rule(&amp;self.action. &amp;self.state,
+</span><span>                         &amp;mut self.follow_on_current);
+</span><span>
+</span><span>                // If a single rule rejects an action,
+</span><span>                // the action is rejected.
+</span><span>                if action_status == ActionStatus::Reject {
+</span><span>                    accepted = false;
+</span><span>
+</span><span>                    // Drain follow-on actions into
+</span><span>                    // rejected queue.
+</span><span>                    for a in self.follow_on_current.drain(..) {
+</span><span>                        self.follow_on_rejected.push_back(a);
+</span><span>                    }
+</span><span>                } else {
+</span><span>                    // Drain follow-on actions into
+</span><span>                    // accepted queue.
+</span><span>                    for a in self.follow_on_current.drain(..) {
+</span><span>                        self.follow_on_accepted.push_back(a);
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                // Stop checking rules if the rule say so.
+</span><span>                if rule_status == RuleStatus::StopChecking {
+</span><span>                    break;
+</span><span>                }
+</span><span>            }
+</span><span>
+</span><span>            if accepted {
+</span><span>
+</span><span>                // Apply the action, clearing the action in the
+</span><span>                // process.
+</span><span>                commit_action(&amp;mut self.state, &amp;mut self.action);
+</span><span>
+</span><span>                // It&#39;s only necessary to re-draw the scene after
+</span><span>                // something has changed.
+</span><span>                // The details of rendering are out of scope.
+</span><span>                RENDER();
+</span><span>
+</span><span>                // Enqueue all the follow-on actions.
+</span><span>                for a in self.follow_on_accepted.drain(..) {
+</span><span>                    self.pending_actions.push_back(a);
+</span><span>                }
+</span><span>
+</span><span>            } else {
+</span><span>
+</span><span>                // The action was rejected.
+</span><span>                // Clear the action.
+</span><span>                self.action.clear();
+</span><span>
+</span><span>                // Enqueue all the follow-on actions.
+</span><span>                for a in self.follow_on_rejected.drain(..) {
+</span><span>                    self.pending_actions.push_back(a);
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span></code></pre>
+<h2 id="limitations"><a class="zola-anchor" href="#limitations" aria-label="Anchor link for: limitations">Limitations</a></h2>
+<p>While using this engine for the 7DRL, I noticed some problems with its current
+design.</p>
+<h3 id="isolated-rules"><a class="zola-anchor" href="#isolated-rules" aria-label="Anchor link for: isolated-rules">Isolated Rules</a></h3>
+<p>Splitting up the game logic into many individual rules leads to high cognitive load.
+The motivation for having lots of small, modular, isolated rules, was to
+<em>decrease</em> cognitive load, but it ended up having the opposite effect. The problem
+is that rules aren’t completely isolated. If rules are checked in the wrong order
+they can be unintentionally skipped. Rules have the ability to make the global decision
+of whether or not to keep checking the remaining rules.</p>
+<p>It’s not even clear whether attempting to
+isolate rules from one another is the right approach. A lot of the fun in turn-based
+games comes from the interaction of different mechanics, so forcing the rules to
+be isolated may be harmful, compared to a framework that allows rules to
+explicitly cooperate.</p>
+<p>Most of the rules reason about changes in position. This means, each rule must
+loop over all the changes in position in the current action, and apply some
+policy. The isolation between rules leads to several rules checking the same
+component, and unnecessarily repeating work. This is more evidencing suggesting
+I should stop isolating rules from one another.</p>
+<h3 id="intra-turn-real-time-animation"><a class="zola-anchor" href="#intra-turn-real-time-animation" aria-label="Anchor link for: intra-turn-real-time-animation">Intra-turn Real-time Animation</a></h3>
+<p>My engine allows a delay to be added between actions during a turn, to allow
+real-time animations to be implemented as part of a turn’s resolution. In the gif
+below, the bullet
+leaving the van and hitting the barrel, and the subsequent explosions, are all
+part of a single turn.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/modifying-entity-component-system-for-turn-based-games/explosion.gif" alt="explosion.gif" /></p>
+<p>This is implemented using rules. Entities can have a <strong>velocity</strong> component, and
+there is a rule that detects when an entity moves because of their velocity, and
+schedules an additional action to move them again, resulting in a chain of
+repeated move actions being committed.</p>
+<p>This is a testament to the expressive power of actions and rules, but it feels
+unnecessarily complicated. Also, when something goes wrong, debugging this chain
+of actions and rules is a nightmare.</p>
+<p>To simplify this, I’m thinking about adding a hook to the turn-resolution loop
+that is called at each discrete point in (real) time as a turn is resolved. It would allow some game logic to
+be invoked periodically to implement real-time mechanics. For example, it would take
+all the entities with a velocity, and update their position such that they move
+under their velocity. Sound familiar? I guess there’s a place for <strong>systems</strong> in
+my engine after all.</p>
+<h2 id="summary"><a class="zola-anchor" href="#summary" aria-label="Anchor link for: summary">Summary</a></h2>
+<p>My turn-based game engine uses a modified form of ECS. I still store data using entities
+and components, but I found the idea of systems to be more suited to real-time
+games. In my engine, I replace <strong>systems</strong> with <strong>actions</strong> and <strong>rules</strong>. Actions
+describe discrete changes to the game’s state, in terms of entities and
+components. Rules determine whether an action is allowed to happen, and which
+additional actions will happen as a result.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;programming-languages-make-terrible-game-engines&#x2F;" aria-label="Previous">
+	  Previous: Programming Languages Make Terrible Game Engines
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;pathfinding-on-a-grid&#x2F;" aria-label="Next">
+	  Next: Pathfinding on a Grid
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

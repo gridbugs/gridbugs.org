@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Learning about kqueue">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/learning-about-kqueue/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/learning-about-kqueue/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-11-11T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Learning about kqueue
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;configuring-feh&#x2F;" aria-label="Previous">
+	  Previous: Configuring Feh
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;disk-image-tool-progress-directory-hierarchies&#x2F;" aria-label="Next">
+	  Next: Disk image tool progress - directory hierarchies
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Learning about kqueue</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-11-11T00:00:00+00:00">
+    November 11, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I’m trying to fix a bug in the <code>rb-kqueue</code> gem which occasionally
+<a href="https://gridbugs.github.io/gridbugs.org/daily/building-this-site-sometimes-crashes-ruby/">crashes the ruby interpreter</a>
+when I’m running a file-watching server while working on this site.</p>
+<p>The bug seems to be in the <code>rb-kqueue</code> gem, which is a thin wrapper around *BSD’s kqueue
+API, which is an interface for subscribing to notifications when a file changes, similar
+to Linux’s inotify.</p>
+<p>To understand what’s wrong with <code>rb-kqueue</code>, I’m going to start by learning how to make
+the most basic thing that does what <code>rb-kqueue</code> does. To start, forget ruby, and makd something
+simple in c.</p>
+<p>Here’s how to get started with kqueue:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ man kqueue
+</span></code></pre>
+<p>…and scroll down to the “EXAMPLES” section.
+Copy paste the example code into a c file, compile it, and run it.
+It will watch the file specified as an argument and print a message when the watched file changes.</p>
+<p>Then read the manual page and modify the code to learn more.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;configuring-feh&#x2F;" aria-label="Previous">
+	  Previous: Configuring Feh
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;disk-image-tool-progress-directory-hierarchies&#x2F;" aria-label="Next">
+	  Next: Disk image tool progress - directory hierarchies
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

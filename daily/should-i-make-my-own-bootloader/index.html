@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Should I make my own bootloader?">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/should-i-make-my-own-bootloader/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/should-i-make-my-own-bootloader/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-27T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Should I make my own bootloader?
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fixing-bugs-in-sample-code&#x2F;" aria-label="Previous">
+	  Previous: Fixing bugs in sample code
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;planning-to-make-a-simple-disk-image-creator&#x2F;" aria-label="Next">
+	  Next: Planning to make a simple disk image creator
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Should I make my own bootloader?</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-27T00:00:00+00:00">
+    August 27, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>On the road to setting up basic memory-management for my hobby OS, I found that
+the bootloader I’ve elected to use (<a href="https://gitlab.com/bztsrc/bootboot">bootboot</a>)
+doesn’t tell the booting kernel about all the available physical memory. In particular
+it omits the memory regions which it uses to store the initial paging hierarchy which
+it sets up before starting the kernel. Looking at its source code, this appears to
+be by design, though I don’t understand why it’s necessary.</p>
+<p>I want my project to be easy to build on at least linux and freebsd. With the
+exception of the <code>mkbootimg</code> tool packaged with bootboot (for generating bootable disk images), the only packages required
+to build the OS are GNU binutils, the netwide assembler (though I’m planning on switching
+to GNU assembler), and qemu (if you want to run the OS in an emulator/VM).</p>
+<p>Dropping bootboot would mean losing <code>mkbootimg</code> (unless I implemented a bootboot-compliant bootloader
+(bootboot is a <em>protocol</em> as well as a reference implementation)). The specific problem which <code>mkbootimg</code>
+solves is taking a binary file containing a compiled kernel (an ELF file) as input, and producing as output
+a hard disk image with a GPT partition table, whose first partition is FAT32 formatted,
+and inside that partition resides a bootloader UEFI file (understood by the system’s UEFI firmware),
+and the kernel ELF. Every alternative tool I’ve found for doing this is specific to linux.
+The <code>grub</code> bootloader comes with a tool <code>grub-mkrescue</code> which is a popular way to make bootable disk images
+for hobby OS projects, but the grub no longer exists in freebsd. You can also make bootable disk image by
+<code>fdisk</code>-ing a regular file, <code>mkvs.vfat</code>-ing a partition onto it, and mounting the partition to copy
+the relevant files to it, but this again is different between linux and bsd, and worse - it requires running
+commands as root (mounting/unmounting the partition from the disk image). A sorry state of affairs indeed!</p>
+<p>Finally, the whole point of this project was for me to learn more about systems programming,
+and a lot of the messy details of booting on x86 are taken care of by bootboot.</p>
+<p>So I’m probably going to make a minimal x86 UEFI bootloader and disk image creator,
+using bootboot and <code>mkbootimg</code> as a reference.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fixing-bugs-in-sample-code&#x2F;" aria-label="Previous">
+	  Previous: Fixing bugs in sample code
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;planning-to-make-a-simple-disk-image-creator&#x2F;" aria-label="Next">
+	  Next: Planning to make a simple disk image creator
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

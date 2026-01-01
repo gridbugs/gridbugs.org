@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 11 - Descending the Stairs">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-09T21:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 11 - Descending the Stairs
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-10&#x2F;" aria-label="Previous">
+	  Previous: Part 10 - Saving and Loading
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-12&#x2F;" aria-label="Next">
+	  Next: Part 12 - Increasing Difficulty
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 11 - Descending the Stairs
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-08-09T21:00:00+10:00">
+    August 09, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll add stairs, and multiple dungeon levels, as well as the ability to upgrade the
+player character as they descend the stairs.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-11/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10-end">part-10-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/#placing-stairs">Placing Stairs</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/#descending-stairs">Descending Stairs</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/#add-combat-stats">Add Combat Stats</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/#use-combat-stats">Use Combat Stats</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/#upgrade-when-descending-stairs">Upgrade when Descending Stairs</a></li>
+</ul>
+<h2 id="placing-stairs"><a class="zola-anchor" href="#placing-stairs" aria-label="Anchor link for: placing-stairs">Placing Stairs</a></h2>
+<p>Start by adding an entity to each floor representing the stairs to the next floor down.
+For this game, stairs only lead downwards, and there’s no way to get back to earlier
+floors of the dungeon.</p>
+<p>Update the terrain generator to add stairs to the last room it creates.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>TerrainTile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Stairs,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid::new_copy(size, </span><span style="color:#0086b3;">None</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> room_centres </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Add stairs to the centre of the last room placed
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>room_centres.</span><span style="color:#62a35c;">last</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>()) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Stairs);
+</span><span>
+</span><span>    grid.</span><span style="color:#62a35c;">map</span><span>(|t| t.</span><span style="color:#62a35c;">unwrap_or</span><span>(TerrainTile::Wall))
+</span><span>}
+</span></code></pre>
+<p>Add a stairs tile, a stairs component, and spawn stairs according to the map produced by terrain generation.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Stairs,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        stairs: (),
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_stairs</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Stairs);
+</span><span>        self.components.stairs.</span><span style="color:#62a35c;">insert</span><span>(entity, ());
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                TerrainTile::Stairs </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">spawn_stairs</span><span>(coord),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add a case to the renderer to handle stairs.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Stairs </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;&gt;&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Levels now contain stairs!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/stairs.png" alt="stairs.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.0">part-11.0</a></p>
+<h2 id="descending-stairs"><a class="zola-anchor" href="#descending-stairs" aria-label="Anchor link for: descending-stairs">Descending Stairs</a></h2>
+<p>To approach the problem of descending stairs top down, start by adding a new control such that
+when the ‘&gt;’ key is pressed, attempt to have the player descend to the next dungeon level.
+Of course this will not do anything unless the player is currently standing on the stairs.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> key {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;&gt;&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_descend</span><span>(),
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>The <code>maybe_player_descend</code> method will check whether the player is on the stairs, and call <code>player_descend</code> if they are.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.world.</span><span style="color:#62a35c;">coord_contains_stairs</span><span>(self.</span><span style="color:#62a35c;">player_coord</span><span>()) {
+</span><span>            self.</span><span style="color:#62a35c;">player_descend</span><span>();
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p><code>player_descend</code> contains the interesting logic relating to descending the stairs.
+Comments inline.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">player_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// remove and return the player&#39;s data
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_data </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">remove_character</span><span>(self.player_entity);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// remove and discard all entities from the world
+</span><span>        self.world.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// forget the visible areas of the map
+</span><span>        self.visibility_grid.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// generate a fresh level
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate {
+</span><span>            player_entity,
+</span><span>            ai_state,
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.rng);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// insert the old player data into the new level
+</span><span>        self.world.</span><span style="color:#62a35c;">replace_character</span><span>(player_entity, player_data);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// the player&#39;s entity may have changed
+</span><span>        self.player_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> player_entity;
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// replace ai state to match the new level
+</span><span>        self.ai_state </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> ai_state;
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>This code depends on several not-yet-implemented methods of <code>World</code> and <code>VisibilityGrid</code>. Let’s implement them now.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub use </span><span>components::EntityData;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>CharacterData {
+</span><span>    entity_data: EntityData,
+</span><span>    inventory_entity_data: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;EntityData&gt;&gt;,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">clear</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.entity_allocator.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        self.components.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">remove_entity_data</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) -&gt; EntityData {
+</span><span>        self.entity_allocator.</span><span style="color:#62a35c;">free</span><span>(entity);
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">remove</span><span>(entity);
+</span><span>        self.components.</span><span style="color:#62a35c;">remove_entity_data</span><span>(entity)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">remove_character</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) -&gt; CharacterData {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entity_data </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">remove_entity_data</span><span>(entity);
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Remove the inventory from the character. An inventory contains entities referring data
+</span><span>        </span><span style="font-style:italic;color:#969896;">// in the current world. These data will also be removed here, and combined with the
+</span><span>        </span><span style="font-style:italic;color:#969896;">// `EntityData` of the character to form a `CharacterData`. When the `CharacterData` is
+</span><span>        </span><span style="font-style:italic;color:#969896;">// re-inserted into the world, the inventory item data will be inserted first, at which
+</span><span>        </span><span style="font-style:italic;color:#969896;">// point each item will be assigned a fresh entity. The character will get a brand new
+</span><span>        </span><span style="font-style:italic;color:#969896;">// inventory containing the new entities.
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory_entity_data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> entity_data
+</span><span>            .inventory
+</span><span>            .</span><span style="color:#62a35c;">take</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character missing inventory&quot;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">slots</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">iter</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|maybe_slot| maybe_slot.</span><span style="color:#62a35c;">map</span><span>(|entity| self.</span><span style="color:#62a35c;">remove_entity_data</span><span>(entity)))
+</span><span>            .collect::&lt;</span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;&gt;();
+</span><span>        CharacterData {
+</span><span>            entity_data,
+</span><span>            inventory_entity_data,
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">replace_character</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        entity: Entity,
+</span><span>        CharacterData {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">mut</span><span> entity_data,
+</span><span>            inventory_entity_data,
+</span><span>        }: CharacterData,
+</span><span>    ) {
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Before inserting the character&#39;s data, create new entities to contain each item in the
+</span><span>        </span><span style="font-style:italic;color:#969896;">// character&#39;s inventory.
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory_slots </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> inventory_entity_data
+</span><span>            .</span><span style="color:#62a35c;">into_iter</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|maybe_entity_data| {
+</span><span>                maybe_entity_data.</span><span style="color:#62a35c;">map</span><span>(|entity_data| {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>                    self.components.</span><span style="color:#62a35c;">update_entity_data</span><span>(entity, entity_data);
+</span><span>                    entity
+</span><span>                })
+</span><span>            })
+</span><span>            .collect::&lt;</span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;&gt;();
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Make a new inventory containing the newly created entities, and add it to the character.
+</span><span>        entity_data.inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Inventory {
+</span><span>            slots: inventory_slots,
+</span><span>        });
+</span><span>        self.components.</span><span style="color:#62a35c;">update_entity_data</span><span>(entity, entity_data);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">coord_contains_stairs</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">layers_at_checked</span><span>(coord)
+</span><span>            .floor
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|floor_entity| self.components.stairs.</span><span style="color:#62a35c;">contains</span><span>(floor_entity))
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">false</span><span>)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Most of the complexity above is because the items in the player’s inventory need to transition between
+dungeon levels along with the player.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// visibility.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>VisibilityGrid {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">clear</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.count </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.grid.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Default</span><span>::default();
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>You can now move onto a staircase, and press ‘&gt;’, and you’ll find yourself in a brand-new level.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.1">part-11.1</a></p>
+<h2 id="add-combat-stats"><a class="zola-anchor" href="#add-combat-stats" aria-label="Anchor link for: add-combat-stats">Add Combat Stats</a></h2>
+<p>Soon we’ll allow the player to level up when descending the stairs, but first we need to
+make our combat system more complex, so that the player can be improved on several different axes.
+We’ll add 4 combat stats to the player:</p>
+<ul>
+<li>base damage: the minimum amount of damage dealt in a melee attack</li>
+<li>strength: a random number between 0 and strength is added to the damage dealth in a melee attack</li>
+<li>dexterity: if the character would receive melee damage, it is reduced by a random number between 0 and dexterity</li>
+<li>intelligence: determines the effectiveness of spells</li>
+</ul>
+<p>NPCs can only deal melee damage, so they don’t have an intelligence stat, but they still get the other three.</p>
+<p>Base damage is an innate property of the character, so it doesn’t increase when you level up.
+Of the other 3 stats, the player may choose one to increment when descending the stairs.
+Alternatively, we’ll let the player choose to increase their max health by 5.</p>
+<p>In this section we’ll add components for each of the stats, and update the UI to display the character’s stats.
+In the next section we’ll update the combat system to make use of these stats.</p>
+<p>Add components for the stats, add the stats components to the player and NPCs, and expose getters for strength, dexterity and intelligence.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        base_damage: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>        strength: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>        dexterity: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>        intelligence: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.components.base_damage.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        self.components.strength.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        self.components.dexterity.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        self.components.intelligence.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_npc</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord, npc_type: NpcType) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.components.base_damage.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(strength, dexterity) </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> npc_type {
+</span><span>            NpcType::Orc </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>            NpcType::Troll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(</span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>        };
+</span><span>        self.components.strength.</span><span style="color:#62a35c;">insert</span><span>(entity, strength);
+</span><span>        self.components.dexterity.</span><span style="color:#62a35c;">insert</span><span>(entity, dexterity);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">strength</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>&gt; {
+</span><span>        self.components.strength.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">dexterity</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>&gt; {
+</span><span>        self.components.dexterity.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">intelligence</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>&gt; {
+</span><span>        self.components.intelligence.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add some getters for the player’s stats to <code>GameState</code>, and also keep track of the current dungeon level.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    ...
+</span><span>    dungeon_level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        initial_visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dungeon_level </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            dungeon_level,
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">player_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.dungeon_level </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_strength</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">strength</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player missing strength&quot;</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_dexterity</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">dexterity</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player missing dexterity&quot;</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_intelligence</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">intelligence</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player missing intelligence&quot;</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">dungeon_level</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">u32 </span><span>{
+</span><span>        self.dungeon_level
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>In <code>app.rs</code>, pass the player’s stats to the ui renderer. Also reduce the padding around
+the ui to make space for the extra information.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::ui::{StatsData, UiData, UiView};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">UI_Y_PADDING</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">0</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">render_ui</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        name: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str</span><span>&gt;,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData {
+</span><span>                player_hit_points,
+</span><span>                messages,
+</span><span>                name,
+</span><span>                examine_cell,
+</span><span>                stats_data: StatsData {
+</span><span>                    strength: data.game_state.</span><span style="color:#62a35c;">player_strength</span><span>(),
+</span><span>                    dexterity: data.game_state.</span><span style="color:#62a35c;">player_dexterity</span><span>(),
+</span><span>                    intelligence: data.game_state.</span><span style="color:#62a35c;">player_intelligence</span><span>(),
+</span><span>                },
+</span><span>                dungeon_level: data.game_state.</span><span style="color:#62a35c;">dungeon_level</span><span>(),
+</span><span>            },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add a ui component for showing the player’s stats.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>StatsView {
+</span><span>    buf: String,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>StatsData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>strength: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>dexterity: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>intelligence: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> StatsData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>StatsView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> StatsData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>        self.buf.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        write!(
+</span><span>            &amp;mut self.buf,
+</span><span>            </span><span style="color:#183691;">&quot;str: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">, dex: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">, int: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>,
+</span><span>            data.strength, data.dexterity, data.intelligence
+</span><span>        )
+</span><span>        .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        StringViewSingleLine::new(Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)))
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.buf, context, frame);
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>And another component for the current dungeon level.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>DungeonLevelView {
+</span><span>    buf: String,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>View&lt;</span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>DungeonLevelView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        dungeon_level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>        self.buf.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        write!(&amp;mut self.buf, </span><span style="color:#183691;">&quot;Level: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, dungeon_level).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        StringViewSingleLine::new(Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)))
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.buf, context, frame);
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add fields for stats and dungeon level to <code>UiData</code> and <code>UiView</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    ...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>stats_data: StatsData,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>dungeon_level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiView {
+</span><span>    ...
+</span><span>    stats_view: StatsView,
+</span><span>    dungeon_level_view: DungeonLevelView,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Finally update <code>UiView::view</code> to draw the new components.
+The whole function is shown here as it’s changed significantly.
+Also note the new helper function <code>centre_health_width</code> for centering
+text within the width of the health bar.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">centre_health_width</span><span>&lt;T: </span><span style="color:#0086b3;">Clone</span><span>&gt;(view: impl View&lt;T&gt;, height: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; impl View&lt;T&gt; {
+</span><span>    BoundView {
+</span><span>        size: Size::new(</span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>, height),
+</span><span>        view: AlignView {
+</span><span>            alignment: Alignment {
+</span><span>                x: AlignmentX::Centre,
+</span><span>                y: AlignmentY::Bottom,
+</span><span>            },
+</span><span>            view,
+</span><span>        },
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>UiView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: UiData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.health_view
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(data.player_hit_points, context, frame);
+</span><span>        self.stats_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.stats_data,
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">HEALTH_WIDTH </span><span style="font-weight:bold;color:#a71d5d;">as i32 + </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>)),
+</span><span>            frame,
+</span><span>        );
+</span><span>        </span><span style="color:#62a35c;">centre_health_width</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.dungeon_level_view, </span><span style="color:#0086b3;">1</span><span>).</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            data.dungeon_level,
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>)),
+</span><span>            frame,
+</span><span>        );
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> message_log_offset </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Coord::new(</span><span style="color:#0086b3;">HEALTH_WIDTH </span><span style="font-weight:bold;color:#a71d5d;">as i32 + </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>);
+</span><span>        self.messages_view
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(data.messages, context.</span><span style="color:#62a35c;">add_offset</span><span>(message_log_offset), frame);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(name) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.name {
+</span><span>            BoundView {
+</span><span>                size: Size::new(</span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>                view: AlignView {
+</span><span>                    alignment: Alignment::centre(),
+</span><span>                    view: StringViewSingleLine::new(
+</span><span>                        Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                    ),
+</span><span>                },
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(name, context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">2</span><span>)), frame);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(examine_cell) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.examine_cell {
+</span><span>            </span><span style="color:#62a35c;">centre_health_width</span><span>(
+</span><span>                StringView::new(
+</span><span>                    Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)),
+</span><span>                    wrap::Word::new(),
+</span><span>                ),
+</span><span>                </span><span style="color:#0086b3;">2</span><span>,
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(
+</span><span>                </span><span style="color:#62a35c;">examine_cell_str</span><span>(examine_cell),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">3</span><span>)),
+</span><span>                frame,
+</span><span>            );
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Running the game, the ui changes should be visible. The level counter will increase
+as you descend deeper into the dungeon.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/stats.png" alt="stats.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.2">part-11.2</a></p>
+<h2 id="use-combat-stats"><a class="zola-anchor" href="#use-combat-stats" aria-label="Anchor link for: use-combat-stats">Use Combat Stats</a></h2>
+<p>We’ll start by replacing the logic for handling bump attacks to take the new stats into account.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>BumpAttackOutcome {
+</span><span>    Hit,
+</span><span>    Dodge,
+</span><span>    Kill,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_bump_attack</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        victim: Entity,
+</span><span>        attacker: Entity,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) -&gt; BumpAttackOutcome {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>attacker_base_damage </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.base_damage.</span><span style="color:#62a35c;">get</span><span>(attacker).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>attacker_strength </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.strength.</span><span style="color:#62a35c;">get</span><span>(attacker).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>victim_dexterity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.dexterity.</span><span style="color:#62a35c;">get</span><span>(victim).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> gross_damage </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> attacker_base_damage </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>(attacker_strength </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> damage_reduction </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>(victim_dexterity </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> net_damage </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> gross_damage.</span><span style="color:#62a35c;">saturating_sub</span><span>(damage_reduction) </span><span style="font-weight:bold;color:#a71d5d;">as u32</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> net_damage </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>            BumpAttackOutcome::Dodge
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.</span><span style="color:#62a35c;">character_damage</span><span>(victim, net_damage).</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                BumpAttackOutcome::Kill
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                BumpAttackOutcome::Hit
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Note that if an attack would deal 0 damage, we say that it was dodged instead, to add some flavour.
+Also note that <code>character_bump_attack</code> now takes an additional argument - a random number generator.
+Its return type has also changed.</p>
+<p>Update <code>maybe_move_character</code> to account for this function’s new signature.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_character</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character_entity: Entity,
+</span><span>        direction: CardinalDirection,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_character_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>()) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_character_coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(dest_character_entity) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(character_entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                    self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(dest_character_entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> character_is_npc.</span><span style="color:#62a35c;">is_some</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span> dest_character_is_npc.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> outcome </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                        self.</span><span style="color:#62a35c;">character_bump_attack</span><span>(dest_character_entity, character_entity, rng);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_type </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> character_is_npc.</span><span style="color:#62a35c;">or</span><span>(dest_character_is_npc).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::write_combat_log_messages(
+</span><span>                        character_is_npc.</span><span style="color:#62a35c;">is_none</span><span>(),
+</span><span>                        outcome,
+</span><span>                        npc_type,
+</span><span>                        message_log,
+</span><span>                    );
+</span><span>                }
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                self.spatial_table
+</span><span>                    .</span><span style="color:#62a35c;">update_coord</span><span>(character_entity, new_character_coord)
+</span><span>                    .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>The <code>BumpAttackOutcome</code> is now being passed to <code>write_combat_log_messages</code>, so update that too.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">write_combat_log_messages</span><span>(
+</span><span>        attacker_is_player: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>        outcome: BumpAttackOutcome,
+</span><span>        npc_type: NpcType,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> attacker_is_player {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> outcome {
+</span><span>                BumpAttackOutcome::Kill </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerKillsNpc(npc_type)),
+</span><span>                BumpAttackOutcome::Hit </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerAttacksNpc(npc_type)),
+</span><span>                BumpAttackOutcome::Dodge </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcDodges(npc_type)),
+</span><span>            }
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> outcome {
+</span><span>                BumpAttackOutcome::Kill </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcKillsPlayer(npc_type)),
+</span><span>                BumpAttackOutcome::Hit </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcAttacksPlayer(npc_type)),
+</span><span>                BumpAttackOutcome::Dodge </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerDodges(npc_type)),
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>This makes use of two new <code>LogMessage</code>s. Define them.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    PlayerDodges(NpcType),
+</span><span>    NpcDodges(NpcType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>And update the ui code to print out the messages.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                PlayerDodges(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You dodge the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&#39;s&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; attack.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NpcDodges(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;The &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; dodges your attack.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>That’s all that’s required to get melee stats working. All that’s left is intelligence.</p>
+<p>There are currently two types of spell: fireball and confusion. The damage dealt by fireball,
+and the duration of confusion, will both be determined by the intelligence stat.
+The control flow around casting the spells involves giving the player a chance to aim,
+then launching a projectile which moves, animated in realtime. If it collides with a character,
+it has some effect based on which spell it was. Only at the point of impact does the
+efficacy of the spell (determined by the caster’s intelligence) need to be known.
+The problem is that right now we don’t store an association between the projectile and the
+entity which cast it. To make this easy, add fields to the <code>Fireball</code> and <code>Confusion </code> <code>ProjectileType</code>s
+storing the damage and duration respectively.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ProjectileType {
+</span><span>    Fireball { damage: </span><span style="font-weight:bold;color:#a71d5d;">u32 </span><span>},
+</span><span>    Confusion { duration: </span><span style="font-weight:bold;color:#a71d5d;">u32 </span><span>},
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Try to compile the code. Any place we pattern-match on a <code>ProjectileType</code> needs to be updated from</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>  ProjectileType::Fireball </span><span style="font-weight:bold;color:#a71d5d;">=&gt; ...
+</span><span>  ProjectileType::Confusion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; ...
+</span></code></pre>
+<p>to</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>  ProjectileType::Fireball { </span><span style="font-weight:bold;color:#a71d5d;">.. </span><span>} </span><span style="font-weight:bold;color:#a71d5d;">=&gt; ...
+</span><span>  ProjectileType::Confusion { </span><span style="font-weight:bold;color:#a71d5d;">.. </span><span>} </span><span style="font-weight:bold;color:#a71d5d;">=&gt; ...
+</span></code></pre>
+<p>Update <code>World::maybe_use_item_aim</code> to set these new fields based on the caster’s intelligence.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> fireball </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ProjectileType::Fireball {
+</span><span>                    damage: (</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self.components.intelligence.</span><span style="color:#62a35c;">get</span><span>(character).</span><span style="color:#62a35c;">unwrap</span><span>()).</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">0</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u32</span><span>,
+</span><span>                };
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(fireball));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, fireball);
+</span><span>            }
+</span><span>            ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> confusion </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ProjectileType::Confusion {
+</span><span>                    duration: (</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self.components.intelligence.</span><span style="color:#62a35c;">get</span><span>(character).</span><span style="color:#62a35c;">unwrap</span><span>()).</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">0</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u32
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">3</span><span>,
+</span><span>                };
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(confusion));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, confusion);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>When a projectile collides with a character, use the information in these fields to affect the character.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">move_projectiles</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entities_to_remove </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> fireball_hit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> confusion_hit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, trajectory) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.components.trajectory.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(direction) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> trajectory.</span><span style="color:#62a35c;">next</span><span>() {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> current_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">coord_of</span><span>(entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> current_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_coord);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                    entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else if let </span><span style="color:#0086b3;">Some</span><span>(character) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                    entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>projectile_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.projectile.</span><span style="color:#62a35c;">get</span><span>(entity) {
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> projectile_type {
+</span><span>                            ProjectileType::Fireball { damage } </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                fireball_hit.</span><span style="color:#62a35c;">push</span><span>((character, damage));
+</span><span>                            }
+</span><span>                            ProjectileType::Confusion { duration } </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                confusion_hit.</span><span style="color:#62a35c;">push</span><span>((character, duration));
+</span><span>                            }
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                </span><span style="font-style:italic;color:#969896;">// ignore collisiosns of projectiles
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let _ = </span><span>self.spatial_table.</span><span style="color:#62a35c;">update_coord</span><span>(entity, new_coord);
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> entities_to_remove {
+</span><span>            self.</span><span style="color:#62a35c;">remove_entity</span><span>(entity);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, damage) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> fireball_hit {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> maybe_npc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(VictimDies) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">character_damage</span><span>(entity, damage) {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(npc) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> maybe_npc {
+</span><span>                    message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcDies(npc));
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, duration) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> confusion_hit {
+</span><span>            self.components.confusion_countdown.</span><span style="color:#62a35c;">insert</span><span>(entity, duration);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>npc_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(entity) {
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcBecomesConfused(npc_type));
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Now the higher your intelligence, the more powerful the effects of your spells.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.3">part-11.3</a></p>
+<h2 id="upgrade-when-descending-stairs"><a class="zola-anchor" href="#upgrade-when-descending-stairs" aria-label="Anchor link for: upgrade-when-descending-stairs">Upgrade when Descending Stairs</a></h2>
+<p>Define a type to represent the different ways the player can level up.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LevelUp {
+</span><span>    Strength,
+</span><span>    Dexterity,
+</span><span>    Intelligence,
+</span><span>    Health,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add a method to <code>World</code> for leveling up a character.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{ExamineCell, LevelUp, LogMessage};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">level_up_character</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, character_entity: Entity, level_up: LevelUp) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level_up {
+</span><span>            LevelUp::Strength </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self
+</span><span>                    .components
+</span><span>                    .strength
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character_entity)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character lacks strength&quot;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>            }
+</span><span>            LevelUp::Dexterity </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self
+</span><span>                    .components
+</span><span>                    .dexterity
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character_entity)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character lacks dexterity&quot;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>            }
+</span><span>            LevelUp::Intelligence </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self
+</span><span>                    .components
+</span><span>                    .intelligence
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character_entity)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character lacks intelligence&quot;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>            }
+</span><span>            LevelUp::Health </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> hit_points </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>                    .components
+</span><span>                    .hit_points
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character_entity)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character lacks hit points&quot;</span><span>);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">INCREASE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">5</span><span>;
+</span><span>                hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">INCREASE</span><span>;
+</span><span>                hit_points.max </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">INCREASE</span><span>;
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Earlier in this section we defined a method <code>GameState::maybe_player_descend</code> which checked
+whether the player is on the stairs, and if so, have them descend to the next dungeon level.
+We now need to move this check outside of <code>GameState</code>. This is because when the player is on
+the stairs and presses the ‘&gt;’ key, we now want to display a level-up menu, which the player
+may cancel. If they select stat to level up, only then will the player be taken to the next
+level, and leveled-up, in a single atomic operation.</p>
+<p>Thus replace <code>GameState::maybe_player_descend</code> with the following two methods:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_level_up_and_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, level_up: LevelUp) {
+</span><span>        assert!(self.</span><span style="color:#62a35c;">is_player_on_stairs</span><span>());
+</span><span>        self.world.</span><span style="color:#62a35c;">level_up_character</span><span>(self.player_entity, level_up);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_data </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">remove_character</span><span>(self.player_entity);
+</span><span>        self.world.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        self.visibility_grid.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        self.dungeon_level </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate {
+</span><span>            player_entity,
+</span><span>            ai_state,
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.rng);
+</span><span>        self.world.</span><span style="color:#62a35c;">replace_character</span><span>(player_entity, player_data);
+</span><span>        self.player_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> player_entity;
+</span><span>        self.ai_state </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> ai_state;
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">is_player_on_stairs</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.world.</span><span style="color:#62a35c;">coord_contains_stairs</span><span>(self.</span><span style="color:#62a35c;">player_coord</span><span>())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Now we need to describe the level-up menu.</p>
+<p>Start with a function that creates a menu instance, listing all the different ways to level up.
+Make it a <code>MenuInstanceChooseOrEscape</code> so that it’s sensitive to the escape key being pressed,
+allowing the user to cancel the menu and not descend the stairs yet.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{GameState, LevelUp};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">level_up_menu_instance</span><span>() -&gt; MenuInstanceChooseOrEscape&lt;LevelUp&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>LevelUp::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    MenuInstanceBuilder {
+</span><span>        items: vec![Strength, Dexterity, Intelligence, Health],
+</span><span>        hotkeys: </span><span style="color:#0086b3;">None</span><span>,
+</span><span>        selected_index: </span><span style="color:#0086b3;">0</span><span>,
+</span><span>    }
+</span><span>    .</span><span style="color:#62a35c;">build</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">into_choose_or_escape</span><span>()
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Describe how to render the level-up menu.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>LevelUpMenuView {
+</span><span>    mouse_tracker: MenuInstanceMouseTracker,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>MenuIndexFromScreenCoord </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">menu_index_from_screen_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, len: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, coord: Coord) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>&gt; {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">menu_index_from_screen_coord</span><span>(len, coord)
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">new_frame</span><span>(context.offset);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(i, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>level_up, maybe_selected) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.level_up_menu.</span><span style="color:#62a35c;">menu_instance</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(prefix, style) </span><span style="font-weight:bold;color:#a71d5d;">= if</span><span> maybe_selected.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                (
+</span><span>                    </span><span style="color:#183691;">&quot;&gt;&quot;</span><span>,
+</span><span>                    Style::new()
+</span><span>                        .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>))
+</span><span>                        .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>),
+</span><span>                )
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                (</span><span style="color:#183691;">&quot; &quot;</span><span>, Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)))
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> text </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> level_up {
+</span><span>                LevelUp::Strength </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Strength&quot;</span><span>,
+</span><span>                LevelUp::Dexterity </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Dexterity&quot;</span><span>,
+</span><span>                LevelUp::Intelligence </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Intelligence&quot;</span><span>,
+</span><span>                LevelUp::Health </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Constitution&quot;</span><span>,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> size </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>StringViewSingleLine::new(style).</span><span style="color:#62a35c;">view_size</span><span>(
+</span><span>                format!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{} {}</span><span style="color:#183691;">&quot;</span><span>, prefix, text),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>)),
+</span><span>                frame,
+</span><span>            );
+</span><span>            self.mouse_tracker.</span><span style="color:#62a35c;">on_entry_view_size</span><span>(size);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Describe a “selector” for the menu that selects the fields of <code>AppData</code> and <code>AppView</code> for
+using and rendering the menu.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>LevelUpMenuSelect;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ChooseSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ChooseOutput </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>MenuInstanceChooseOrEscape&lt;LevelUp&gt;;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ChooseOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.level_up_menu
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>DataSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ViewSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> LevelUpMenuView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>input.level_up_menu_view
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.level_up_menu_view
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Define a decorator which knows how to render the menu on top of the game, dimming the game in the background.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>LevelUpMenuDecorate;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Decorate </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>LevelUpMenuDecorate {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;E, F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">mut </span><span>event_routine_view: EventRoutineView&lt;E&gt;,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        E: EventRoutine&lt;Data = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Data, View = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>View&gt;,
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        BoundView {
+</span><span>            size: data.game_state.</span><span style="color:#62a35c;">size</span><span>(),
+</span><span>            view: AlignView {
+</span><span>                alignment: Alignment::centre(),
+</span><span>                view: FillBackgroundView {
+</span><span>                    rgb24: Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>),
+</span><span>                    view: BorderView {
+</span><span>                        style: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>BorderStyle {
+</span><span>                            title: </span><span style="color:#0086b3;">Some</span><span>(</span><span style="color:#183691;">&quot;Level Up&quot;</span><span>.</span><span style="color:#62a35c;">to_string</span><span>()),
+</span><span>                            title_style: Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">Default</span><span>::default()
+</span><span>                        },
+</span><span>                        view: MinSizeView {
+</span><span>                            size: Size::new(</span><span style="color:#0086b3;">12</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> event_routine_view,
+</span><span>                        },
+</span><span>                    },
+</span><span>                },
+</span><span>            },
+</span><span>        }
+</span><span>        .</span><span style="color:#62a35c;">view</span><span>(data, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">10</span><span>), frame);
+</span><span>        event_routine_view.view.game_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state,
+</span><span>            context.</span><span style="color:#62a35c;">compose_col_modify</span><span>(ColModifyMap(|c: Rgb24| c.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>))),
+</span><span>            frame,
+</span><span>        );
+</span><span>        event_routine_view
+</span><span>            .view
+</span><span>            .</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="color:#0086b3;">None</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And define a function returning an <code>impl EventRoutine&lt;...&gt;</code> which runs the menu
+and “returns” the level-up or cancellation selected by the player.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">level_up_menu</span><span>() -&gt; impl EventRoutine&lt;
+</span><span>    Return = </span><span style="color:#0086b3;">Result</span><span>&lt;LevelUp, menu::Escape&gt;,
+</span><span>    Data = AppData,
+</span><span>    View = AppView,
+</span><span>    Event = CommonEvent,
+</span><span>&gt; {
+</span><span>    MenuInstanceRoutine::new(LevelUpMenuSelect)
+</span><span>        .</span><span style="color:#62a35c;">convert_input_to_common_event</span><span>()
+</span><span>        .</span><span style="color:#62a35c;">decorated</span><span>(LevelUpMenuDecorate)
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Phew. Developer note: Adding menus currently requires a lot of boilerplate. The common patterns should be encapsulated
+into helpers inside the <code>chargrid</code> library.</p>
+<p>Add the data and view fields to <code>AppData</code> and <code>AppView</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    level_up_menu: MenuInstanceChooseOrEscape&lt;LevelUp&gt;,
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            level_up_menu: </span><span style="color:#62a35c;">level_up_menu_instance</span><span>(),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {
+</span><span>    ...
+</span><span>    level_up_menu_view: LevelUpMenuView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            level_up_menu_view: LevelUpMenuView::default(),
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update <code>AppData::handle_input</code> such that when ‘&gt;’ is pressed, rather than immediately descending,
+return a new <code>GameReturn</code> representing the fact that a level-up menu should be run.
+Also add a helper function for applying the <code>LevelUp</code> and descending the player.
+Run the visibility system after descending so that the next time the game state is rendered
+there are visible cells from the new level.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>GameReturn {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    LevelUpAndDescend,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> key {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;&gt;&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.game_state.</span><span style="color:#62a35c;">is_player_on_stairs</span><span>() {
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::LevelUpAndDescend);
+</span><span>                        }
+</span><span>                    }
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">player_level_up_and_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, level_up: LevelUp) {
+</span><span>        self.game_state.</span><span style="color:#62a35c;">player_level_up_and_descend</span><span>(level_up);
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(self.visibility_algorithm);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And update <code>game_loop</code> to handle <code>LevelUpAndDescend</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> F);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            GameReturn::LevelUpAndDescend </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::F(</span><span style="color:#62a35c;">level_up_menu</span><span>().</span><span style="color:#62a35c;">and_then</span><span>(|maybe_level_up| {
+</span><span>                SideEffect::new_with_view(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> maybe_level_up {
+</span><span>                        </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>                        </span><span style="color:#0086b3;">Ok</span><span>(level_up) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> data.</span><span style="color:#62a35c;">player_level_up_and_descend</span><span>(level_up),
+</span><span>                    }
+</span><span>                    </span><span style="color:#0086b3;">None
+</span><span>                })
+</span><span>            })),
+</span><span>        })
+</span><span>    })
+</span><span>    .</span><span style="color:#62a35c;">return_on_exit</span><span>(|data| data.</span><span style="color:#62a35c;">save_game</span><span>())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now when the player hits ‘&gt;’ while standing on the stairs, they see a menu like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>If they make a selection, the relevant stat will increase, and they’ll descend to the next dungeon level.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11.4">part-11.4</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-12/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-10&#x2F;" aria-label="Previous">
+	  Previous: Part 10 - Saving and Loading
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-12&#x2F;" aria-label="Next">
+	  Next: Part 12 - Increasing Difficulty
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

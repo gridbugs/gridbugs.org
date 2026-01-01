@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="2018 Recap">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/2018-recap/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/2018-recap/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-12-30T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+2018 Recap
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">2018 Recap</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-12-30T00:00:00+00:00">
+    December 30, 2018
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/meta" aria-label="tag">meta</a>
+  
+</p>
+
+
+  
+
+<p>Here’s a summary of the things I made this year - mostly libraries and
+experiments relating to games and computer graphics. Many of these projects
+deserve a dedicated post explaining them in further depth, and I intend to
+elaborate further in future posts. All these projets are written in rust.
+Headings link to the projects on github. All animations are realtime screen
+recordings.</p>
+<h2 id="wave-function-collapse-library"><a class="zola-anchor" href="#wave-function-collapse-library" aria-label="Anchor link for: wave-function-collapse-library"><a href="https://github.com/gridbugs/wfc">Wave Function Collapse Library</a></a></h2>
+<p><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/wfc-cat.png" alt="wfc-cat.png" /></p>
+<p>Wave Function Collapse is a procedural generation algorithm which takes as input
+a list of tiles, rules describing which tiles may appear adjacent to one another
+in the output, and the relative frequency with which each tile should appear in
+the output. A common way of specifying this input is in the form of an example
+image which looks similar to the desired output.</p>
+<span id="continue-reading"></span>
+<p>The image above was generated from this example:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/cat.png" alt="cat.png" /></p>
+<p>I first read about WFC here: <a href="https://github.com/mxgmn/WaveFunctionCollapse">mxgmn/WaveFunctionCollapse</a>.
+That page contains links to many other implementations and explanations of the algorithm.</p>
+<p>Here’s another example showing the order in which pixels are filled in using my
+library:</p>
+<p><img src="https://raw.githubusercontent.com/gridbugs/wfc/master/images/flowers-animate.gif" alt="flowers animation" /></p>
+<p>The example image is below. Pixel colours in the animation are the probability-weighted-average of all the possible
+colours that could end up in that position.</p>
+<p><img src="https://raw.githubusercontent.com/gridbugs/wfc/master/images/flowers.png" alt="flowers" /></p>
+<p>I’m still adding minor ergonomic improvements to the api to this library, but
+it’s currently in a working state, and I intend to use it to generate levels for
+a roguelike soon.</p>
+<h2 id="platform-game-physics"><a class="zola-anchor" href="#platform-game-physics" aria-label="Anchor link for: platform-game-physics"><a href="https://github.com/gridbugs/simple-physics">Platform Game Physics</a></a></h2>
+<p>This is an experiment to see how hard it is to make a simple physics engine,
+appropriate for use in a platform game. The answer is: very!</p>
+<video autoplay muted loop>
+  <source src="collisions.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>It took a long time to get it to the state in the video above. There were many
+rewrites, and hours of debugging the player (the red square) getting stuck on
+the edges of platforms, or clipping through walls. The biggest challenge is
+numbers! All representations of numbers have drawbacks:</p>
+<ul>
+<li>floating points have floating point errors</li>
+<li>rationals cause integer overflows when too much precision is required</li>
+<li>fixed points are inaccurate (though this doesn’t matter in practice, and I
+think fixed points win)</li>
+<li>bignums cause dynamic allocation, which I try to avoid in code that runs
+every frame of a game</li>
+</ul>
+<p>In the end, I ended up using double precision floating points. All the maths in
+the collision detection system has to deal with the potential for floating point
+errors, but after a painstaking process of testing and debugging, I finally have
+something that works reliably.</p>
+<p>That said, if I replace the double precision floats with single precision
+floats, this happens:</p>
+<video autoplay muted loop>
+  <source src="collisions-bad.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>The biggest step forward I had while working on this was changing my
+representation of polygons from using “regular” line segments as their edges, to
+line segments that are only solid on one side (the side on the outside of the
+polygon). This immediately solved many of
+the problems I had where the player would get stuck on the edge of platforms, or
+clip through the corners of platforms. I plan on posting more about this idea
+(with diagrams!).</p>
+<p><a name="simon"></a></p>
+<h2 id="simon-an-arg-functor"><a class="zola-anchor" href="#simon-an-arg-functor" aria-label="Anchor link for: simon-an-arg-functor"><a href="https://github.com/gridbugs/simon">Simon - an Arg Functor</a></a></h2>
+<p>This is a library for parsing command line arguments. All the command-line-parsing
+rust libraries I could find were similar to <a href="https://docs.python.org/3/library/argparse.html">python argparse</a>,
+in that one must register the arguments with a parser, then have the parser
+parse the arguments into some structure, then extract the argument values from
+that structure. There are two problems with this. Firstly, it’s repetitive - the argument names must be specified when registering, <strong>and</strong>
+extracting the arguments. Secondly, since rust is statically-typed, parsing all arguments into a common structure
+forces arguments to be homogeneous.</p>
+<p>Simon is a library of combinators, allowing one to compose basic parsers and
+operations on parsed values, to form parsers of complex data. It’s best
+explained by example:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">extern crate</span><span> simon;
+</span><span>
+</span><span>#[derive(Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Person {
+</span><span>    name: String,
+</span><span>    age: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> parser </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>simon::opt_required(</span><span style="color:#183691;">&quot;n&quot;</span><span>, </span><span style="color:#183691;">&quot;name&quot;</span><span>, </span><span style="color:#183691;">&quot;your name&quot;</span><span>, </span><span style="color:#183691;">&quot;NAME&quot;</span><span>)
+</span><span>        .</span><span style="color:#62a35c;">both</span><span>(simon::opt(</span><span style="color:#183691;">&quot;a&quot;</span><span>, </span><span style="color:#183691;">&quot;age&quot;</span><span>, </span><span style="color:#183691;">&quot;your age&quot;</span><span>, </span><span style="color:#183691;">&quot;NUM&quot;</span><span>).</span><span style="color:#62a35c;">with_default</span><span>(</span><span style="color:#0086b3;">42</span><span>))
+</span><span>        .</span><span style="color:#62a35c;">map</span><span>(|(name, age)| Person { name, age })
+</span><span>        .</span><span style="color:#62a35c;">with_help_default</span><span>();
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> person </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> parser.</span><span style="color:#62a35c;">parse_env_default_or_exit</span><span>();
+</span><span>
+</span><span>    println!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, person);
+</span><span>}
+</span></code></pre>
+<p>Running it:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ./foo -a 26 -n Steve
+</span><span>Person { name: &quot;Steve&quot;, age: 26 }
+</span><span>
+</span><span>$ ./foo
+</span><span>name is required but not supplied
+</span><span>
+</span><span>Usage: ./foo [options]
+</span><span>
+</span><span>Options:
+</span><span>    -h, --help          print this help menu
+</span><span>    -n, --name NAME     your name
+</span><span>    -a, --age NUM       your age
+</span></code></pre>
+<p>It’s named for the fact that it is an <a href="http://learnyouahaskell.com/functors-applicative-functors-and-monoids#applicative-functors">applicative functor</a>.
+Thus far, every time I’ve explained the name, I’ve also had to explain the fact
+that it’s a joke. If you get the joke, you may be the first!</p>
+<h2 id="per-pixel-visible-area-detection"><a class="zola-anchor" href="#per-pixel-visible-area-detection" aria-label="Anchor link for: per-pixel-visible-area-detection"><a href="https://github.com/gridbugs/pixel-shadow-experiment/">Per-Pixel Visible Area Detection</a></a></h2>
+<p>I was curious whether there was a way to accelerate 2d visible area detection
+with a GPU. A common approach for 3d visible area detection is a depth buffer,
+which keeps track of, for each pixel on the screen, how far the part of world
+being drawn to that pixel is from the eye. Then you just draw all the objects in
+the world, only updating depth and colour of a pixel if its depth is less than
+the currently-buffered depth for that position. That is, things that are close
+to the eye cover up things that are further from the eye.</p>
+<p>The 2d situation I’m interested in is quite different. The eye is not behind the screen, but
+is a point on the screen in 2d space, and each frame, you draw the entire scene,
+rather than just the parts that the eye can see,
+but you want the visible part of the scene to be rendered differently (brighter in this case).
+Also the scene is a hand drawn black and white image - not a collection of
+polygons, as is the case for most 3d graphics.</p>
+<video autoplay muted loop>
+  <source src="shadows1.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>The approach I used for this demo is each frame, test each pixel for visibility
+by considering the
+line segment between that pixel and the eye. If that line segment crosses any
+opaque (black in this case) pixels, the pixel we’re testing is not visible, so
+render it a dark colour. If the line crosses no opaque pixels, then it is
+visible, so render it a bright colour.
+The test is conducted per pixel, and the result of the test of one pixel doesn’t
+affect the result for any other pixel, so this is trivially parallelised by
+performing the test in the fragment shader that renders the pixels.</p>
+<p>But how do we actually test if the line segment from a pixel to the eye crosses
+any opaque pixels. We could scan along the line segment, one pixel at a time,
+checking if we encounter an opaque pixel. For pixels far from the eye, there could be
+many hundreds of pixels to traverse, and the traversal must happen once per pixel.
+This is a lot of work to do each frame, and attempting it causes a noticeable drop in frame rate.</p>
+<p>A key observation for improving
+upon this is that most scenes have large areas of transparent pixels, and
+sometimes large areas of opaque pixels too. Consider a low-resolution
+image of the scene, constructed by combining square regions of pixels
+of the original image into single pixels, averaging out their colours (remember,
+white for transparent, black for opaque). In the low-res image,  white
+and black pixels must correspond to entirely transparent and entirely opaque
+squares of pixels in the original image!
+We can still scan along the line segment one pixel at a time, but rather than
+scanning on the original image, use a low resolution version of the
+image (which has fewer pixels, so the scan will take fewer steps), only checking the
+high resolution image when more detail is required.</p>
+<video autoplay muted loop>
+  <source src="shadows2.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>In this demo, I create several different resolution versions of the scene, and
+start scanning in the lowest resolution. When a grey pixel is encountered, I
+jump to the second lowest, and so on, until a black or white pixel is reached.
+If it’s black, we’re done, and the pixel we’re currently testing is not visible.
+Otherwise, keep going! Also, jump back to a lower resolution image whenever
+the scan at the current resolution crosses a pixel boundary in the next-lowest
+resolution.</p>
+<h2 id="prototty"><a class="zola-anchor" href="#prototty" aria-label="Anchor link for: prototty"><a href="https://github.com/gridbugs/prototty">Prototty</a></a></h2>
+<p>Prototty is a text UI library, similar to ncurses. It has several different
+frontends, meaning that an application written using prototty can be run in a
+terminal, a window, or a browser. It also provides an abstraction of a file
+system, so browser and native applications can share the same logic for a
+limited set of file operations.</p>
+<p><a href="https://games.gridbugs.org/prototty-tetris/"><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/prototty-tetris.png" alt="prototty-tetris.png" /></a></p>
+<p>I used this library to make <a href="https://gridbugs.github.io/gridbugs.org/2018-recap/#meters-below-the-ground">Meters Below the Ground</a>.</p>
+<h2 id="conway-s-game-of-life-in-an-opengl-shader"><a class="zola-anchor" href="#conway-s-game-of-life-in-an-opengl-shader" aria-label="Anchor link for: conway-s-game-of-life-in-an-opengl-shader"><a href="https://github.com/gridbugs/life-gl">Conway’s Game of Life in an OpenGL Shader</a></a></h2>
+<p>For a bit of fun I decided to try implementing <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway’s Game of Life</a>,
+in such a way that the logic for determining if a cell lives or dies is
+implemented in a fragment shader.</p>
+<p><img src="https://raw.githubusercontent.com/gridbugs/life-gl/master/images/screenshot1.png" alt="life-gl" /></p>
+<p>I’ve implemented Conway’s Game of Life many times. <a href="https://gridbugs.github.io/gridbugs.org/cellular-automata-cave-generation/">There’s a javascript implementation embedded in an earlier post!</a> This implementation is
+interesting because each frame, the per-cell computation is done on the GPU,
+allowing for a great deal of parallelism. When a frame is rendered, it is also
+rendered to a texture. When the following frame is rendered, it samples that
+texture so it can check which cells are alive, and which are dead.</p>
+<p>It was adding the command line options to this program that motivated me to make
+<a href="https://gridbugs.github.io/gridbugs.org/2018-recap/#simon">simon</a>.</p>
+<h2 id="roguelike-utility-libraries"><a class="zola-anchor" href="#roguelike-utility-libraries" aria-label="Anchor link for: roguelike-utility-libraries">Roguelike Utility Libraries</a></h2>
+<p>I made libraries providing common types and operations that I frequently find
+myself using in roguelikes, as well as libraries implementing some of the
+complicated algorithms that many roguelikes need.</p>
+<h3 id="coord-2d"><a class="zola-anchor" href="#coord-2d" aria-label="Anchor link for: coord-2d"><a href="https://github.com/gridbugs/coord-2d">Coord-2d</a></a></h3>
+<p>Defines types and operations for 2d rectangle sizes and coordinates.</p>
+<h3 id="grid-2d"><a class="zola-anchor" href="#grid-2d" aria-label="Anchor link for: grid-2d"><a href="https://github.com/gridbugs/grid-2d">Grid-2d</a></a></h3>
+<p>A generic 2d grid.</p>
+<h3 id="direction"><a class="zola-anchor" href="#direction" aria-label="Anchor link for: direction"><a href="https://github.com/gridbugs/direction">Direction</a></a></h3>
+<p>Defines compass direction types, and many operations for manipulating and
+enumerating them.</p>
+<h3 id="shadowcast"><a class="zola-anchor" href="#shadowcast" aria-label="Anchor link for: shadowcast"><a href="https://github.com/gridbugs/shadowcast">Shadowcast</a></a></h3>
+<p>A visible area detection algorithm, often referred to as “Recursive Shadowcast”.
+This library understands partially-transparent tiles, and can report the
+visibility of edges and corners of tiles. This is necessary when implementing
+lighting, as if a wall is lit from one side only, and the player is looking at
+the other side, they shouldn’t see that the wall is lit, even though they are
+looking at a tile which the light touches.</p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">Read more about recursive shadowcast.</a></p>
+<h3 id="grid-search"><a class="zola-anchor" href="#grid-search" aria-label="Anchor link for: grid-search"><a href="https://github.com/gridbugs/grid-search">Grid-Search</a></a></h3>
+<p>Implementations of several algorithms for searching grids, including Dijkstra’s
+algorithm, A* and Jump Point Search.</p>
+<h3 id="entity-store-code-gen"><a class="zola-anchor" href="#entity-store-code-gen" aria-label="Anchor link for: entity-store-code-gen"><a href="https://github.com/gridbugs/entity-store">Entity Store Code Gen</a></a></h3>
+<p>A code generator which takes a config file describing components and generates a rust module
+containing a data structure suitable for storing the data in an entity component
+system with those components.</p>
+<h2 id="punchcards"><a class="zola-anchor" href="#punchcards" aria-label="Anchor link for: punchcards"><a href="https://github.com/gridbugs/punchcards">Punchcards</a></a></h2>
+<p>This is a roguelike I started working on in early 2018, and streamed almost all
+the development on twitch. It served as a great way to test the roguelike
+libraries I’d been making, and I used it as a starting point for my 7drl
+project.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/punchcards.png" alt="punchcards.png" /></p>
+<p>After the 7drl I wanted a break from roguelikes and streaming for a while, and
+so nothing further came of it.</p>
+<h2 id="twitch"><a class="zola-anchor" href="#twitch" aria-label="Anchor link for: twitch"><a href="https://www.twitch.tv/gridbugs">Twitch</a></a></h2>
+<p>For a few months at the start of 2018 I streamed game development on twitch. I
+was mostly working on prototty,  roguelike libraries, and punchcards.
+The highlights were a member of chat spotting a bug in the code I was writing,
+and someone contacting me on reddit with a list of suggestions for game
+mechancis for punchcards. I also appreciate the words of support I got on the
+night that I finished my 7drl project.</p>
+<p>I would often have between 5 and 10 people watching at a time, and by the end of
+my final 7drl stream I had over 100 follewers.</p>
+<p>I stopped streaming after the 7drl because I wanted to take a break. I tried going back to it a few months ago,
+but I don’t have fibre internet at my house, and the only way I can reliably
+stream is from my phone’s internet, which is expensive, and still not that
+reliable. When I live somewhere with better internet, maybe I’ll restart the
+stream.</p>
+<p><a name="meters-below-the-ground"></a></p>
+<h2 id="meters-below-the-ground"><a class="zola-anchor" href="#meters-below-the-ground" aria-label="Anchor link for: meters-below-the-ground"><a href="https://github.com/gridbugs/meters-below-the-ground">Meters Below the Ground</a></a></h2>
+<p>This was my entry into the 7drl this year. <a href="http://roguetemple.com/7drl/2018/">It came
+second!</a></p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/7drl2018-success-screenshot.png" alt="7drl2018-success-screenshot.png" /></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/meters-below-the-ground/">Post announcing the game</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/7drl2018-day1/">Start of development journal</a></p>
+<p>After reflecting on this, I no longer think that an entity component system is appropriate for representing the
+types of games that I enjoy creating. The great thing about an ECS is how easy
+it becomes to encode rich interractions between different systems and
+components. Often interractions emerge that weren’t even explicitly desired by
+the developer, but which follow implicitly from other interractions.</p>
+<p>This sounds like fun (and it is fun!), and emergent interractions are sometimes
+what you want, especially when making a simulation, or simulation-like-game,
+which many roguelikes are.</p>
+<p>However my intention for Meters Below the Ground was a might tighter,
+purposefully-designed experience, where all the interractions are there because
+I planned them to be there. In the end I achieved this goal, but the ECS was
+more of a hinderence than a help.</p>
+<p>That’s not to say that I’m dropping all ECS-related ideas completely.
+For example the idea that game objects are collections of data that define their
+properties is valuable outside of ECS, and I intend to continue representing
+objects in this spirit.</p>
+<p>I look forward to experimenting with a non-ECS roguelike engine in 2019.</p>
+<h2 id="generating-wall-geometry-from-a-grid-map"><a class="zola-anchor" href="#generating-wall-geometry-from-a-grid-map" aria-label="Anchor link for: generating-wall-geometry-from-a-grid-map"><a href="https://github.com/gridbugs/walls-experiment">Generating wall geometry from a grid map</a></a></h2>
+<p>I’ve been using opengl for several years now, but never rendered anything 3d.
+To teach myself something about 3d graphics,
+I made a tiny program which takes a text description of a wall map, like:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>.......
+</span><span>.###.#.
+</span><span>.#.###.
+</span><span>.#.#.#.
+</span><span>.......
+</span><span>
+</span></code></pre>
+<p>And renders a scene like:
+<img src="https://gridbugs.github.io/gridbugs.org/2018-recap/walls.png" alt="walls.png" /></p>
+<p>It’s not particularly impressive, but at least now I have something to build
+upon when I want to experiment with something more complicated.</p>
+<h2 id="quadtree-library"><a class="zola-anchor" href="#quadtree-library" aria-label="Anchor link for: quadtree-library"><a href="https://github.com/gridbugs/quadtree">Quadtree Library</a></a></h2>
+<p>This is an unfinished implementation of quadtrees in rust. I had ambitions of
+making a realtime 2d platform game (or at least the engine thereof), which I
+still haven’t done. I want to have a solid story for collision detection, and
+fast collision detection relies on being able to enumerate all the things which
+are near a particular thing (as it’s infeasible to perform a collision test on
+every pair of objects in the world). Quadtrees are a family of data structures
+which divide a space into a hierarchy of smaller spaces. I intended to compare
+several different incarnations of this idea, but got distracted after
+implementing one. I even started a blog post explaining how quadtrees work, and
+why they’re useful, which I never finished. Maybe next year!</p>
+<p>Enjoy this graphic which I made for the post!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/2018-recap/spatial-queries-with-quadtrees.png" alt="spatial-queries-with-quadtrees.png" /></p>
+<p>I also made a <a href="https://github.com/gridbugs/loose-quadtree-ocaml">persistent quadtree library in ocaml</a>, to use for the aforementioned
+blog post, with the idea being that I think ocaml beats rust as a language for humans
+to communicate with other humans about computing ideas.</p>
+<h2 id="in-2019"><a class="zola-anchor" href="#in-2019" aria-label="Anchor link for: in-2019">In 2019…</a></h2>
+<p>The main change I will make is posting more to this blog. There are many items
+in this page which deserve their own dedicated post going into more detail with
+diagrams.</p>
+<p>I also want to start a larger scale roguelike project to showcase my libraries
+and experiment more with procedural generation.</p>
+<p>Finally, I intend on entering the 7drl again this year, with the primary goal of
+not getting burned out by the end!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;pathfinding-on-a-grid&#x2F;" aria-label="Previous">
+	  Previous: Pathfinding on a Grid
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;wave-function-collapse&#x2F;" aria-label="Next">
+	  Next: Procedural Generation with Wave Function Collapse
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

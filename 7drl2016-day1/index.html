@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2016: Day 1">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2016-03-06T10:04:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2016: Day 1
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-plan&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Plan
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-procedural-generation&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2016: Day 1</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2016-03-06T10:04:00+10:00">
+    March 06, 2016
+  </time>
+  
+</p>
+
+
+  
+
+<p>It’s one day in. Here’s my progress so far!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>Completed features (from the plan I posted yesterday):</p>
+<ul>
+<li>guns</li>
+<li>shooting the hull can cause a breach and vent the atmosphere from connected
+parts of the ship</li>
+<li>as atmosphere is vented, characters and items are sucked towards, and possibly
+out of, the breach</li>
+<li>flamethrower that doesn’t penetrate the hull but only works in atmosphere
+<ul>
+<li>flamethrower is implemented but it works in a vacuum</li>
+</ul>
+</li>
+</ul>
+<p>Guns have a “spread” parameter that determines how quickly bullets spread out.
+This screenshot was taken directly after firing a shotgun at the zombie. You can
+see the bullets in flight:
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/gun-fired.png" alt="gun-fired.png" /></p>
+<p>We hit the zombie but we also hit the hull. The red tint indicates that that
+section of the ship is currently being vented into space. Venting takes place
+over several turns, during which things are sucked towards the hull breach. Note
+that items and characters have moved since the first screenshot. This was the
+most complicated mechanic to implement. It uses <a href="http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps">dijkstra
+maps</a>
+to determine which way entities move.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/aftermath.png" alt="aftermath.png" /></p>
+<p>After all the air has vented from a section of the ship, it changes to blue
+tinted and things stop getting sucked out. Eventually being it vacuum will drain
+oxygen from your suit, but this feature is not implemented yet.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/vacuum.png" alt="vacuum.png" /></p>
+<p>If you open a door of a pressurized section of the ship that’s facing vacuum,
+that section starts venting.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/open-door.png" alt="open-door.png" /></p>
+<p>If you make it inside the venting room and close the door, atmosphere returns.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-day1/closed-door.png" alt="closed-door.png" /></p>
+<p>Coming soon:</p>
+<ul>
+<li>you need oxygen in your suit to survive in vacuum</li>
+<li>oxygen drains while
+you’re in vacuum, and recharges while you’re in atmosphere.</li>
+<li>make the flamethrower only work in atmosphere</li>
+</ul>
+<p>Additionally, as this needs to be a game and not just a tech demo,
+I’m also planning on implementing:</p>
+<ul>
+<li>procedurally generated ship</li>
+<li>different NPCs
+<ul>
+<li>something that explodes when killed so players have to think about whether
+killing it will breach the hull</li>
+<li>something that can only be killed by getting sucked into space</li>
+</ul>
+</li>
+</ul>
+<p>The most interesting bug I’ve encountered so far is when shooting the hull with
+a machine gun, if the hull is breached while bullets are still leaving your gun,
+there’s a chance you will be sucked towards the hull, in front of bullets that
+haven’t been fired yet, resulting in you getting shot by your own bullets.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-plan&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Plan
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-procedural-generation&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

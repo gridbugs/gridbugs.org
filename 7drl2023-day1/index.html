@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2023: Bootstrapping, Boat Gameplay, Vision">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2023-day1/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day1/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-03-06T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day1/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2023: Bootstrapping, Boat Gameplay, Vision
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day7&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2022: Complete
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day2&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2023: Bootstrapping, Boat Gameplay, Vision</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-03-06T00:00:00+00:00">
+    March 06, 2023
+  </time>
+  
+</p>
+
+
+  
+
+<p>It’s the end of my first day of hacking on this year’s 7DRL.
+My game will be called “Boat Journey”. It’s about driving a boat along a river
+with the goal of reaching the ocean without running out of fuel or otherwise
+becoming stranded, while picking up passengers who give you additional
+abilities.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day1/screenshot.png" alt="Screenshot of gameplay showing the player standing on a boat adjacent to a small island" /></p>
+<p>I’m intentionally going for a very minimal graphical style this year since the
+past few years I’ve found I spend more time on fancy graphics than I would like,
+and less time working on gameplay features.</p>
+<span id="continue-reading"></span>
+<p>I spent most of the day getting basic boat gameplay working. You can drive
+around in the boat, turning it in intervals of 45 degrees, toggle
+between driving the boat and walking around, and you can drive the
+boat slightly over walkable tiles which causes the edge of the boat to become
+walkable (denoted by a ‘=’ tile), allowing you to leave the boat. This is shown
+in the screenshot below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day1/docked.png" alt="Screenshot of gameplay showing the boat docked to the small island" /></p>
+<p>I also spent some time on basic bootstrapping, getting doors to work, a visible
+area detection system, rendering and a subtle mist effect.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day7&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2022: Complete
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day2&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="The latest rust release broke backtraces on FreeBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/the-latest-rust-release-broke-backtraces-on-freebsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/the-latest-rust-release-broke-backtraces-on-freebsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-23T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+The latest rust release broke backtraces on FreeBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;raidz-setup&#x2F;" aria-label="Previous">
+	  Previous: Raidz setup
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;boss-fights-in-traditional-roguelikes&#x2F;" aria-label="Next">
+	  Next: Boss fights in traditional roguelikes
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">The latest rust release broke backtraces on FreeBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-23T00:00:00+00:00">
+    October 23, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Rust 1.47 broke backtraces on FreeBSD. Backtraces are now handled by <a href="https://crates.io/crates/gimli">gimli</a>
+which does not support meaningful backtraces on FreeBSD at the time of writing. Backtraces now look like:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>stack backtrace:
+</span><span>   0:          0x11298b1 - &lt;unknown&gt;
+</span><span>   1:          0x1141d60 - &lt;unknown&gt;
+</span><span>   2:          0x11277df - &lt;unknown&gt;
+</span><span>   3:          0x112b59d - &lt;unknown&gt;
+</span><span>   4:          0x112b24c - &lt;unknown&gt;
+</span><span>   5:          0x112bc45 - &lt;unknown&gt;
+</span><span>   6:          0x112b80d - &lt;unknown&gt;
+</span><span>   7:          0x1129d70 - &lt;unknown&gt;
+</span><span>   8:          0x112b7cc - &lt;unknown&gt;
+</span><span>   9:          0x1141040 - &lt;unknown&gt;
+</span><span>  10:          0x11437f7 - &lt;unknown&gt;
+</span><span>  11:          0x10a0864 - &lt;unknown&gt;
+</span><span>  12:          0x1096c59 - &lt;unknown&gt;
+</span><span>  13:          0x1096095 - &lt;unknown&gt;
+</span><span>  14:          0x108351d - &lt;unknown&gt;
+</span><span>  15:          0x1073e66 - &lt;unknown&gt;
+</span><span>  16:          0x108af2e - &lt;unknown&gt;
+</span><span>  17:          0x107bad1 - &lt;unknown&gt;
+</span><span>  18:          0x106a3c4 - &lt;unknown&gt;
+</span><span>  19:          0x112c0ae - &lt;unknown&gt;
+</span><span>  20:          0x106a3a2 - &lt;unknown&gt;
+</span><span>  21:          0x1073f0b - &lt;unknown&gt;
+</span><span>  22:          0x106a10b - &lt;unknown&gt;
+</span></code></pre>
+<p>On rust 1.46, they looked like this:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>stack backtrace:
+</span><span>   0: backtrace::backtrace::libunwind::trace
+</span><span>             at /cargo/registry/src/github.com-1ecc6299db9ec823/backtrace-0.3.46/src/backtrace/libunwind.rs:86
+</span><span>   1: backtrace::backtrace::trace_unsynchronized
+</span><span>             at /cargo/registry/src/github.com-1ecc6299db9ec823/backtrace-0.3.46/src/backtrace/mod.rs:66
+</span><span>   2: std::sys_common::backtrace::_print_fmt
+</span><span>             at src/libstd/sys_common/backtrace.rs:78
+</span><span>   3: &lt;std::sys_common::backtrace::_print::DisplayBacktrace as core::fmt::Display&gt;::fmt
+</span><span>             at src/libstd/sys_common/backtrace.rs:59
+</span><span>   4: core::fmt::write
+</span><span>             at src/libcore/fmt/mod.rs:1076
+</span><span>   5: std::io::Write::write_fmt
+</span><span>             at src/libstd/io/mod.rs:1537
+</span><span>   6: std::sys_common::backtrace::_print
+</span><span>             at src/libstd/sys_common/backtrace.rs:62
+</span><span>   7: std::sys_common::backtrace::print
+</span><span>             at src/libstd/sys_common/backtrace.rs:49
+</span><span>   8: std::panicking::default_hook::{{closure}}
+</span><span>             at src/libstd/panicking.rs:198
+</span><span>   9: std::panicking::default_hook
+</span><span>             at src/libstd/panicking.rs:217
+</span><span>  10: std::panicking::rust_panic_with_hook
+</span><span>             at src/libstd/panicking.rs:526
+</span><span>  11: rust_begin_unwind
+</span><span>             at src/libstd/panicking.rs:437
+</span><span>  12: core::panicking::panic_fmt
+</span><span>             at src/libcore/panicking.rs:85
+</span><span>  13: core::slice::&lt;impl [T]&gt;::copy_from_slice
+</span><span>             at /rustc/04488afe34512aa4c33566eb16d8c912a3ae04f9/src/libcore/macros/mod.rs:16
+</span><span>  14: mini_gpt::GptHeader::crc32_from_logical_block
+</span><span>             at mini-gpt/src/lib.rs:166
+</span><span>  15: mini_gpt::GptHeader::parse
+</span><span>             at mini-gpt/src/lib.rs:124
+</span><span>  16: mini_gpt::write_header
+</span><span>             at ./mini-gpt/src/lib.rs:614
+</span><span>  17: gpt_fat_disk_image_create::main
+</span><span>             at tools/src/create.rs:55
+</span><span>  18: std::rt::lang_start::{{closure}}
+</span><span>             at /rustc/04488afe34512aa4c33566eb16d8c912a3ae04f9/src/libstd/rt.rs:67
+</span><span>  19: std::rt::lang_start_internal::{{closure}}
+</span><span>             at src/libstd/rt.rs:52
+</span><span>  20: std::panicking::try::do_call
+</span><span>             at src/libstd/panicking.rs:348
+</span><span>  21: std::panicking::try
+</span><span>             at src/libstd/panicking.rs:325
+</span><span>  22: std::panic::catch_unwind
+</span><span>             at src/libstd/panic.rs:394
+</span><span>  23: std::rt::lang_start_internal
+</span><span>             at src/libstd/rt.rs:51
+</span><span>  24: std::rt::lang_start
+</span><span>             at /rustc/04488afe34512aa4c33566eb16d8c912a3ae04f9/src/libstd/rt.rs:67
+</span><span>  25: main
+</span><span>  26: _start
+</span><span>             at /usr/src/lib/csu/amd64/crt1.c:76
+</span></code></pre>
+<p>This was a regression in the rust compiler and not a problem with FreeBSD as I
+<a href="https://gridbugs.github.io/gridbugs.org/daily/rust-stacktraces-are-unknown-on-freebsd/">previously thought</a>,
+which is a relief. FreeBSD is a <a href="https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-2">tier 2</a>
+rust platform, so tests don’t necessarily run, and breakages like this one aren’t
+the end of the world, though this is the first real problem I’ve run into using rust
+on FreeBSD.</p>
+<p>The temporary solution is to switch back to rust 1.46. This meant changing back some parts
+of my GPT FAT disk tools that were taking advantage of the
+<a href="https://blog.rust-lang.org/2020/10/08/Rust-1.47.html#traits-on-larger-arrays">const generic teaser</a>
+included in 1.47.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;raidz-setup&#x2F;" aria-label="Previous">
+	  Previous: Raidz setup
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;boss-fights-in-traditional-roguelikes&#x2F;" aria-label="Next">
+	  Next: Boss fights in traditional roguelikes
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

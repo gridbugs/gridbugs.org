@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2017: Mechanics and Descriptions">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2017-mechanics/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2017-mechanics/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2017-03-08T01:44:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2017: Mechanics and Descriptions
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-vehicles&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Vehicles
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-procgen-explosions&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2017: Procgen and Explosions
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2017: Mechanics and Descriptions</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2017-03-08T01:44:00+10:00">
+    March 08, 2017
+  </time>
+  
+</p>
+
+
+  
+
+<p>Today I implemented lots of small mechanics to add some depth to gameplay. I
+also added descriptions to many actions which are printed in the message log.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2017-mechanics/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>Health is now broken up into hit points, engine health, tyres and armour.
+When getting shot, if there is armour, there is a 1/(armour + 1) chance for the
+armour to deflect the damage. If this check fails, the armour value is
+decremented. If there’s no armour, either the hit points, engine health, or
+tyres will be decremented. The choice of which of these to decrease is random,
+with the chance of a stat being decreased depending on the current value of that
+stat (ie. higher stats are more likely to be decreased than lower stats).</p>
+<p>Driving through acid now has a chance to destroy a tyre. When steering (moving
+up and down the screen), there’s now a chance that it will fail. The more tyres
+you have, the greater chance of success. If the van has all its tyres, success
+is guaranteed.</p>
+<p>The maximum speed is half the engine health (rounding up).
+I’m yet to implement damaging collisions with obstacles. I plan to make these
+damage the engine. It’s possible for your engine to be destroyed and get stuck.
+To reconcile this I plan on allowing the player to repair the van while it’s
+stopped, and making take several turns, so it won’t be done lightly.</p>
+<p>The van can collect letters from the level. Currently this just increments a
+counter. The plan is for these to increase the reward received upon completing a
+level.</p>
+<p>I added barrels, but am yet to make them explosive.</p>
+<p>For all combat actions (being shot or rammed by vehicles, or clawed by zombies),
+I added descriptions which are printed on the message log when the action takes
+place. I also added some messages when failing to turn, failing to accelerate,
+and when a tyre is dissolved by acid.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-vehicles&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Vehicles
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-procgen-explosions&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2017: Procgen and Explosions
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

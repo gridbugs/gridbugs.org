@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="NTFS on FreeBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/ntfs-on-freebsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/ntfs-on-freebsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-12-18T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+NTFS on FreeBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">NTFS on FreeBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-12-18T00:00:00+00:00">
+    December 18, 2020
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/unix" aria-label="tag">unix</a>
+  
+</p>
+
+
+  
+
+<p>Here’s a guide for myself on how to format and mount an NTFS partition on FreeBSD.
+These examples were run on FreeBSD 12.2-RELEASE.</p>
+<p>List disks:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># geom disk list
+</span><span>...
+</span><span>Geom name: da1
+</span><span>Providers:
+</span><span>1. Name: da1
+</span><span>   Mediasize: 1000204886016 (932G)
+</span><span>   Sectorsize: 512
+</span><span>   Stripesize: 4096
+</span><span>   Stripeoffset: 0
+</span><span>   Mode: r0w0e0
+</span><span>   descr: HGST TOURO S
+</span><span>   lunid: 5000000000000001
+</span><span>   ident: 21001410170002100173
+</span><span>   rotationrate: unknown
+</span><span>   fwsectors: 63
+</span><span>   fwheads: 255
+</span></code></pre>
+<span id="continue-reading"></span>
+<p>This guide will create a single giant NTFS partition taking up the entirety of da1.</p>
+<p>Destroy the existing partition table if necessary:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart destroy -F da1
+</span><span>da1 destroyed
+</span></code></pre>
+<p>Create the (GPT) partition table if you don’t already have one.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart create -s GPT da1
+</span><span>da1 created
+</span></code></pre>
+<p>Create a partition:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart add -t ms-basic-data da1
+</span><span>da1p1 added
+</span></code></pre>
+<p>A common mistake when trying to create an NTFS partition is to run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart add -t ntfs da1
+</span><span>gpart: Invalid argument
+</span></code></pre>
+<p>This is one of the least helpful error messages I can imagine.
+<code>gpart</code> doesn’t let you create a partition with type “ntfs” on a disk with a GPT
+partition table. You’d need to make a MBR partition table instead.</p>
+<p>Format the partition:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># NTFS_USE_UBLIO=0 mkntfs -vf /dev/da1p1
+</span></code></pre>
+<p>The <code>mkntfs</code> command is part of the <code>sysutils/fusefs-ntfs</code> package.
+<code>-v</code> prints verbose output, <code>-f</code> skips zeroing out the partition and elides some checks to speed up
+creating the partition. Setting <code>NTFS_USE_UBLIO</code> is a workaround for a bug in <code>mkntfs</code> which causes
+the command to hang.</p>
+<ul>
+<li><a href="https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=206978">bug report</a></li>
+<li><a href="https://unix.stackexchange.com/questions/513732/why-is-mkntfs-taking-such-a-long-time">stack exchange post about the problem</a></li>
+<li><a href="https://chieflemming.wordpress.com/tag/freebsd/">blog post where I first read about this issue and the workaround</a></li>
+</ul>
+<p>Mount the partition:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># ntfs-3g /dev/da1p1 /mnt/
+</span></code></pre>
+<p>The <code>ntfs-3g</code> program is also part of the <code>sysutils/fusefs-ntfs</code> package.</p>
+<p>Should this fail with the error <code>fuse: failed to open fuse device: No such file or directory</code>,
+the <code>fuse</code> kernel module is likely not loaded. Load it with:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># kldload fuse
+</span></code></pre>
+<p>Set it to load on boot by adding the following to /boot/loader.conf:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>fuse_load=&quot;YES&quot;
+</span></code></pre>
+<p>To unmount the partition:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># umount /mnt
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;dmenu_histogram&#x2F;" aria-label="Previous">
+	  Previous: dmenu_histogram
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;2020-recap&#x2F;" aria-label="Next">
+	  Next: 2020 Recap
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

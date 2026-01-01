@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Programming an Arduino the Hard Way">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-05-10T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino1.jpg">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Programming an Arduino the Hard Way
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Programming an Arduino the Hard Way</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-05-10T00:00:00+00:00">
+    May 10, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/electronics" aria-label="tag">electronics</a>
+  
+</p>
+
+
+  
+
+<p>This is a guide I wrote mostly for my future self on how to set up an ergonomic
+development environment for writing Arduino programs in c without any
+Arduino-specific tools and using an Arduino to make a simple circuit with some
+flashing LEDs. I’ll also discus options for powering the Arduino from a 12v
+DC power supply.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino1.jpg" alt="A breadboard holding an Arduino and several other components including a range of coloured LEDs, some of which are on." /></p>
+<span id="continue-reading"></span>
+<p>For this guide I’ll be using one of
+<a href="https://www.elegoo.com/en-au/products/elegoo-nano-v3-0">these</a>:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino3.jpg" alt="A top-down view of an Arduino Nano" /></p>
+<p>It’s an Elegoo Nano - a cheaper drop-in replacement for the Arduino Nano. The
+only noticeable differences are that the header pins don’t come pre-soldered,
+it doesn’t come with any cables and it has a different USB to serial
+chip (a CH340 instead of the FT232 found on the Arduino).</p>
+<h2 id="usb-serial-driver"><a class="zola-anchor" href="#usb-serial-driver" aria-label="Anchor link for: usb-serial-driver">USB Serial Driver</a></h2>
+<p>The docs on the <a href="https://www.elegoo.com/en-au/products/elegoo-nano-v3-0">Elegoo
+website</a> suggest that
+you’ll need to install special drivers in order for your computer to detect the
+Elegoo Nano when you plug it in with a USB cable. The necessary Linux driver is
+called <code>ch341</code> and it’s probably already installed as a kernel module on most
+Linux distributions and it’s likely that it just work when you plug in the USB
+cable with the Arduino attached.</p>
+<p>If not, here are some things to try.</p>
+<p>Enable the kernel module explicitly. If this fails it indicates that you don’t have
+the <code>ch341</code> kernel module installed and may have to install it with a package manager
+or build it from source.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo modprobe ch341
+</span><span>$ lsmod | grep ch341
+</span><span>ch341                  28672  0
+</span><span>usbserial              73728  2 pl2303,ch341
+</span><span>usbcore               385024  13 pl2303,usbserial,xhci_hcd,snd_usb_audio,usbhid,snd_usbmidi_lib,xpad,usb_storage,uvcvideo,btusb,xhci_pci,uas,ch341
+</span></code></pre>
+<p>When you connect the Elegoo Nano via a USB cable, you’ll see this in the output
+of <code>dmesg</code>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>...
+</span><span>[210724.817737] usb 1-6: new full-speed USB device number 23 using xhci_hcd
+</span><span>[210724.958846] usb 1-6: New USB device found, idVendor=1a86, idProduct=7523, bcdDevice= 2.64
+</span><span>[210724.958853] usb 1-6: New USB device strings: Mfr=0, Product=2, SerialNumber=0
+</span><span>[210724.958856] usb 1-6: Product: USB Serial
+</span><span>[210724.967993] ch341 1-6:1.0: ch341-uart converter detected
+</span><span>[210724.981915] usb 1-6: ch341-uart converter now attached to ttyUSB0
+</span></code></pre>
+<p>After plugging in the device you should see a new device file <code>/dev/ttyUSB0</code>.
+This will be used later on both to program the device and also to see the output
+when printing messages over the serial port.</p>
+<p>If nothing happens when you plug in the device, try a different cable (the first
+one I used didn’t work for some reason). If your Linux kernel didn’t come with
+the ch341 module try building and loading the ch341ser module from
+<a href="https://github.com/juliagoda/CH341SER">here</a>.</p>
+<p>Note that even though I’m technically not using an Arduino, I’ll be referring to
+the device as an Arduino for the remainder of this post!</p>
+<h2 id="get-the-tools"><a class="zola-anchor" href="#get-the-tools" aria-label="Anchor link for: get-the-tools">Get the Tools</a></h2>
+<p>We won’t be using the Arduino IDE but we still need to install some tools.
+Namely:</p>
+<h3 id="avr-gcc"><a class="zola-anchor" href="#avr-gcc" aria-label="Anchor link for: avr-gcc"><code>avr-gcc</code></a></h3>
+<p>A c compiler targeting AVR processors such as the one found in the Arduino.</p>
+<h3 id="make"><a class="zola-anchor" href="#make" aria-label="Anchor link for: make"><code>make</code></a></h3>
+<p>Minimal build system.</p>
+<h3 id="avrdude"><a class="zola-anchor" href="#avrdude" aria-label="Anchor link for: avrdude"><code>avrdude</code></a></h3>
+<p>Tool for downloading code to AVR processors such as the one found in the
+Arduino.</p>
+<h3 id="picocom"><a class="zola-anchor" href="#picocom" aria-label="Anchor link for: picocom"><code>picocom</code></a></h3>
+<p>Tool for sending and receiving data over a serial port. This will be used to
+connect to the Arduino so we can see the messages it prints.</p>
+<h3 id="clangd"><a class="zola-anchor" href="#clangd" aria-label="Anchor link for: clangd"><code>clangd</code></a></h3>
+<p>A Language Server Protocol (LSP) server for c. This will allow for some
+ergonomics such as jumping to function definitions in editors that contain an
+LSP client (e.g. vscode, neovim with the LanguageClient-neovim plugin). This
+might be found in a package named <code>clang-tools</code> if no <code>clangd</code> package is
+available in your distro.</p>
+<h3 id="bear"><a class="zola-anchor" href="#bear" aria-label="Anchor link for: bear"><code>bear</code></a></h3>
+<p><code>bear</code> is a tool for generating compilation databases (<code>compile_commands.json</code>)
+from a <code>Makefile</code>.</p>
+<h3 id="avr-libc"><a class="zola-anchor" href="#avr-libc" aria-label="Anchor link for: avr-libc"><code>avr-libc</code></a></h3>
+<p>The standard c library for AVR devices. In some Linux distros this will come with
+<code>avr-gcc</code> but on others it will need to be installed separately.</p>
+<h2 id="print-hello-world"><a class="zola-anchor" href="#print-hello-world" aria-label="Anchor link for: print-hello-world">Print “Hello, World!”</a></h2>
+<p>The code for this section is <a href="https://github.com/gridbugs/hello-avr">here</a>.</p>
+<p>Put this in <code>main.c</code>. This program implements a very simple serial (USART)
+driver for the Arduino and uses it to print <code>Hello, World!</code> with <code>printf</code>:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-style:italic;color:#969896;">// main.c
+</span><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;stdio.h&gt;
+</span><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;avr/io.h&gt;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// The arduino clock is 16Mhz and the USART0 divides this clock rate by 16
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>USART0_CLOCK_HZ </span><span style="color:#0086b3;">1000000
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>BAUD_RATE_HZ </span><span style="color:#0086b3;">9600
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>UBRR_VALUE (USART0_CLOCK_HZ </span><span style="font-weight:bold;color:#a71d5d;">/</span><span> BAUD_RATE_HZ)
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Send a character over USART0.
+</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">USART0_tx</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">char </span><span>data, </span><span style="font-weight:bold;color:#a71d5d;">struct</span><span> __file</span><span style="font-weight:bold;color:#a71d5d;">* </span><span>_f) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">!</span><span>(UCSR0A </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span>(</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> UDRE0))); </span><span style="font-style:italic;color:#969896;">// wait for the data buffer to be empty
+</span><span>    UDR0 </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data; </span><span style="font-style:italic;color:#969896;">// write the character to the data buffer
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span>;
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Create a stream associated with transmitting data over USART0 (this will be
+</span><span style="font-style:italic;color:#969896;">// used for stdout so we can print to a terminal with printf).
+</span><span style="font-weight:bold;color:#a71d5d;">static</span><span> FILE uartout </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>FDEV_SETUP_STREAM(USART0_tx, </span><span style="color:#0086b3;">NULL</span><span>, _FDEV_SETUP_WRITE);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">USART0_init</span><span>( </span><span style="font-weight:bold;color:#a71d5d;">void </span><span>) {
+</span><span>    UBRR0H </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(UBRR_VALUE </span><span style="font-weight:bold;color:#a71d5d;">&gt;&gt; </span><span style="color:#0086b3;">8</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span style="color:#0086b3;">0xF</span><span>; </span><span style="font-style:italic;color:#969896;">// set the high byte of the baud rate
+</span><span>    UBRR0L </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> UBRR_VALUE </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span style="color:#0086b3;">0xFF</span><span>; </span><span style="font-style:italic;color:#969896;">// set the low byte of the baud rate
+</span><span>    UCSR0B </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> TXEN0; </span><span style="font-style:italic;color:#969896;">// enable the USART0 transmitter
+</span><span>    UCSR0C </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> UCSZ00; </span><span style="font-style:italic;color:#969896;">// use 8-bit characters
+</span><span>    stdout </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>uartout;
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">main</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">void</span><span>) {
+</span><span>    USART0_init();
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;Hello, World!</span><span style="color:#0086b3;">\r\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span>;
+</span><span>}
+</span></code></pre>
+<p>Compile the code to an elf file. <code>atmega328p</code> is the name of the microcontroller
+on the Arduino Nano but other devices may have a different microcontroller.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ avr-gcc -mmcu=atmega328p main.c -o hello.elf
+</span></code></pre>
+<p>Flash the Arduino. Plug it in with a USB cable, then run the following command.
+Replace <code>/dev/ttyUSB0</code> with the device associated with the Arduino’s serial port
+(if you have multiple USB serial devices plugged in it might get assigned a
+different device file). Also as with the <code>avr-gcc</code> command above, replace
+<code>m328p</code> with the part number of the microcontroller on your Arduino. <code>avrdude</code>
+uses a different naming convention to <code>avr-gcc</code>.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+</span><span>
+</span><span>avrdude: AVR device initialized and ready to accept instructions
+</span><span>avrdude: device signature = 0x1e950f (probably m328p)
+</span><span>avrdude: Note: flash memory has been specified, an erase cycle will be performed.
+</span><span>         To disable this feature, specify the -D option.
+</span><span>avrdude: erasing chip
+</span><span>avrdude: reading input file hello.elf for flash
+</span><span>         with 390 bytes in 1 section within [0, 0x185]
+</span><span>         using 4 pages and 122 pad bytes
+</span><span>avrdude: writing 390 bytes flash ...
+</span><span>
+</span><span>Writing | ################################################## | 100% 0.10 s
+</span><span>
+</span><span>avrdude: 390 bytes of flash written
+</span><span>avrdude: verifying flash memory against hello.elf
+</span><span>
+</span><span>Reading | ################################################## | 100% 0.06 s
+</span><span>
+</span><span>avrdude: 390 bytes of flash verified
+</span><span>
+</span><span>avrdude done.  Thank you.
+</span></code></pre>
+<p>To see the output of this program you’ll need to use a tool that prints data
+received over a serial connection. I’ll use <code>picocom</code> in this guide. Run the
+following command, replacing <code>/dev/ttyUSB0</code> with the device file associated with
+the Arduino.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo picocom -b9600 /dev/ttyUSB0
+</span><span>picocom v3.2a
+</span><span>
+</span><span>port is        : /dev/ttyUSB0
+</span><span>flowcontrol    : none
+</span><span>baudrate is    : 9600
+</span><span>parity is      : none
+</span><span>databits are   : 8
+</span><span>stopbits are   : 1
+</span><span>escape is      : C-a
+</span><span>local echo is  : no
+</span><span>noinit is      : no
+</span><span>noreset is     : no
+</span><span>hangup is      : no
+</span><span>nolock is      : no
+</span><span>send_cmd is    : /nix/store/sy0ipq6qy2slql25lbax77i4315bynzp-lrzsz-0.12.20/bin/sz -vv
+</span><span>receive_cmd is : /nix/store/sy0ipq6qy2slql25lbax77i4315bynzp-lrzsz-0.12.20/bin/rz -vv -E
+</span><span>imap is        :
+</span><span>omap is        :
+</span><span>emap is        : crcrlf,delbs,
+</span><span>logfile is     : none
+</span><span>initstring     : none
+</span><span>exit_after is  : not set
+</span><span>exit is        : no
+</span><span>
+</span><span>Type [C-a] [C-h] to see available commands
+</span><span>Terminal ready
+</span><span>Hello, World!
+</span></code></pre>
+<p>To exit <code>picocom</code>, press Ctrl-a, then Ctrl-x.</p>
+<p>When the Arduino is plugged in via its USB port, connecting to it with <code>picocom</code> (running the <code>sudo picocom ...</code> command)
+will cause the device to reset, so you won’t miss the “Hello, World!” message if
+you don’t connect fast enough. You can also reset the Arduino by pressing the
+button near its built-in LEDs.</p>
+<p>Also note the <code>-b9600</code> sets the baud rate which corresponds to the line <code>#define BAUD_RATE_HZ 9600</code> in the program.</p>
+<p>Another note on <code>picocom</code> is that you won’t be able to download code to the Arduino (the
+<code>avrdude</code> command) while connected to the device with <code>picocom</code>. Exit <code>picocom</code>
+(Ctrl-a, then Ctrl-x) before running <code>avrdude</code>.</p>
+<p>So that we don’t have to manually run <code>avr-gcc</code> every time we compile the code,
+create a <code>Makefile</code> with the following contents:</p>
+<pre data-lang="make" style="background-color:#ffffff;color:#323232;" class="language-make "><code class="language-make" data-lang="make"><span style="font-style:italic;color:#969896;"># Makefile
+</span><span>TARGET</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">hello
+</span><span>
+</span><span>SRC</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">main.c
+</span><span>OBJ</span><span style="font-weight:bold;color:#a71d5d;">=$(</span><span>SRC:.c=.o</span><span style="font-weight:bold;color:#a71d5d;">)
+</span><span>
+</span><span>CC</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">avr-gcc
+</span><span>MCU</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">atmega328p
+</span><span>
+</span><span style="font-style:italic;color:#969896;"># The --param=min-pagesize=0 argument is to fix the error:
+</span><span style="font-style:italic;color:#969896;"># error: array subscript 0 is outside array bounds of ‘volatile uint8_t[0]’
+</span><span style="font-style:italic;color:#969896;">#        {aka ‘volatile unsigned char[]’}
+</span><span style="font-style:italic;color:#969896;"># ...which is incorrectly reported in some versions of gcc
+</span><span>CFLAGS</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">-mmcu=</span><span style="font-weight:bold;color:#a71d5d;">$(</span><span>MCU</span><span style="font-weight:bold;color:#a71d5d;">)</span><span style="color:#183691;"> -std=c99 -Werror -Wall --param=min-pagesize=0
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">$(</span><span style="font-weight:bold;color:#323232;">TARGET</span><span style="font-weight:bold;color:#a71d5d;">)</span><span style="font-weight:bold;color:#795da3;">.elf</span><span style="font-weight:bold;color:#a71d5d;">: $(</span><span>OBJ</span><span style="font-weight:bold;color:#a71d5d;">)
+</span><span>	</span><span style="font-weight:bold;color:#a71d5d;">$(</span><span>CC</span><span style="font-weight:bold;color:#a71d5d;">) $(</span><span>CFLAGS</span><span style="font-weight:bold;color:#a71d5d;">) $(</span><span>OBJ</span><span style="font-weight:bold;color:#a71d5d;">) </span><span>-o $@
+</span><span>
+</span><span style="font-weight:bold;color:#323232;">%</span><span style="font-weight:bold;color:#795da3;">.o </span><span style="font-weight:bold;color:#a71d5d;">: </span><span>%</span><span style="color:#183691;">.c
+</span><span>	</span><span style="font-weight:bold;color:#a71d5d;">$(</span><span>CC</span><span style="font-weight:bold;color:#a71d5d;">) $(</span><span>CFLAGS</span><span style="font-weight:bold;color:#a71d5d;">) </span><span>-c -o $@ $&lt;
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">clean</span><span style="font-weight:bold;color:#a71d5d;">: 
+</span><span>	rm -rf </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>.o </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>.elf
+</span></code></pre>
+<p>Note that this also enables more warnings and works around a problem where
+<code>avr-gcc</code> would incorrectly report an error.</p>
+<p>Now to rebuild the <code>hello.elf</code> binary after changing the code you can simply run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ make
+</span><span>avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
+</span><span>avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 main.o -o hello.elf
+</span></code></pre>
+<h2 id="jump-to-definition-and-other-ergonomics-with-languageclient-neovim-and-clangd"><a class="zola-anchor" href="#jump-to-definition-and-other-ergonomics-with-languageclient-neovim-and-clangd" aria-label="Anchor link for: jump-to-definition-and-other-ergonomics-with-languageclient-neovim-and-clangd">Jump to Definition and other ergonomics with LanguageClient-neovim and clangd</a></h2>
+<p>I won’t cover setting up an LSP client here as there are too many different
+editors and plugins to choose from, but for an example neovim LSP setup using
+the LanguageClient-neovim plugin, see <a href="https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L72">my neovim
+config</a>.</p>
+<p>For the LSP server we’ll use <code>clangd</code>. As long as <code>clangd</code> is installed and your editor is correctly configured,
+your editor should take care of starting and stopping <code>clangd</code> in the background. To check
+that it’s installed try running the command <code>clangd</code>.</p>
+<p>For <code>clangd</code> to work correctly it needs to know how you intend on compiling the
+code. It finds this out by reading a file <code>compile_commands.json</code> that lists the
+commands used to compile the code. There are various ways of generating this
+file and since it will contain absolute paths it’s not advised to check it into
+the project. One way of generating <code>compile_commands.json</code> is with a tool called
+<code>bear</code>.</p>
+<p><code>bear</code> can generate a <code>compile_commands.json</code> from an invocation of <code>make</code> by
+watching what commands are run. For example (the working directory is
+<code>/home/s/src/hello-avr</code>):</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ bear -- make --always-make
+</span><span>avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 -c -o main.o main.c
+</span><span>avr-gcc -mmcu=atmega328p -std=c99 -Werror -Wall --param=min-pagesize=0 main.o -o hello.elf
+</span><span>
+</span><span>$ cat compile_commands.json
+</span><span>[
+</span><span>  {
+</span><span>    &quot;arguments&quot;: [
+</span><span>      &quot;/usr/bin/avr-gcc&quot;,
+</span><span>      &quot;-mmcu=atmega328p&quot;,
+</span><span>      &quot;-std=c99&quot;,
+</span><span>      &quot;-Werror&quot;,
+</span><span>      &quot;-Wall&quot;,
+</span><span>      &quot;--param=min-pagesize=0&quot;,
+</span><span>      &quot;-c&quot;,
+</span><span>      &quot;-o&quot;,
+</span><span>      &quot;main.o&quot;,
+</span><span>      &quot;main.c&quot;
+</span><span>    ],
+</span><span>    &quot;directory&quot;: &quot;/home/s/src/hello-avr&quot;,
+</span><span>    &quot;file&quot;: &quot;/home/s/src/hello-avr/main.c&quot;,
+</span><span>    &quot;output&quot;: &quot;/home/s/src/hello-avr/main.o&quot;
+</span><span>  }
+</span><span>]
+</span></code></pre>
+<p>The <code>--always-make</code> argument to <code>make</code> tells it to unconditionally run the
+build commands and removes the need to run <code>make clean</code> first.</p>
+<p>On some systems, this is sufficient to allow an LSP client to do code navigation
+and other ergonomic features.</p>
+<p>I’ve tested this on Alpine Linux and NixOS. On the former, LSP features worked as expected
+at this point and no further configuration was necessary, but on NixOS I had
+some errors from <code>clangd</code> when opening <code>main.c</code> in a text editor with LSP
+support:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/errors.jpg" alt="Screenshot of a text editor with errors indicating that the LSP server could not locate some included header files" /></p>
+<p>It’s not immediately clear from the error messages but this problem is caused by
+the LSP server (<code>clangd</code>) being unable to locate the header file <code>&lt;avr/io.h&gt;</code>.</p>
+<p>Since this problem is easy to reproduce on NixOS, we’ll start by looking at the
+contents of <code>compile_commands.json</code> on NixOS:</p>
+<pre data-lang="json" style="background-color:#ffffff;color:#323232;" class="language-json "><code class="language-json" data-lang="json"><span>[
+</span><span>  {
+</span><span>    </span><span style="color:#183691;">&quot;arguments&quot;</span><span>: [
+</span><span>      </span><span style="color:#183691;">&quot;/nix/store/pfxqwrvm0y6lbs53injrl4sqz2njrpyl-avr-stage-final-gcc-wrapper-12.2.0/bin/avr-gcc&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-mmcu=atmega328p&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-std=c99&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-Werror&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-Wall&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;--param=min-pagesize=0&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-c&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-o&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;main.o&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;main.c&quot;
+</span><span>    ],
+</span><span>    </span><span style="color:#183691;">&quot;directory&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr&quot;</span><span>,
+</span><span>    </span><span style="color:#183691;">&quot;file&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr/main.c&quot;</span><span>,
+</span><span>    </span><span style="color:#183691;">&quot;output&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr/main.o&quot;
+</span><span>  }
+</span><span>]
+</span></code></pre>
+<p>Let’s try manually adding some extra include paths to help <code>clangd</code> find
+<code>&lt;avr/io.h&gt;</code>. Since the code compiles when we run <code>make</code>, <code>avr-gcc</code> must be
+finding headers successfully. We can ask <code>avr-gcc</code> to print out its additional
+include paths with this command:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ avr-gcc -E -Wp,-v - &lt; /dev/null
+</span><span>ignoring duplicate directory &quot;/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include&quot;
+</span><span>ignoring duplicate directory &quot;/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include&quot;
+</span><span>ignoring duplicate directory &quot;/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include&quot;
+</span><span>ignoring nonexistent directory &quot;/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/../../../../avr/sys-include&quot;
+</span><span>ignoring nonexistent directory &quot;/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/../../../../avr/include&quot;
+</span><span>ignoring duplicate directory &quot;/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed&quot;
+</span><span>#include &quot;...&quot; search starts here:
+</span><span>#include &lt;...&gt; search starts here:
+</span><span> /nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include
+</span><span> /nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include
+</span><span> /nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed
+</span><span> /nix/store/r2jr0x50g79spg2ncm5kjmw74n7gvxzg-avr-libc-avr-2.1.0/avr/include
+</span><span>End of search list.
+</span><span># 0 &quot;&lt;stdin&gt;&quot;
+</span><span># 0 &quot;&lt;built-in&gt;&quot;
+</span><span># 0 &quot;&lt;command-line&gt;&quot;
+</span><span># 1 &quot;&lt;stdin&gt;&quot;
+</span></code></pre>
+<p>The 4 lines after
+<code>#include &lt;...&gt; search starts here:</code> are the paths we’re interested in.
+We can probably skip the first one as it’s related to <code>avrdude</code> but including it
+won’t hurt and just adding all the extra include paths simplifies the process
+compared to adding a select few. Manually editing <code>compile_commands.json</code>
+to explicitly add these include files results in:</p>
+<pre data-lang="json" style="background-color:#ffffff;color:#323232;" class="language-json "><code class="language-json" data-lang="json"><span>[
+</span><span>  {
+</span><span>    </span><span style="color:#183691;">&quot;arguments&quot;</span><span>: [
+</span><span>      </span><span style="color:#183691;">&quot;/nix/store/pfxqwrvm0y6lbs53injrl4sqz2njrpyl-avr-stage-final-gcc-wrapper-12.2.0/bin/avr-gcc&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-mmcu=atmega328p&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-std=c99&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-Werror&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-Wall&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;--param=min-pagesize=0&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-c&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-o&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;main.o&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;main.c&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-I/nix/store/fh0ccmn4vv7hncyfic4ph3hx34vmzsih-avrdude-7.1/include&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-I/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-I/nix/store/ss76yfg4wj01ha9rjjgkr4qg0g76ivpa-avr-stage-final-gcc-12.2.0/lib/gcc/avr/12.2.0/include-fixed&quot;</span><span>,
+</span><span>      </span><span style="color:#183691;">&quot;-I/nix/store/r2jr0x50g79spg2ncm5kjmw74n7gvxzg-avr-libc-avr-2.1.0/avr/include&quot;
+</span><span>    ],
+</span><span>    </span><span style="color:#183691;">&quot;directory&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr&quot;</span><span>,
+</span><span>    </span><span style="color:#183691;">&quot;file&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr/main.c&quot;</span><span>,
+</span><span>    </span><span style="color:#183691;">&quot;output&quot;</span><span>: </span><span style="color:#183691;">&quot;/home/s/src/hello-avr/main.o&quot;
+</span><span>  }
+</span><span>]
+</span></code></pre>
+<p>Note the extra 4 <code>-I...</code> arguments to <code>avr-gcc</code>.</p>
+<p>Opening <code>main.c</code> in an LSP-enabled editor again, the errors are gone:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/no-errors.jpg" alt="Screenshot of a text editor editing the same file as above, but this time there are no errors" /></p>
+<p>We can use LSP’s “jump to definition” feature to open <code>&lt;avr/io.h&gt;</code>. In neovim
+(with LanguageClient-neovim)
+move the cursor over <code>&lt;avr/io.h&gt;</code> and run <code>:call LanguageClient#textDocument_definition()</code> (obviously <a href="https://github.com/gridbugs/dotfiles/blob/1f7375ff2ab74bb3688326ec43744df0c77fd07a/nvim/plugins.vim#L108">bind this to a key
+combination</a>):</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/avr_io.jpg" alt="Editor with avr/io.h open" /></p>
+<p>For another example, move the cursor over a symbol defined in a header, such as
+the <code>UCSR0A</code> register on line 11 of <code>main.c</code>:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/jtd.jpg" alt="Editor with the definition of UCSR0A open" /></p>
+<p>Another handy feature of LSP is showing type signatures and documentation of
+symbols. For example put the cursor over the call to <code>printf</code> in <code>main.c</code> and
+run <code>:call LanguageClient#textDocument_hover()</code> (again, assuming
+LanguageClient-neovim):</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/doc.jpg" alt="Editor showing documentation of the printf function" /></p>
+<p>One remaining problem is that <code>compile_commands.json</code> contains a bunch of
+absolute paths and so isn’t portable; we can’t check it into version control
+which means we need to generate it after checking out the project. Rather than
+using <code>bear</code> directly and manually modifying the result, here is a script that
+automates the modification we just performed. Note that it uses the <code>jq</code> command
+which may need to be installed.</p>
+<pre data-lang="bash" style="background-color:#ffffff;color:#323232;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="font-style:italic;color:#969896;">#!/bin/sh
+</span><span style="color:#62a35c;">set</span><span> -euo pipefail
+</span><span>
+</span><span style="font-style:italic;color:#969896;"># Script that prints a compilation database (typically stored in
+</span><span style="font-style:italic;color:#969896;"># compile_commands.json) which contains additional include paths found by
+</span><span style="font-style:italic;color:#969896;"># querying avr-gcc.
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">include_paths</span><span>() {
+</span><span>    </span><span style="font-style:italic;color:#969896;"># Print custom include paths used by the avr compiler to stdout, one per line.
+</span><span>    CC</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">avr-gcc
+</span><span>    $CC -E -Wp,-v - </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span> /dev/null </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">&gt;&amp;</span><span style="color:#0086b3;">1 </span><span>\
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>sed -n </span><span style="color:#183691;">&#39;/#include &lt;...&gt; search starts here:/,/End of search list./p&#39; </span><span>\
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>tail -n+2 \
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>head -n-1 \
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>xargs -n1 echo
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">compile_commands</span><span>() {
+</span><span>    </span><span style="font-style:italic;color:#969896;"># Print the compilation database that would normally go in
+</span><span>    </span><span style="font-style:italic;color:#969896;"># compile_commands.json.
+</span><span>    </span><span style="font-style:italic;color:#969896;"># This would be simpler if bear supported printing to stdout:
+</span><span>    </span><span style="font-style:italic;color:#969896;"># https://github.com/rizsotto/Bear/issues/525
+</span><span>    TMP</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;$(</span><span>mktemp -d</span><span style="color:#183691;">)&quot;
+</span><span>    </span><span style="color:#62a35c;">trap </span><span style="color:#183691;">&quot;rm -rf $</span><span>TMP</span><span style="color:#183691;">&quot;</span><span> EXIT
+</span><span>    OUTPUT</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">$</span><span>TMP</span><span style="color:#183691;">/x.json
+</span><span>    bear --output $OUTPUT</span><span style="font-weight:bold;color:#a71d5d;"> --</span><span> make --always-make </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> /dev/null
+</span><span>    cat $OUTPUT
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;"># Comma-separated list of quoted include paths with &quot;-I&quot; prepended to each. E.g.
+</span><span style="font-style:italic;color:#969896;"># &quot;-Ifoo&quot;,&quot;-Ibar&quot;
+</span><span>COMMA_SEPARATED_QUOTED_INCLUDE_ARGS</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">$(
+</span><span style="color:#183691;">    </span><span>include_paths </span><span style="color:#183691;">\
+</span><span style="color:#183691;">        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>xargs -I</span><span style="color:#183691;">{} echo &#39;&quot;-I{}&quot;&#39; \
+</span><span style="color:#183691;">        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>tr </span><span style="color:#183691;">&#39;\n&#39; , \
+</span><span style="color:#183691;">        </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>sed </span><span style="color:#183691;">&#39;s/,$//&#39;
+</span><span style="color:#183691;">)
+</span><span>
+</span><span style="font-style:italic;color:#969896;"># Add the extra include paths to the compilation database and print the result.
+</span><span>compile_commands </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>\
+</span><span>    jq </span><span style="color:#183691;">&quot;map(.arguments += [$</span><span>COMMA_SEPARATED_QUOTED_INCLUDE_ARGS</span><span style="color:#183691;">])&quot;
+</span></code></pre>
+<p>Put this script in <code>tools/compile_commands_with_extra_include_paths.sh</code> and run
+it with:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ tools/compile_commands_with_extra_include_paths.sh &gt; compile_commands.json
+</span></code></pre>
+<h2 id="led-chaser-circuit"><a class="zola-anchor" href="#led-chaser-circuit" aria-label="Anchor link for: led-chaser-circuit">LED Chaser Circuit</a></h2>
+<p>Now let’s make a simple LED Chaser circuit by attaching some LEDs to some of the
+digital IO pins on the Arduino.</p>
+<p>Step 1 is working out which pins we’ll be using.</p>
+<p>Here’s a close up of an Arduino Nano with the names of each pin visible:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino2.png" alt="A top-down view of an Arduino Nano" /></p>
+<p>For ease of reading here are the pin labels copied from the above image in a
+table in the same positions as they appear in the image above:</p>
+<table><thead><tr><th>Left Side</th><th>Right Side</th></tr></thead><tbody>
+<tr><td>D13</td><td>D12</td></tr>
+<tr><td>3V3</td><td>D11</td></tr>
+<tr><td>REF</td><td>D10</td></tr>
+<tr><td>A0</td><td>D9</td></tr>
+<tr><td>A1</td><td>D8</td></tr>
+<tr><td>A2</td><td>D7</td></tr>
+<tr><td>A3</td><td>D6</td></tr>
+<tr><td>A4</td><td>D5</td></tr>
+<tr><td>A5</td><td>D4</td></tr>
+<tr><td>A6</td><td>D3</td></tr>
+<tr><td>A7</td><td>D2</td></tr>
+<tr><td>5V</td><td>GND</td></tr>
+<tr><td>RST</td><td>RST</td></tr>
+<tr><td>GND</td><td>RX0</td></tr>
+<tr><td>VIN</td><td>TX1</td></tr>
+</tbody></table>
+<p>And this is the pinout from the Arduino official docs. Most pins have multiple
+functions. The I/O-Port functions are what we’re interested in. They are
+coloured orange without stripes in the following diagram. The key calls them
+“Microcontroler’s Port” and ATmega328P manual calls them “I/O-Port”.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/pinout.jpg" alt="A pinout of the Arduino Nano from the official Arduino documentation" /></p>
+<p>Note that this diagram contains an error. The “ADC[6]” and “ADC[7]” pins have
+labels coloured both yellow and orange with “ADC[x]” on them but the orange
+labels are for I/O-Ports only so labeling them with “ADC” doesn’t make sense. We
+won’t be using these pins here, but I did do an experiment where I turned on
+all the I/O-Port pins and A6 and A7 pins didn’t turn on so they aren’t
+connected to an I/O-Port.</p>
+<p>I only have enough space on my breadboard for 15 LEDs (after accounting for the
+Arduino’s pins and current-limiting resistors for the LEDs), so I’ve chosen 15
+pins on
+the Arduino Nano that connect to I/O-Port pins on the microcontroller. Using the
+labels of pins physically printed on the Arduino board, these
+pins are: D2, D3, D4, D5, D6, D7, D8, D9, D10, A0, A1, A2, A3, A4, A5.</p>
+<p>This is the circuit diagram for the LED chaser. The orientation of the
+Arduino is the same as in the above image, and the pins are all in the same
+positions and labels.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino-circuit.jpg" alt="A circuit diagram with an Arduino Nano at the centre, and a resistor and LED connected in series between several pins (D2, D3, D4, D5, D6, D7, D8, D9, D10, A0, A1, A2, A3, A4, A5) and ground." /></p>
+<p>In the circuit, some pins are connected to a resistor in series with an LED.
+The cathode of each LED is connected to ground. The resistor is there to limit
+the current flowing through the pin and LED to prevent damage to each. I used 1K
+resistors here.</p>
+<p>Here’s how the circuit looks on a breadboard:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/arduino-breadboard.jpg" alt="An Arduino Nano on a breadboard according to the circuit diagram above" /></p>
+<h2 id="led-chaser-code"><a class="zola-anchor" href="#led-chaser-code" aria-label="Anchor link for: led-chaser-code">LED Chaser Code</a></h2>
+<p>Here’s the code for the LED chaser.
+It’s also available on github <a href="https://github.com/gridbugs/arduino-nano-led-chaser">here</a>.</p>
+<p>Most of the I/O-Port pins on the Arduino have multiple possible functions and must be
+configured by writing to various registers. All pins which can function as
+I/O-Port pins are initially configured as I/O-Port pins, so no explicit
+configuration is necessary for this example. Note however that the pins labelled
+TX1 and RX0 are also I/O-Port pins (Port D, pins 0 and 1). They must be
+explicitly configured to behave as USART pins (sending and receiving data over a
+serial port - this is how “Hello, World!” is printed on startup). Even though
+nothing is plugged into these pins, they are connected internally to the
+Arduino’s USB chip. The LED chaser intentionally doesn’t use this pins as if it
+did we wouldn’t be able to print anything over USART.</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;stdio.h&gt;
+</span><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;avr/io.h&gt;
+</span><span>
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// The arduino clock is 16Mhz and the USART0 divides this clock rate by 16
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>USART0_CLOCK_HZ </span><span style="color:#0086b3;">1000000
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>BAUD_RATE_HZ </span><span style="color:#0086b3;">9600
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>UBRR_VALUE (USART0_CLOCK_HZ </span><span style="font-weight:bold;color:#a71d5d;">/</span><span> BAUD_RATE_HZ)
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Send a character over USART0.
+</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">USART0_tx</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">char </span><span>data, </span><span style="font-weight:bold;color:#a71d5d;">struct</span><span> __file</span><span style="font-weight:bold;color:#a71d5d;">* </span><span>_f) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">!</span><span>(UCSR0A </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span>(</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> UDRE0))); </span><span style="font-style:italic;color:#969896;">// wait for the data buffer to be empty
+</span><span>    UDR0 </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data; </span><span style="font-style:italic;color:#969896;">// write the character to the data buffer
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span>;
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Create a stream associated with transmitting data over USART0 (this will be
+</span><span style="font-style:italic;color:#969896;">// used for stdout so we can print to a terminal with printf).
+</span><span style="font-weight:bold;color:#a71d5d;">static</span><span> FILE uartout </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>FDEV_SETUP_STREAM(USART0_tx, </span><span style="color:#0086b3;">NULL</span><span>, _FDEV_SETUP_WRITE);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">USART0_init</span><span>( </span><span style="font-weight:bold;color:#a71d5d;">void </span><span>) {
+</span><span>    UBRR0H </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(UBRR_VALUE </span><span style="font-weight:bold;color:#a71d5d;">&gt;&gt; </span><span style="color:#0086b3;">8</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span style="color:#0086b3;">0xF</span><span>; </span><span style="font-style:italic;color:#969896;">// set the high byte of the baud rate
+</span><span>    UBRR0L </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> UBRR_VALUE </span><span style="font-weight:bold;color:#a71d5d;">&amp; </span><span style="color:#0086b3;">0xFF</span><span>; </span><span style="font-style:italic;color:#969896;">// set the low byte of the baud rate
+</span><span>    UCSR0B </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> TXEN0; </span><span style="font-style:italic;color:#969896;">// enable the USART0 transmitter
+</span><span>    UCSR0C </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> UCSZ00; </span><span style="font-style:italic;color:#969896;">// use 8-bit characters
+</span><span>    stdout </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>uartout;
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Represents a single I/O-Port pin
+</span><span style="font-weight:bold;color:#a71d5d;">typedef struct </span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">volatile </span><span style="color:#0086b3;">uint8_t</span><span style="font-weight:bold;color:#a71d5d;">*</span><span> port; </span><span style="font-style:italic;color:#969896;">// pointer to the port&#39;s register
+</span><span>    </span><span style="color:#0086b3;">uint8_t</span><span> bit; </span><span style="font-style:italic;color:#969896;">// (0 to 7) which bit in the register the port corresponds to
+</span><span>} led_t;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// List out each pin with an attached LED in the order we want them to flash
+</span><span>led_t leds[] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>{
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">7 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">6 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">5 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">4 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTD, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTB, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTB, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTB, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">5 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">4 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1 </span><span>},
+</span><span>    { .port </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>PORTC, .bit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0 </span><span>},
+</span><span>};
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// The number of LEDs
+</span><span style="font-weight:bold;color:#a71d5d;">#define </span><span>N_LEDS (</span><span style="font-weight:bold;color:#a71d5d;">sizeof</span><span>(leds) </span><span style="font-weight:bold;color:#a71d5d;">/ sizeof</span><span>(led_t))
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Turn on a single LED without affecting the state of the other LEDs
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">led_on</span><span>(led_t led) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>led.port </span><span style="font-weight:bold;color:#a71d5d;">|= </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span> led.bit;
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">main</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">void</span><span>) {
+</span><span>    USART0_init();
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;Hello, World!</span><span style="color:#0086b3;">\r\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Set the data direction for each I/O-Port pin to &quot;output&quot;.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Each DDRx register controls whether each pin in I/O-Port x is
+</span><span>    </span><span style="font-style:italic;color:#969896;">// an input pin (0) or an output pin (1).
+</span><span>    DDRB </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0xFF</span><span>;
+</span><span>    DDRC </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0xFF</span><span>;
+</span><span>    DDRD </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0xFF</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// The starting points for the indices into the global `leds` array
+</span><span>    </span><span style="font-style:italic;color:#969896;">// that will be on. We&#39;ll have 3 lights on at a time in a rotating
+</span><span>    </span><span style="font-style:italic;color:#969896;">// pattern, evenly spaced out.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">int</span><span> indices[] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>{</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">5</span><span>, </span><span style="color:#0086b3;">10</span><span>};
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>(</span><span style="color:#0086b3;">1</span><span>) {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Briefly turn off all the LEDs
+</span><span>        PORTB </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>        PORTC </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>        PORTD </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Turn on just the pins at the indices, and increment each index
+</span><span>        </span><span style="font-style:italic;color:#969896;">// wrapping around at N_LEDS
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>; i </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">sizeof</span><span>(indices) </span><span style="font-weight:bold;color:#a71d5d;">/ sizeof</span><span>(indices[</span><span style="color:#0086b3;">0</span><span>])); i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span>) {
+</span><span>            led_on(leds[indices[i]]);
+</span><span>            indices[i] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(indices[i] </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">%</span><span> N_LEDS;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Wait for a short amount of time before progressing
+</span><span>        </span><span style="color:#0086b3;">uint32_t</span><span> delay </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">100000</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>(delay </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0</span><span>) {
+</span><span>            delay </span><span style="font-weight:bold;color:#a71d5d;">-= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span>;
+</span><span>}
+</span></code></pre>
+<p>Use the same Makefile as in the previous example, then build and download the
+code to an Arduino with the command:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>make &amp;&amp; sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+</span></code></pre>
+<p>Remember to substitute <code>/dev/ttyUSB0</code> with the device corresponding to your
+Arduino.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/chaser.gif" alt="A video showing the LED chaser in action" /></p>
+<h2 id="usb-uart-adapter"><a class="zola-anchor" href="#usb-uart-adapter" aria-label="Anchor link for: usb-uart-adapter">USB UART Adapter</a></h2>
+<p>I have a bunch of these USB to UART adapters lying around from another project.
+It would be fun to try using one of these to talk to the Arduino directly via
+its header pins rather than through its USB port. We won’t be able to program it
+through this adapter but we will be able to power it and print over UART and see
+the results in <code>picocom</code>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/usb-uart.jpg" alt="USB to UART adapter" /></p>
+<p>What are the 4 wires? There’s no brand name and I forget where I bought it from so I
+don’t know how to find documentation. However, the black wire is probably
+ground, and the red wire provides 5v. Of the two remaining wires, one of them is
+transmit (TX) and the other receive (RX). I don’t know which one is which and there
+doesn’t seem to be standardised colours as far as I can tell, so I’ll just
+guess.</p>
+<p>Turns out the white wire is TX and the green wire is RX.</p>
+<p>Disconnect the USB cable from the Arduino’s USB port as we should only power it
+from one source at a time, and we’ll be using the 5V pin on the USB to UART
+adapter to power it now.</p>
+<p>I used male to male patch pins to connect the wires on the USB to UART adapter
+to my breadboard. Connect the wires as per this table:</p>
+<table><thead><tr><th>UART to USB wire function</th><th>UART to USB wire colour</th><th>Arduino pin name</th></tr></thead><tbody>
+<tr><td>5v</td><td>Red</td><td>5V</td></tr>
+<tr><td>Ground</td><td>Black</td><td>GND (any of them)</td></tr>
+<tr><td>TX (UART end)</td><td>White</td><td>TX1</td></tr>
+<tr><td>RX (UART end)</td><td>Green</td><td>RX0</td></tr>
+</tbody></table>
+<p>I clarify “UART end” for the TX an RX wires as for example the other end of the
+TX wire would be labelled “RX”; the Arduino transmits data on this wire and the
+device at the other end of the wire (the UART to USB adapter in this case)
+receives that data, and vice versa.</p>
+<p>Again, disconnect the cable from the Arduino’s USB port before doing this.
+Here’s how it looks on my breadboard:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/with-usb-to-uart.jpg" alt="Arduino powered by USB to UART adapter" /></p>
+<p>When you plug the USB end of the adapter into your computer it should show up as
+a device <code>/dev/ttyUSBx</code>, just like the Arduino did when we plugged it in. You
+can’t program the device with <code>avrdude</code>, but you can still connect to it with
+<code>picocom</code> to see it print “Hello, World!”.</p>
+<p>Unlike before, connecting to the
+device with <code>picocom</code> will not cause the Arduino to reset, so you can miss the
+message it prints when it turns on. Just press the reset button on the top of
+the Arduino to restart it and you should see “Hello, World!” in the <code>picocom</code>
+session. (Resetting the Arduino does not cause <code>picocom</code> to disconnect as
+technically <code>picocom</code> is connected to the USB to UART adapter - not the Arduino.
+It just displays whatever data arrives over the TX wire no matter what it’s
+plugged into.
+In fact, if you had a magnetized needle and a steady hand…<a href="https://xkcd.com/378/">never
+mind</a>).</p>
+<p>Also note that we aren’t transmitting any data <em>to</em> the Arduino over UART, so
+you don’t even need to plug the green wire in at all.</p>
+<p>One trick this adapter lets us perform is continuously seeing the output of the
+Arduino, even while programming it. Previously if we wanted to program the
+Arduino and see the messages it prints over UART we would need to first run
+<code>avrdude</code> to program it, then run <code>picocom</code> to see its output. To program it
+again we would have to stop <code>picocom</code> before running <code>avrdude</code>. That gets a bit
+annoying.</p>
+<p>We’re going to use the USB cable for programming and the USB to UART adapter for receiving messages printed by the Arduino.
+To set this up, unplug the red 5v wire from the UART adapter, and plug the USB cable back into
+the USB port. Keep at least the white and black wires attached from the setup
+above - just make sure the red wire is unplugged as we’ll be powering the
+Arduino with the USB cable once again. Now with both the USB cable (the one
+attached to the Arduino’s USB port) <em>and</em> the USB to UART adapter both plugged
+into your computer, you should see devices <code>/dev/ttyUSB0</code> and <code>/dev/ttyUSB1</code>
+corresponding to both of these devices. You can use <code>dmesg</code> to determine which
+one is which by unplugging and re-plugging them and watching the output of
+<code>dmesg</code>, or just see which one can be used to program the device with <code>avrdude</code>.
+Connect <code>picocom</code> to the USB to UART adapter, and program the device with
+<code>avrdude</code> via the USB cable, and you’ll no longer need to close <code>picocom</code> to
+reprogram the Arduino!</p>
+<p>Here’s an example of how this might look.</p>
+<p>In one terminal:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo avrdude -P /dev/ttyUSB0 -c arduino -p m328p -U flash:w:hello.elf
+</span></code></pre>
+<p>And in the other terminal:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo picocom /dev/ttyUSB1
+</span></code></pre>
+<p>Depending on the order you plugged things in, the <code>ttyUSB0</code> and <code>ttyUSB1</code> in the
+above commands might have to be swapped.</p>
+<h2 id="power-options"><a class="zola-anchor" href="#power-options" aria-label="Anchor link for: power-options">Power Options</a></h2>
+<p>There are a couple of additional ways you can power the arduino besides the two
+mentioned above. When your Arduino is deployed in whatever wonderful project
+you’re planning to use it for, probably there won’t be a USB cable or USB to
+UART adapter attached to it.</p>
+<p>Power solutions will depend on what power supply is available in your project.
+Mine has a 12v DC power supply, so here are my options:</p>
+<h3 id="powering-from-a-dc-12v-supply-via-the-vin-pin"><a class="zola-anchor" href="#powering-from-a-dc-12v-supply-via-the-vin-pin" aria-label="Anchor link for: powering-from-a-dc-12v-supply-via-the-vin-pin">Powering from a DC 12v supply via the VIN pin</a></h3>
+<p>The simplest solution is to attach the 12v DC supply directly to the VIN
+pin on the Arduino. Between the VIN and 5V pins on the Arduino there is a 5 volt
+voltage regulator (specifically, a
+<a href="https://www.ti.com/lit/ds/symlink/lm1117.pdf?ts=168433779491">LM117IMPX-5.0</a> -
+see the Arduino Nano schematics
+<a href="https://docs.arduino.cc/static/59500e84ace853fee30c7854084c2e2c/A000005-schematics.pdf">here</a>).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/vreg.jpg" alt="Diagram showing the VIN pin connected to the 5V pin through a voltage regulator" /></p>
+<p>This means that you can provide a range of voltages to the VIN pin and the
+voltage regulator will provide a steady 5v to the rest of the board. All the
+advice I can find recommends between 7 and 12 volts be provided to this pin. Too
+little and the voltage regulator might not be able to provide 5v at its output.
+Too much and it could overheat.</p>
+<h3 id="powering-from-a-dc-12v-supply-with-a-78l05-voltage-regulator"><a class="zola-anchor" href="#powering-from-a-dc-12v-supply-with-a-78l05-voltage-regulator" aria-label="Anchor link for: powering-from-a-dc-12v-supply-with-a-78l05-voltage-regulator">Powering from a DC 12v supply with a 78L05 voltage regulator</a></h3>
+<p>You can also power the Arduino directly from its 5V pin, bypassing the built-in
+voltage regulator. To do this, I’ll attach an external voltage regulator - a
+78L05, like this one:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/78l05.jpg" alt="close up of a 78l05" /></p>
+<p>It looks like a transistor but it’s not. The right pin is the input which I’ll
+attach to the 12v supply. The middle pin is ground. The left pin is the output
+which I’ll connect to the 5V pin of the Arduino.</p>
+<p>This shows how the voltage regulator will be attached between the 12v power
+supply and the Arduino, via its 5V pin:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/vreg-circuit.jpg" alt="diagram showing 78l05 attached between 12v power supply and Arduino 5V pin" /></p>
+<p>Here it is on my breadboard:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/vreg-breadboard.jpg" alt="78l05 attached to the breadboard" /></p>
+<p>And here’s proof that it didn’t immediately catch fire when I turned it on!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/programming-an-arduino-the-hard-way/benchtop.jpg" alt="breadboard with arduino and LED chaser powered by a 12v power supply through the 78l05 voltage regulator" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;chargrid-sdl-frontend&#x2F;" aria-label="Previous">
+	  Previous: Chargrid SDL Frontend
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;component-pinouts-and-notes&#x2F;" aria-label="Next">
+	  Next: Component Pinouts and Notes
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>
