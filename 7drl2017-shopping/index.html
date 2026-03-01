@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2017: Shopping">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2017-shopping/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2017-shopping/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2017-03-06T02:24:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2017: Shopping
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Day 1
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-vehicles&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2017: Vehicles
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2017: Shopping</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2017-03-06T02:24:00+10:00">
+    March 06, 2017
+  </time>
+  
+</p>
+
+
+  
+
+<p>The main feature I implemented today was a set of menus that are displayed
+between levels. These include a shop for buying items (currently just guns),
+equipping guns to weapon slots (which can’t be done in the field), and
+inventory management (just removing items from the inventory to make room for
+more items).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2017-shopping/shop.png" alt="shop.png" /></p>
+<span id="continue-reading"></span>
+<p>An interesting consideration was integrating this in-between-level logic with the
+entity component system that the game is built on. Each level has a database of
+entities, but where is the player when they are between levels? It would make
+sense for items in the shop to be represented as entities, but which database do
+they belong in?</p>
+<p>I ended up adding an additional entity database for use between levels. When the
+player gets to the end of a level, all their associated components are moved
+into this database. The shop is set up in this database too, and entities in the
+shop can be moved between the shop’s inventory and the player’s inventory.</p>
+<p>The most interesting bug I encountered was the logic for switching the player
+between levels not understanding that some components (namely the inventory and
+weapon slots) depend on the existence of other entities. Both of these
+components store a collection of entity ids, which are references into the
+current entity database (ie. they can’t span multiple entity databases). Thus,
+when moving the player between levels, any entities referred to by these
+components must also be moved.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2017-shopping/railgun.png" alt="railgun.png" /></p>
+<p>I added a shotgun, a machine gun and a railgun. The image above shows a
+zombie about to get toasted by the railgun. Also visible in the screenshot above
+is the current and maximum speed displayed on the heads up display.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Day 1
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-vehicles&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2017: Vehicles
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

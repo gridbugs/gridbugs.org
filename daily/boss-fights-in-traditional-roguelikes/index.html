@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Boss fights in traditional roguelikes">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/boss-fights-in-traditional-roguelikes/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/boss-fights-in-traditional-roguelikes/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-24T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Boss fights in traditional roguelikes
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;the-latest-rust-release-broke-backtraces-on-freebsd&#x2F;" aria-label="Previous">
+	  Previous: The latest rust release broke backtraces on FreeBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;repository-of-new-words&#x2F;" aria-label="Next">
+	  Next: Repository of new words
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Boss fights in traditional roguelikes</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-24T00:00:00+00:00">
+    October 24, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Today I completed my first successful run of <a href="https://jupiterhell.com/">Jupiter Hell</a> -
+a traditional roguelike which is the spiritual successor to <a href="https://drl.chaosforge.org/">DOOM the Roguelike</a>.
+As a traditional roguelike, gameplay is turn-based, and levels are abstracted as 2D square grids of tiles.</p>
+<p>Another property that tends to be true of roguelikes is that most turns are uninteresting - walking down a corridor,
+or attacking a single standard enemy. There are meaningful <em>strategic</em> decisions to be made from time to time,
+such as choosing whether to discard an item from your inventory to make room for a new item or deciding on a skill
+to upgrade. Meaningful <em>tactical</em> decisions come about when a situation rapidly becomes dire (Do you stand your ground or flee
+when surprised by a difficult enemy?) or the combination of enemies and terrain presents an opportunity (Which enemy do you
+attack first? Is there time to run to cover? Should you use a rare/expensive grenade? Should you trigger an explosive barrel?).</p>
+<p>Jupiter Hell culminates with a boss fight fairly typical of DOOM-inspired games.
+You fight a large enemy that periodically spawns normal enemies and then teleports away.
+After a few such iterations my dual-pistol toting marine made short work of it.
+As with the boss fight at the end of Doom the Roguelike, I found it to be an anti-climactic
+conclusion to an otherwise solid game.</p>
+<p>Upon further reflection, I’m not convinced that the roguelike genre supports boss fights at all.</p>
+<p>In real-time games, or some non-roguelike turn-based games, a typical boss fight
+involves the player fighting a single tougher-than-usual enemy in a closed-off arena.
+Gameplay during a boss fight should resemble standard gameplay that has been enhanced, or purified in some way.
+The boss fight becomes a way for players to prove to the games that they have mastered some aspects of its mechanics.</p>
+<p>To defeat Smough and Ornstein
+in Dark Souls you must demonstrate your ability to patiently wait for the right time to strike,
+and time attacks, dodges, and blocks perfectly, which is what melee combat in Dark Souls is all about.
+The Icon of Sin at the end of Doom II (or Doom Eternal) forces you to manage an endless horde of
+hell spawn while also shooting the boss itself until it’s dead, which is the main mechanic of the
+game, only more-so.
+In Darkest Dungeon - a turned based game with some roguelike properties, the combat system is entirely based on
+abilities, with enough variety and (anti)synergy with one another; unlike traditional roguelikes, <em>every</em> turn
+feels like a meaningful decision.
+Because of the richness of combat, all 10 or so boss fights feel fresh (except for the part where they re-use
+the same boss 3 times for each area - but that’s a different issue!).</p>
+<p>Which brings us back to traditional roguelikes. The richness of combat in the genre comes from the interactions
+between groups of enemies, the terrain, and the player. In a boss arena, where there is only a single enemy (plus
+its summons, perhaps), the number of interesting interactions is low, compared to normal, non-boss gameplay.
+Boss fights feel repetitive and boring when you win, and an unfair skill-check when you loose.
+Rarely does a decision made by the player during a boss fight meaningfully affect its outcome.
+Gameplay during a boss fight is not just an amplified version of standard play, but instead a detraction from it.</p>
+<p>So how do you conclude your roguelike? Originally, (in Rogue, say) the hero would reach the bottom of the dungeon, and retrieve
+an item (traditionally an amulet), and then make it back to the surface, possibly pursued by the item’s
+guardians. In their flight, the player may still need to fight remnant (or perhaps newly-spawned) enemies on
+floors as they ascend, but now they might be under time pressure due to their pursuers, or item pressure as
+the floors were already looted by the player on their way down. The game’s culmination is the same experience
+as normal gameplay, only enhanced in some way.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;the-latest-rust-release-broke-backtraces-on-freebsd&#x2F;" aria-label="Previous">
+	  Previous: The latest rust release broke backtraces on FreeBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;repository-of-new-words&#x2F;" aria-label="Next">
+	  Next: Repository of new words
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

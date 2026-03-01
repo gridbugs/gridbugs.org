@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 13 - Equipment">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-15T19:40:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 13 - Equipment
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-12&#x2F;" aria-label="Previous">
+	  Previous: Part 12 - Increasing Difficulty
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<span class="disabled-link">Next: (none)</span>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 13 - Equipment
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-08-15T19:40:00+10:00">
+    August 15, 2020
+  </time>
+  
+</p>
+
+
+<p>This is the final part of the tutorial, in which we’ll add equipment.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/screenshot.png" alt="screenshot.png" /></p>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-13/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-12-end">part-12-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/#equipment-entities">Equipment Entities</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/#equipable-equipment">Equipable Equipment</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/#modifying-stats-with-equipment">Modifying Stats with Equipment</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/#balance-item-distribution">Balance Item Distribution</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/#log-message-for-equipment">Log Message for Equipment</a></li>
+</ul>
+<h2 id="equipment-entities"><a class="zola-anchor" href="#equipment-entities" aria-label="Anchor link for: equipment-entities">Equipment Entities</a></h2>
+<p>Add additional item types to represent equipment.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Sword,
+</span><span>    Staff,
+</span><span>    Armour,
+</span><span>    Robe,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Sword </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;sword&quot;</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Staff </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;staff&quot;</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Armour </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;armour&quot;</span><span>,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;robe&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> usage </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemUsage::Aim,
+</span><span>            ItemType::Sword </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Staff </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Armour </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>todo!(),
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            ItemType::HealthPotion
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Sword
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Staff
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Armour
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>panic!(</span><span style="color:#183691;">&quot;invalid item for aim&quot;</span><span>),
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add equipment to the item probability distribution. Set the probability of each to 1000
+for now so it’s highly likely that all items will be equipment. This will help us test.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">make_item_probability_distribution</span><span>(level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="color:#0086b3;">Vec</span><span>&lt;(ItemType, </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>)&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>ItemType::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    vec![
+</span><span>        (HealthPotion, </span><span style="color:#0086b3;">20</span><span>),
+</span><span>        (
+</span><span>            FireballScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">5</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">10</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>        (
+</span><span>            ConfusionScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">3</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">5</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>        (Sword, </span><span style="color:#0086b3;">1000</span><span>),
+</span><span>        (Staff, </span><span style="color:#0086b3;">1000</span><span>),
+</span><span>        (Armour, </span><span style="color:#0086b3;">1000</span><span>),
+</span><span>        (Robe, </span><span style="color:#0086b3;">1000</span><span>),
+</span><span>    ]
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add some code for rendering the new item types.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">SWORD</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">187</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">STAFF</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">255</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">ARMOUR</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">ROBE</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">187</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_colour</span><span>(item_type: ItemType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::Sword </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">SWORD</span><span>,
+</span><span>            ItemType::Staff </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">STAFF</span><span>,
+</span><span>            ItemType::Armour </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">ARMOUR</span><span>,
+</span><span>            ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">ROBE</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Item(ItemType::Sword) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;/&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">SWORD</span><span>),
+</span><span>        Tile::Item(ItemType::Staff) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;</span><span style="color:#0086b3;">\\</span><span style="color:#183691;">&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">STAFF</span><span>),
+</span><span>        Tile::Item(ItemType::Armour) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;]&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">ARMOUR</span><span>),
+</span><span>        Tile::Item(ItemType::Robe) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;}&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">ROBE</span><span>),
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>The game will now populate levels with equipment.
+Since equipment are just regular items, they can already be picked up, dropped, and viewed in
+the inventory. Attempting to use a piece of equipment will panic at the moment (the <code>todo!()</code> macro).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/items.png" alt="items.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.0">part-13.0</a></p>
+<h2 id="equipable-equipment"><a class="zola-anchor" href="#equipable-equipment" aria-label="Anchor link for: equipable-equipment">Equipable Equipment</a></h2>
+<p>We’ll allow equipment to be equipped in two slots. Armour and robes go in the “worn” slot,
+and swords and staffs go in the “held” slot.
+We’ll keep track of whit is equipped by adding two components - <code>equipment_worn_inventory_index</code> and
+<code>equipment_held_inventory_index</code> - which will store the index in the player’s inventory containing the
+items equipped in the respective slots.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        equipment_worn_inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        equipment_held_inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Replace the <code>todo!()</code> from the previous section to allow equipment items to be used from the inventory menu,
+which will cause the item to be equipped.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> usage </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemUsage::Aim,
+</span><span>            ItemType::Sword </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Staff </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                self.components
+</span><span>                    .equipment_held_inventory_index
+</span><span>                    .</span><span style="color:#62a35c;">insert</span><span>(character, inventory_index);
+</span><span>                ItemUsage::Immediate
+</span><span>            }
+</span><span>            ItemType::Armour </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                self.components
+</span><span>                    .equipment_worn_inventory_index
+</span><span>                    .</span><span style="color:#62a35c;">insert</span><span>(character, inventory_index);
+</span><span>                ItemUsage::Immediate
+</span><span>            }
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update the logic for dropping items so that equipped items are unequipped if they are dropped.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_drop_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self
+</span><span>            .components
+</span><span>            .equipment_held_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(inventory_index)
+</span><span>        {
+</span><span>            self.components
+</span><span>                .equipment_held_inventory_index
+</span><span>                .</span><span style="color:#62a35c;">remove</span><span>(character);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self
+</span><span>            .components
+</span><span>            .equipment_worn_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(inventory_index)
+</span><span>        {
+</span><span>            self.components
+</span><span>                .equipment_worn_inventory_index
+</span><span>                .</span><span style="color:#62a35c;">remove</span><span>(character);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>To tell the player what they currently have equipped, we’ll update the inventory menu to display
+the equipment slot occupied by equipped items. Add a type to <code>world.rs</code> representing the inventory
+slot indices corresponding to equipped items (if any), and a method for returning the equipment
+inventory slots of a given entity.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>EquippedInventoryIndices {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>worn: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>&gt;,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>held: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>&gt;,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">equipped_inventory_indices</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; EquippedInventoryIndices {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> held </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .equipment_held_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> worn </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .equipment_worn_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>        EquippedInventoryIndices { held, worn }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add a method to <code>GameState</code> for querying the player’s <code>EquippedInventoryIndices</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{
+</span><span>    EquippedInventoryIndices, HitPoints, Inventory, ItemType, ItemUsage, Location, NpcType,
+</span><span>    Populate, ProjectileType, Tile, World,
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_equipped_inventory_indices</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; EquippedInventoryIndices {
+</span><span>        self.world.</span><span style="color:#62a35c;">equipped_inventory_indices</span><span>(self.player_entity)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update the rendering logic for the inventory menu to show the equipment slots corresponding
+to equipped items.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> equipped_indices </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_equipped_inventory_indices</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>((i, entry, maybe_selected), </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>slot) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data
+</span><span>            .inventory_slot_menu
+</span><span>            .</span><span style="color:#62a35c;">menu_instance</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">enumerate</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">zip</span><span>(player_inventory_slots.</span><span style="color:#62a35c;">into_iter</span><span>())
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> prefix </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>format!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{} {}</span><span style="color:#183691;">) &quot;</span><span>, selected_prefix, entry.key);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> equipment_suffix </span><span style="font-weight:bold;color:#a71d5d;">= if</span><span> equipped_indices.held </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(i) {
+</span><span>                </span><span style="color:#183691;">&quot; (held)&quot;
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> equipped_indices.worn </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(i) {
+</span><span>                </span><span style="color:#183691;">&quot; (worn)&quot;
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                </span><span style="color:#183691;">&quot;&quot;
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> text </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>[
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                RichTextPart {
+</span><span>                    text: equipment_suffix,
+</span><span>                    style: name_style,
+</span><span>                },
+</span><span>            ];
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now you can equip items by selecting them from the inventory. The name of their occupied equipment slot
+will appear next to items in the inventory menu.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/inventory.png" alt="inventory.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.1">part-13.1</a></p>
+<h2 id="modifying-stats-with-equipment"><a class="zola-anchor" href="#modifying-stats-with-equipment" aria-label="Anchor link for: modifying-stats-with-equipment">Modifying Stats with Equipment</a></h2>
+<p>Right now you can equip items, but equipping an item doesn’t actually change the game at all.
+Let’s make each item increase combat stats by a flat amount.</p>
+<p>Add some methods to <code>World</code> for computing modifiers to various combat stats based on equipment.
+The effect of equipping different items will be hard-coded into these methods.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">inventory_item_type</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity, index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ItemType&gt; {
+</span><span>        self.components.inventory.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">and_then</span><span>(|inventory| {
+</span><span>            inventory
+</span><span>                .</span><span style="color:#62a35c;">get</span><span>(index)
+</span><span>                .</span><span style="color:#62a35c;">ok</span><span>()
+</span><span>                .</span><span style="color:#62a35c;">and_then</span><span>(|held_entity| self.components.item.</span><span style="color:#62a35c;">get</span><span>(held_entity).</span><span style="color:#62a35c;">cloned</span><span>())
+</span><span>        })
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">damage_modifier</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.components
+</span><span>            .equipment_held_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">and_then</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>held_index| {
+</span><span>                self.</span><span style="color:#62a35c;">inventory_item_type</span><span>(entity, held_index)
+</span><span>                    .</span><span style="color:#62a35c;">map</span><span>(|item_type| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>                        ItemType::Sword </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                    })
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">0</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">defense_modifier</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.components
+</span><span>            .equipment_worn_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">and_then</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>held_index| {
+</span><span>                self.</span><span style="color:#62a35c;">inventory_item_type</span><span>(entity, held_index)
+</span><span>                    .</span><span style="color:#62a35c;">map</span><span>(|item_type| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>                        ItemType::Armour </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                    })
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">0</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">magic_modifier</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> held </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .equipment_held_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">and_then</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>held_index| {
+</span><span>                self.</span><span style="color:#62a35c;">inventory_item_type</span><span>(entity, held_index)
+</span><span>                    .</span><span style="color:#62a35c;">map</span><span>(|item_type| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>                        ItemType::Staff </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                    })
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">0</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> worn </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .equipment_worn_inventory_index
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">and_then</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>held_index| {
+</span><span>                self.</span><span style="color:#62a35c;">inventory_item_type</span><span>(entity, held_index)
+</span><span>                    .</span><span style="color:#62a35c;">map</span><span>(|item_type| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>                        ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                    })
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">0</span><span>);
+</span><span>        held </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> worn
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update <code>World::character_bump_attack</code> to take modifiers into account.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_bump_attack</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        victim: Entity,
+</span><span>        attacker: Entity,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) -&gt; BumpAttackOutcome {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>attacker_base_damage </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.base_damage.</span><span style="color:#62a35c;">get</span><span>(attacker).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>attacker_strength </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.strength.</span><span style="color:#62a35c;">get</span><span>(attacker).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> attacker_damage_modifier </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">damage_modifier</span><span>(attacker);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>victim_dexterity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.dexterity.</span><span style="color:#62a35c;">get</span><span>(victim).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> victim_defense_modifier </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">defense_modifier</span><span>(victim);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> gross_damage </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> attacker_base_damage
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>(attacker_strength </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>))
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> attacker_damage_modifier;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> damage_reduction </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>(victim_dexterity </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>)) </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> victim_defense_modifier;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> net_damage </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> gross_damage.</span><span style="color:#62a35c;">saturating_sub</span><span>(damage_reduction).</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">0</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u32</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add a method <code>World::magic</code> which computes a magic score based on intelligence and the magic modifier,
+and use this to determine the power of spells.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">magic</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">i32 </span><span>{
+</span><span>        self.components
+</span><span>            .intelligence
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or</span><span>(</span><span style="color:#0086b3;">0</span><span>)
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>self.</span><span style="color:#62a35c;">magic_modifier</span><span>(entity)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> fireball </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ProjectileType::Fireball {
+</span><span>                    damage: self.</span><span style="color:#62a35c;">magic</span><span>(character).</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">0</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u32</span><span>,
+</span><span>                };
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(fireball));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, fireball);
+</span><span>            }
+</span><span>            ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> confusion </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ProjectileType::Confusion {
+</span><span>                    duration: self.</span><span style="color:#62a35c;">magic</span><span>(character).</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">0</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u32 * </span><span style="color:#0086b3;">3</span><span>,
+</span><span>                };
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(confusion));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, confusion);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.2">part-13.2</a></p>
+<h2 id="balance-item-distribution"><a class="zola-anchor" href="#balance-item-distribution" aria-label="Anchor link for: balance-item-distribution">Balance Item Distribution</a></h2>
+<p>Replace the debugging values in <code>make_item_probability_distribution</code> with smaller values.
+To further reduce the odds of an item being a piece of equipment, increase the probability of
+the other items too. Make the odds of finding equipment go up the deeper the player is in the dungeon.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">make_item_probability_distribution</span><span>(level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="color:#0086b3;">Vec</span><span>&lt;(ItemType, </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>)&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>ItemType::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item_chance </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> level {
+</span><span>        </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">5</span><span>,
+</span><span>        </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">3 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">10</span><span>,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">20</span><span>,
+</span><span>    };
+</span><span>    vec![
+</span><span>        (HealthPotion, </span><span style="color:#0086b3;">200</span><span>),
+</span><span>        (
+</span><span>            FireballScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">10</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">50</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">100</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>        (
+</span><span>            ConfusionScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">10</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">30</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">50</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>        (Sword, item_chance),
+</span><span>        (Staff, item_chance),
+</span><span>        (Armour, item_chance),
+</span><span>        (Robe, item_chance),
+</span><span>    ]
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>These numbers were chosen fairly arbitrarily. Tune these based on the result of play-testing.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.3">part-13.3</a></p>
+<h2 id="log-message-for-equipment"><a class="zola-anchor" href="#log-message-for-equipment" aria-label="Anchor link for: log-message-for-equipment">Log Message for Equipment</a></h2>
+<p>One final touch - adding a log message when the player equips an item.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    PlayerEquips(ItemType),
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> usage </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemUsage::Aim,
+</span><span>            ItemType::Sword </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Staff </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                self.components
+</span><span>                    .equipment_held_inventory_index
+</span><span>                    .</span><span style="color:#62a35c;">insert</span><span>(character, inventory_index);
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerEquips(item_type));
+</span><span>                ItemUsage::Immediate
+</span><span>            }
+</span><span>            ItemType::Armour </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::Robe </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                self.components
+</span><span>                    .equipment_worn_inventory_index
+</span><span>                    .</span><span style="color:#62a35c;">insert</span><span>(character, inventory_index);
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerEquips(item_type));
+</span><span>                ItemUsage::Immediate
+</span><span>            }
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                PlayerEquips(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You equip the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, item_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::item_colour(item_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/message.png" alt="message.png" /></p>
+<p>That concludes the tutorial series. There’s still a lot more work to do before this game can be considered complete.
+It has no ending, and is very light on content and mechanics. Hopefully by now you have enough of a handle on
+<code>chargrid</code> that you can extend the project we made here into the roguelike of your dreams.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-13.4">part-13.4</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-12&#x2F;" aria-label="Previous">
+	  Previous: Part 12 - Increasing Difficulty
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<span class="disabled-link">Next: (none)</span>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

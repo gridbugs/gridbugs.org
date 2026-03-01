@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Building this site sometimes crashes ruby">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/building-this-site-sometimes-crashes-ruby/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/building-this-site-sometimes-crashes-ruby/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-11-06T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Building this site sometimes crashes ruby
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;how-i-start-x&#x2F;" aria-label="Previous">
+	  Previous: How I start X
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;tmux-runs-a-login-shell-by-default&#x2F;" aria-label="Next">
+	  Next: Tmux runs a login shell by default
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Building this site sometimes crashes ruby</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-11-06T00:00:00+00:00">
+    November 06, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>This is a jekyll site, which means that it’s composed of a bunch of markdown files,
+and I run a ruby script called “jekyll” which turns it into a bunch of html files
+which I then upload to my web server. When working on a post, I usually run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>bundle exec jekyll serve
+</span></code></pre>
+<p>…which watches the markdown files, regenerating the
+html each time a file changes, and serves the result on a local we server.
+When I first switched to FreeBSD, the file-watching mechanism wasn’t working properly,
+and I would see:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>          NoMethodError:
+</span><span>            undefined method `callback!&#39; for nil:NilClass
+</span><span>          # ./vendor/bundle/ruby/2.6/gems/rb-kqueue-0.2.5/lib/rb-kqueue/event.rb:80:in `callback!&#39;
+</span><span>          # ./vendor/bundle/ruby/2.6/gems/rb-kqueue-0.2.5/lib/rb-kqueue/queue.rb:337:in `block in process&#39;
+</span><span>          # ./vendor/bundle/ruby/2.6/gems/rb-kqueue-0.2.5/lib/rb-kqueue/queue.rb:337:in `each&#39;
+</span><span>          # ./vendor/bundle/ruby/2.6/gems/rb-kqueue-0.2.5/lib/rb-kqueue/queue.rb:337:in `process&#39;
+</span><span>          # ./vendor/bundle/ruby/2.6/gems/rb-kqueue-0.2.5/lib/rb-kqueue/queue.rb:316:in `run&#39;
+</span></code></pre>
+<p>…and the site wouldn’t rebuild when a file changed. This is a <a href="https://github.com/guard/listen/issues/475">known issue</a>,
+and I could work around it by polling instead of using FreeBSD’s kqueue mechanism to watch files, but
+the latency was quite high. I eventually <a href="https://github.com/mat813/rb-kqueue/pull/12">fixed</a> a bug in the
+rb-kqueue gem which seemed to solve the problem. It’s not merged yet but I can include a reference to my
+fork of the library in this site’s Gemfile until it gets merged.</p>
+<p>Lately however, I’ve started seeing this crash when changing a file:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>/usr/home/steve/.rvm/gems/ruby-2.7.2/bundler/gems/rb-kqueue-144ee7bb7963/lib/rb-kqueue/native/flags.rb:145: [BUG] Segmentation fault at 0x0000000100210014
+</span><span>ruby 2.7.2p137 (2020-10-01 revision 5445e04352) [x86_64-freebsd12.2]
+</span></code></pre>
+<p>…which is clearly related to rb-kqueue. I’m not sure if this was introduced by my change.
+Need to dig deeper!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;how-i-start-x&#x2F;" aria-label="Previous">
+	  Previous: How I start X
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;tmux-runs-a-login-shell-by-default&#x2F;" aria-label="Next">
+	  Next: Tmux runs a login shell by default
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

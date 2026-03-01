@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Even Separation Algorithm">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2016-05-04T23:27:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Even Separation Algorithm
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Even Separation Algorithm</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2016-05-04T23:27:00+10:00">
+    May 04, 2016
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/algorithms" aria-label="tag">algorithms</a>
+  
+</p>
+
+
+  
+
+<p>This post describes an algorithm for evenly spreading out a sequence of items made
+up of
+two distinct types of item. I came up with it when attempting to draw straight
+lines on a grid, where lines are represented by discrete steps in one of two
+directions. In order for such a line to appear straight, the steps in one
+direction should be spread out as much as possible with respect to the steps in
+the other direction. The solution generalizes to spreading out any sequence
+made up of two distinct types of item that are repeated a number of times.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/straight-line-screenshot.png" alt="straight-line-screenshot.png" /></p>
+<span id="continue-reading"></span><p class="label">
+Straight line from @ to Z, made up of steps to the east and northeast
+</p>
+<style>
+span.arrows {
+    font-size: 24pt;
+}
+</style>
+<h2 id="straight-lines"><a class="zola-anchor" href="#straight-lines" aria-label="Anchor link for: straight-lines">Straight Lines</a></h2>
+<p>In a 2D grid, a straight line is made up of steps in at most two directions. One
+of these is always a cardinal direction (north, east, south, west) and the other
+is an ordinal direction (northeast, southeast, southwest, northeast). It’s
+simple to determine the number of each steps required to get between two points.
+Suppose you take steps in the ordinal direction until you are in line with the
+destination in the cardinal direction, then move in the cardinal direction until
+you reach the destination.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/direction-count.png" alt="direction-count.png" /></p>
+<p class="label">
+Splitting the line into its cardinal and ordinal components
+</p>
+<p>To make the line appear straight, we have to spread out the cardinal and ordinal
+steps “as much as possible”. Being “as spread out as possible” turns out to be a
+non-trivial property to quantify. Assuming there are more ordinal steps than
+cardinal steps, there’s no reason to ever have two or more cardinal steps in a
+row. Thus the sequence of steps becomes groups of one or more ordinal steps,
+separated by individual cardinal steps. Also, we want the groups of ordinal
+steps to all be similar in size.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/naive-straight-line.png" alt="naive-straight-line.png" /></p>
+<p class="label">
+First attempt at a straight line
+</p>
+<p>The sequence of steps in the image above is:<span class="arrows">
+⇗⇒⇗⇒⇗⇗</span>. A close look reveals a slightly
+longer diagonal section at the Z end of the line. So what’s missing from the
+definition of “as spread out as possible”? How can we make this line more straight?
+This sequence can be thought of as groups of <span class="arrows">⇗</span>
+separated by <span class="arrows">⇒</span>. The sizes of these groups in the
+order they appear is: 1 1 2.
+What if we apply the same separation property to this sequence? There are more
+1s than 2s, so no two 1s should be adjacent. Groups of 1s should be separated by
+individual 2s. Thus the sequence becomes: 1 2 1.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/even-separation-algorithm/straight-line-screenshot.png" alt="straight-line-screenshot.png" /></p>
+<p class="label">
+Cardinal and ordinal steps are now as spread out as possible
+</p>
+<p>The sequence of steps has become:
+<span class="arrows">
+⇗⇒⇗⇗⇒⇗</span>.
+Representing it as group sizes, it is: 1 2 1.
+This sequence of sizes can similarly be thought of as groups of 1s separated by
+2s. The sequence of sizes of these groups is: 1 1. Now that we have a homogeneous
+list, there’s no further spreading necessary, and thus our sequence is as spread
+out as possible, and our line is as straight as possible.</p>
+<h2 id="as-spread-out-as-possible"><a class="zola-anchor" href="#as-spread-out-as-possible" aria-label="Anchor link for: as-spread-out-as-possible">As spread out as possible</a></h2>
+<p>Let’s quantify the property that makes a sequence “as spread out as possible”.
+As you probably inferred from the above example, this property is recursive.</p>
+<p>The first base case: A sequence is as spread out as possible if all its elements are
+homogeneous. E.g. AAAAAAAA</p>
+<p>The second base case: A sequence is as spread out
+as possible if it is made up of an equal number of two distinct types of
+element, and the sequence alternates between elements one at a time. E.g.
+ABABABAB</p>
+<p>The recursive case: A sequence is as spread out as possible if elements of its
+most-frequent type
+are arranged into groups separated by individual elements of its less-frequent
+type, such that:</p>
+<ul>
+<li>there are at most two different sizes of group</li>
+<li>if there are two different group sizes, the larger size is 1 greater than the
+smaller size</li>
+<li>the sequence of group sizes in the order they appear is as spread out as possible</li>
+</ul>
+<h2 id="separation-algorithm"><a class="zola-anchor" href="#separation-algorithm" aria-label="Anchor link for: separation-algorithm">Separation Algorithm</a></h2>
+<p>This algorithm takes as input a pair of elements <code>a</code> and <code>b</code>, and non-negative
+integers <code>na</code> and <code>nb</code>, and returns a sequence containing <code>na</code> copies of <code>a</code>, and
+<code>nb</code> copies of <code>b</code>, that is as spread out as possible. The core idea is to
+figure out the group sizes and how many groups of each size will be present in
+the output, then recur with the group sizes and number of each group size as
+arguments. The result will be a sequence of group sizes that is as spread out as
+possible, that can then be used to construct a spread out list of elements.</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#a71d5d;">function </span><span style="font-weight:bold;color:#795da3;">spread</span><span>(a, b, na, nb) {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// allows us to assume na &gt;= nb
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>(na </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span>nb) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="font-weight:bold;color:#795da3;">spread</span><span>(b, a, nb, na);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// first base case - no need for na == 0 case, as na &gt;= nb
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>(nb </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0</span><span>) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>[a, a, a, a, </span><span style="font-weight:bold;color:#a71d5d;">...</span><span>];
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// second base case
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>(na </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>nb) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>[a, b, a, b, </span><span style="font-weight:bold;color:#a71d5d;">...</span><span>];
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">/* Because of the second base case, at this point we know
+</span><span style="font-style:italic;color:#969896;">     * that na &gt; nb. Thus, the result will be groups of &quot;a&quot;,
+</span><span style="font-style:italic;color:#969896;">     * separated by individual &quot;b&quot;.
+</span><span style="font-style:italic;color:#969896;">     * E.g. aaa b aaaa b aaa b aaaa b aaa
+</span><span style="font-style:italic;color:#969896;">     */
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// sequence starts and ends with a group of &quot;a&quot;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>numGroups </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>nb </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// there may be up to two group sizes
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>smallGroupSize </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="font-weight:bold;color:#795da3;">floor</span><span>(na </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span>numGroups);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>largeGroupSize </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>smallGroupSize </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">/* To determine the number of small and large groups:
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *      numGroups == numSmallGroups + numLargeGroups
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *      na == numSmallGroups * smallGroupSize +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups * largeGroupSize
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *         == numSmallGroups * smallGroupSize +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups * (smallGroupSize + 1)
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *         == numSmallGroups * smallGroupSize +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups * smallGroupSize +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *         == smallGroupSize * (numSmallGroups +
+</span><span style="font-style:italic;color:#969896;">     *                              numLargeGroups) +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *         == smallGroupSize * numGroups +
+</span><span style="font-style:italic;color:#969896;">     *            numLargeGroups
+</span><span style="font-style:italic;color:#969896;">     *
+</span><span style="font-style:italic;color:#969896;">     *      numLargeGroups == na - numGroups * smallGroupSize
+</span><span style="font-style:italic;color:#969896;">     */
+</span><span>     </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>numLargeGroups </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>na </span><span style="font-weight:bold;color:#a71d5d;">- </span><span>numGroups </span><span style="font-weight:bold;color:#a71d5d;">* </span><span>smallGroupSize;
+</span><span>     </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>numSmallGroups </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>numGroups </span><span style="font-weight:bold;color:#a71d5d;">- </span><span>numLargeGroups;
+</span><span>
+</span><span>     </span><span style="font-style:italic;color:#969896;">/* In the &quot;aaa b aaaa b aaa b aaaa b aaa&quot; example:
+</span><span style="font-style:italic;color:#969896;">      * na == 17
+</span><span style="font-style:italic;color:#969896;">      * nb == 4
+</span><span style="font-style:italic;color:#969896;">      * numGroups == 5
+</span><span style="font-style:italic;color:#969896;">      * smallGroupSize == 3
+</span><span style="font-style:italic;color:#969896;">      * largeGroupSize == 4
+</span><span style="font-style:italic;color:#969896;">      * numSmallGroups == 3
+</span><span style="font-style:italic;color:#969896;">      * numLargeGroups == 2
+</span><span style="font-style:italic;color:#969896;">      */
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// recur on group sizes
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>groupSizes </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="font-weight:bold;color:#795da3;">spread</span><span>(smallGroupSize, largeGroupSize,
+</span><span>                            numSmallGroups, numLargeGroups);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// total number of elements in result sequence
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>nTotal </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>na </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>nb;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// create array to hold result
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>sequence </span><span style="font-weight:bold;color:#a71d5d;">= new </span><span>Array(nTotal);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// will be used as index into sequence
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>index </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// construct sequence from group sizes
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">let </span><span>size </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>groupSizes) {
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// insert the current group
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">let </span><span>i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>; i </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span>size; </span><span style="font-weight:bold;color:#a71d5d;">++</span><span>i) {
+</span><span>            sequence[index] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>a;
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">++</span><span>index;
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// instert the individual separator
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>(index </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span>nTotal) {
+</span><span>            sequence[index] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>b;
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">++</span><span>index;
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>sequence;
+</span><span>}
+</span><span>
+</span></code></pre>
+<h2 id="complexity"><a class="zola-anchor" href="#complexity" aria-label="Anchor link for: complexity">Complexity</a></h2>
+<p>Let’s work out the worst case execution time in terms of the value of <code>n == na + nb</code>
+(ie. the total length of the requested sequence).</p>
+<p>If we ignore the recursion for
+a second (pretend any recursive calls are instant), this algorithm includes a
+single loop, which iterates exactly <code>n</code> times as it builds up the result sequence.
+Thus the complexity of the algorithm ignoring recursive calls is linear.</p>
+<p>When we recur, the length of the requested sequence is
+<code>numSmallGroups + numLargeGroups == numGroups == nb + 1</code>. Recall that in the
+non-trivial case, <code>nb</code> is strictly less than <code>na</code>. Thus, <code>nb + 1</code> is at most
+<code>n / 2</code>.</p>
+<p>So the cost of the first recursive call (ignoring any further recursions) is
+<code>n / 2</code>. If this call makes further recursions, each will again cost at most
+half of the callers value of <code>n</code>. Thus, the total complexity can be expressed as
+<code>O(n + n/2 + n/4 + n/8 + ...) == O(n * (1 + 1/2 + 1/4 + 1/8 + ...)) == O(n * 2) == O(n)</code>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;encoding-rules-for-turn-based-games&#x2F;" aria-label="Previous">
+	  Previous: Encoding Rules for Turn-Based Games
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;programming-languages-make-terrible-game-engines&#x2F;" aria-label="Next">
+	  Next: Programming Languages Make Terrible Game Engines
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

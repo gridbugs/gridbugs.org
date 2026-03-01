@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 2 - Entities, Rendering, Map">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-06-19T20:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 2 - Entities, Rendering, Map
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-1&#x2F;" aria-label="Previous">
+	  Previous: Part 1 - Drawing and Moving the Player
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-3&#x2F;" aria-label="Next">
+	  Next: Part 3 - Generating a Dungeon
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 2 - Entities, Rendering, Map
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-06-19T20:00:00+10:00">
+    June 19, 2020
+  </time>
+  
+</p>
+
+
+<p>In the <a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/">previous part</a> we got a single ‘@’ sign moving
+around the screen. The player character was represented by a coordinate stored directly in
+the game state. In this part, we’ll define a generic “entity” type, of which the player character
+is merely one instance. The rendering logic will be generalized to draw arbitrary game entities.
+Finally, we’ll use the generic entity type to define map components - namely walls and
+floor tiles.</p>
+<p>By the end of this part, the game will look like this:
+<img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-2/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1-end">part-1-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/#refactor">Refactor</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/#generic-entities">Generic Entities</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/#general-rendering">General Rendering</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/#spatial-table">Spatial Table</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/#walls-and-floors">Walls and Floors</a></li>
+</ul>
+<h2 id="refactor"><a class="zola-anchor" href="#refactor" aria-label="Anchor link for: refactor">Refactor</a></h2>
+<p>First, a minor refactor to split the code into 3 files. This won’t change any logic - it will
+just make future changes easier to talk about.</p>
+<p>A new file <code>game.rs</code> will contain all the game-specific logic, mostly agnostic of the fact that it is a chargrid application.
+For now this will look a lot like the <code>AppData</code> type. Note the <code>player_coord</code> method. For now this will just return the value
+in the <code>player_coord</code> field but this will change later in this part.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>direction::CardinalDirection;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    screen_size: Size,
+</span><span>    player_coord: Coord,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Coord {
+</span><span>        self.player_coord
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>A new file <code>app.rs</code> will contain the definitions of <code>AppData</code>, <code>AppView</code>, and <code>App</code>.
+<code>AppData</code> is now a wrapper of the <code>GameState</code> type from <code>game.rs</code>.
+Keep the <code>handle_input</code> method here, interpreting <code>chargrid::input::Input</code>s
+and calling the appropriate method of <code>GameState</code> (currently just <code>maybe_move_player</code>).
+<code>GameState</code> doesn’t expose its <code>player_coord</code> field, so update the implementation of <code>chargrid::render::View</code>
+to call the <code>player_coord</code> method instead.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::GameState;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    game_state: GameState,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            game_state: GameState::new(screen_size),
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                KeyboardInput::Left </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::West)
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            },
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>));
+</span><span>        frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(data.game_state.</span><span style="color:#62a35c;">player_coord</span><span>(), </span><span style="color:#0086b3;">0</span><span>, view_cell, context);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>After this change, <code>main.rs</code> will contain the <code>main</code> function and nothing else.
+Also note the lack of <code>chargrid::...</code> qualifiers on types from the <code>chargrid</code> library.
+All the types from <code>chargrid</code> are now explicitly imported at the top of each file.</p>
+<p>Here’s how the code should look after the refactor: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.0">part-2.0</a></p>
+<h2 id="generic-entities"><a class="zola-anchor" href="#generic-entities" aria-label="Anchor link for: generic-entities">Generic Entities</a></h2>
+<p>At the moment the player is represented by a <code>Coord</code> in a field of the game state.
+Eventually we will want to add other characters to the game, as well as other game objects such as walls, doors, and items.
+To this end, we need a generic way of representing a game entity.</p>
+<p>The general idea is this: For each property that an entity can have, we’ll make a table associating an entity’s id (just a number)
+with the property value. Each entity’s data will be “spread out” over a number of tables corresponding to all the properties
+which the entity has. This is based on the idea of “components” from <a href="https://en.wikipedia.org/wiki/Entity_component_system">Entity Component Systems</a>.
+From now on the term “component” will refer to a property of a game entity.</p>
+<p>Add a dependency to help represent game state as a collection of component tables:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">entity_table </span><span>= </span><span style="color:#183691;">&quot;0.2&quot;
+</span></code></pre>
+<p>Now we need to think about which components we will need. So far, the only entity is the player.
+We can think of the player as having a location and a tile. The <code>Coord</code> type is suitable for representing
+a location. As for tiles, let’s start with this:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span>
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    Player,
+</span><span>}
+</span></code></pre>
+<p>Rather than storing how to draw the player (symbol, colour, etc), store an abstract value in the game state,
+and let the rendering logic decide how to draw the player.</p>
+<p>Now to define our components:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        coord: Coord,
+</span><span>        tile: Tile,
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>components::Components;
+</span></code></pre>
+<p>This invocation of the <code>declare_entity_module</code> macro generates code resembling:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">mod </span><span>components {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>coord: ComponentTable&lt;Coord&gt;,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>tile: ComponentTable&lt;Tile&gt;,
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>ComponentTable&lt;T&gt;</code> type is defined in the <code>entity_table</code> crate, and associates entity ids with values of type <code>T</code>.
+The <code>Entity</code> type from <code>entity_table</code> is an entity id, and contains no data of its own.</p>
+<p>Here’s part of the interface exposed by <code>ComponentTable</code> relevant to this post. Read more in <a href="https://docs.rs/entity_table/0.2.1/entity_table/struct.ComponentTable.html"><code>entity_table</code>’s documentation</a>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;T&gt; ComponentTable&lt;T&gt; {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// set the component value of an entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">insert</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity, data: T) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;T&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// look up the component value of an entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">get</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>T&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// obtain a mutable reference to the component value of an entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">get_mut</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> T&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// returns an iterator over entities and their component values
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">iter</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; impl </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = (Entity, T)&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update the <code>GameState</code> type to store a <code>Components</code> and the <code>Entity</code> representing the player character:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    screen_size: Size,
+</span><span>    components: Components,
+</span><span>    player_entity: Entity,
+</span><span>}
+</span></code></pre>
+<p>Add a method to <code>GameState</code> for spawning the player character, which adds entries to component tables
+such that the player character is inserted at a specified location. Then add a second method which populates
+the map, which for now will just spawn the player (we’ll add more to this method shortly).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) {
+</span><span>        self.components.coord.</span><span style="color:#62a35c;">insert</span><span>(self.player_entity, coord);
+</span><span>        self.components
+</span><span>            .tile
+</span><span>            .</span><span style="color:#62a35c;">insert</span><span>(self.player_entity, Tile::Player);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, player_coord: Coord) {
+</span><span>        self.</span><span style="color:#62a35c;">spawn_player</span><span>(player_coord);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>The existing methods of <code>GameState</code> need to be updated to match its new definition.</p>
+<p>So far we haven’t talked about how new values of <code>Entity</code> are created. They are effectively just numbers, but
+their numerical representation is opaque. They must be created with an <code>EntityAllocator</code> - another type
+defined in <code>entity_table</code> which allows entity ids to be created and destroyed. Update <code>GameState::new</code> to create a <code>Components</code>,
+and use an <code>EntityAllocator</code> to allocate an <code>Entity</code> representing the player. Then populate the <code>GameState</code> by calling
+the <code>populate</code> method we just defined.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entity_allocator </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>EntityAllocator::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> components </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Components::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            screen_size,
+</span><span>            components,
+</span><span>            player_entity,
+</span><span>        };
+</span><span>        game_state.</span><span style="color:#62a35c;">populate</span><span>(screen_size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2</span><span>);
+</span><span>        game_state
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>The logic for moving the player must be updated to operate on the <code>coord</code> component table rather than a single
+<code>coord</code> value. It obtains a mutable reference to the player’s current position, panicking if the player has no
+current position. This mut ref is used to both check whether the movement is valid, and update the player’s
+position.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .coord
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord component&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_player_coord </span><span style="font-weight:bold;color:#a71d5d;">= *</span><span>player_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_player_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.screen_size) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> new_player_coord;
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Finally, the <code>player_coord</code> method, which returns the coordinate of the player character, must be updated to
+work with the <code>coord</code> component, rather than just returning the value of the <code>player_coord</code> field (now removed):</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Coord {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>self
+</span><span>            .components
+</span><span>            .coord
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord component&quot;</span><span>)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note that we didn’t change the public api of the <code>GameState</code> type, so no code outside of this file is affected by
+changing the representation of game state.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.1">part-2.1</a></p>
+<h2 id="general-rendering"><a class="zola-anchor" href="#general-rendering" aria-label="Anchor link for: general-rendering">General Rendering</a></h2>
+<p>The rendering logic in <code>app.rs</code> is still hard-coded to only render the player character at the location returned by
+<code>player_coord</code>. Before we can add additional entities to the game, rendering logic needs to be generalized to render
+all entities which can be rendered.</p>
+<p>Start by providing a way for <code>GameState</code> to tell the renderer what needs to be rendered.
+Define a new type in <code>game.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>EntityToRender {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>tile: Tile,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>coord: Coord,
+</span><span>}
+</span></code></pre>
+<p>This tells the renderer to draw a given tile at a given position on the screen.</p>
+<p>Add a method to <code>GameState</code> which returns an <code>Iterator</code> over <code>EntityToRender</code>s for all the entities which
+need to be rendered. For now, let’s say that an entity needs to be rendered if it has both a <code>coord</code> and a <code>tiile</code>
+component.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">entities_to_render</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>self) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a + </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = EntityToRender&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_component </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.components.tile;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> coord_component </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.components.coord;
+</span><span>        tile_component.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">filter_map</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>(entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>tile)</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> coord_component.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>()</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>;
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(EntityToRender { tile, coord })
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now in <code>app.rs</code>, update the <code>view</code> method of <code>AppView</code> to call <code>entities_to_render</code> instead of <code>player_coord</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{GameState, Tile};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.tile {
+</span><span>                Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>                    .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>                    .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>            };
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(entity_to_render.coord, </span><span style="color:#0086b3;">0</span><span>, view_cell, context);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note that the <code>ViewCell</code> which is rendered is obtained by matching on <code>entity_to_render.tile</code>. As we add new <code>Tile</code> variants,
+we’ll update this match statement to tell the renderer how to draw the new <code>Tile</code>s.</p>
+<p>Now remove the <code>player_coord</code> method from <code>GameState</code> as it’s no longer needed.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.2">part-2.2</a></p>
+<h2 id="spatial-table"><a class="zola-anchor" href="#spatial-table" aria-label="Anchor link for: spatial-table">Spatial Table</a></h2>
+<p>Shortly we’ll be adding walls to the game. Walls are solid; we’ll soon need a way of determining whether the player
+is trying to move through a wall and prevent their movement. The game engine will need to answer queries of the form
+“is there a solid entity at a given location?”. One approach would be to add a new component <code>solid</code>, set to <code>true</code> on
+solid entities (such as walls). The problem with this is in order to determine whether a solid object exists at a location,
+the engine would need to cross reference the <code>solid</code> and <code>coord</code> components. Since <code>ComponentTable</code>s are indexed by
+<code>Entity</code> (rather than, say, <code>Coord</code>), this cross reference will be expensive, as it will involve iterating over all entities
+that are solid, and checking whether their <code>coord</code> is the one we’re interested in.</p>
+<p>It would be useful to have a separate data structure which could be indexed by a <code>Coord</code>, and tell us which entities are
+currently at the specified location. The crate <a href="https://crates.io/crates/spatial_table">spatial_table</a> defines a type
+<code>SpatialTable</code> which is similar to a <code>ComponentTable&lt;Coord&gt;</code> in that it associates <code>Entity</code>s with a <code>Coord</code>,
+but it also provides the <em>reverse</em> association - a mapping from <code>Coord</code> to <code>Entity</code> indicating which entities are
+at a given <code>Coord</code>.</p>
+<p>Add a dependency on <code>spatial_table</code>:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">spatial_table </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;
+</span></code></pre>
+<p>Multiple entities may share a single location (e.g. a floor entity and a character entity may
+co-exist in the same cell). To represent this fact, a <code>SpatialTable</code> associates each coordinate with a collection of <code>Entity</code>s
+where each entity is on a separate “layer”. At each coordinate, there are a fixed number of layers, and each layer
+may contain one or zero entities. It might help to visualize a <code>SpatialTable</code> as a 2D array of a <code>Layers</code> type defined
+as:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Layers {
+</span><span>    floor: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>    character: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>    feature: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>}
+</span></code></pre>
+<p>In this scenario, every cell of the 2D grid <em>may</em> contain a floor, a character, and a feature (walls, doors, furniture, etc).
+<code>SpatialTable</code> doesn’t care which entities are stored in a layer. When adding or updating an entity’s location, you may also
+set which layer it is on. <code>SpatialTable</code> doesn’t allow you to update the coordinate or layer of an entity if its destination
+coordinate and layer is already occupied.</p>
+<p><code>SpatialTable</code> doesn’t assume anything about which layers you will use. Start by defining which layers we will be using for our game:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>spatial_table::declare_layers_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    layers {
+</span><span>        floor: Floor,
+</span><span>        character: Character,
+</span><span>        feature: Feature,
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub use </span><span>layers::Layer;
+</span><span style="font-weight:bold;color:#a71d5d;">type </span><span>SpatialTable </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>spatial_table::SpatialTable&lt;layers::Layers&gt;;
+</span><span style="font-weight:bold;color:#a71d5d;">pub type </span><span>Location </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>spatial_table::Location&lt;Layer&gt;;
+</span></code></pre>
+<p>The <code>declare_layers_module</code> macro produces code resembling:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">mod </span><span>layers {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Layers {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>floor: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>character: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>feature: </span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;,
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Layer {
+</span><span>        Floor,
+</span><span>        Character,
+</span><span>        Feature,
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>spatial_table::Layers </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>Layers {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Layer </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> Layer;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>Layers</code> type represents which entities are on which layer. A <code>SpatialTable</code> will contain one <code>Layers</code> for each
+cell in its grid.
+The <code>Layer</code> type lets you refer to layers dynamically, for example when inserting an enity into a <code>SpatialTable</code>
+at a specified coordinate and layer.</p>
+<p>After the macro invocation, create type aliases to make it convenient to work with <code>SpatialTable</code> for our specified set of layers.
+The <code>Location</code> type is a <code>Coord</code> plus a <code>Layer</code>.
+It’s defined as:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Location&lt;L&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>coord: Coord,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>layer: </span><span style="color:#0086b3;">Option</span><span>&lt;L&gt;,
+</span><span>}
+</span></code></pre>
+<p>Note that the <code>layer</code> field is an <code>Option</code> - an <code>Entity</code> doesn’t need to be associated with a layer.
+Only entities associated with layers will be returned when querying which entities are at a given coordinate.</p>
+<p>Here’s the relevant part of the <code>SpatialTable</code> interface. Note that it’s generic over the type of layers in each cell.
+The full interface is specified in <a href="https://docs.rs/spatial_table/0.2.0/spatial_table/struct.SpatialTable.html"><code>spatial_table</code>’s documentation</a>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;L: spatial_table::Layers&gt; SpatialTable&lt;L&gt; {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Creates a new SpatialTable&lt;L&gt; with given dimensions
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns the location (coord and layer) of a given entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">location_of</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Location&lt;</span><span style="font-weight:bold;color:#a71d5d;">L::</span><span>Layer&gt;&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns the coord of a given entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">coord_of</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;Coord&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns the layers at a given coord, panicking if coord is out of bounds
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">layers_at_checked</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>L { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Update the location (coord and layer) associated with an entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity, location: Location&lt;</span><span style="font-weight:bold;color:#a71d5d;">L::</span><span>Layer&gt;)
+</span><span>        -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), UpdateError&gt; {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Update the coord associated with an entity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity, coord: Coord)
+</span><span>        -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), UpdateError&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>UpdateError {
+</span><span>    OccupiedBy(Entity),
+</span><span>    DestinationOutOfBounds,
+</span><span>}
+</span></code></pre>
+<p>Remove the <code>coord</code> component table. It will be replaced with a <code>SpatialTable</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        tile: Tile,
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a <code>SpatialTable</code> to <code>GameState</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    screen_size: Size,
+</span><span>    components: Components,
+</span><span>    spatial_table: SpatialTable,
+</span><span>    player_entity: Entity,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entity_allocator </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>EntityAllocator::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> components </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Components::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> spatial_table </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>SpatialTable::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            screen_size,
+</span><span>            components,
+</span><span>            spatial_table,
+</span><span>            player_entity,
+</span><span>        };
+</span><span>        game_state.</span><span style="color:#62a35c;">populate</span><span>(screen_size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2</span><span>);
+</span><span>        game_state
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update <code>spawn_player</code> to add the player <code>Entity</code> to the <code>SpatialTable</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) {
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                self.player_entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Character),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components
+</span><span>            .tile
+</span><span>            .</span><span style="color:#62a35c;">insert</span><span>(self.player_entity, Tile::Player);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update <code>maybe_move_player</code> to update the <code>SpatialTable</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_player_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.screen_size) {
+</span><span>            self.spatial_table
+</span><span>                .</span><span style="color:#62a35c;">update_coord</span><span>(self.player_entity, new_player_coord)
+</span><span>                .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>And update <code>entities_to_render</code> to use the <code>SpatialTable</code>.
+Replace the <code>coord: Coord</code> field of <code>EntityToRender</code> with a <code>location: Location</code> field
+so the render knows which layer each entity is on. This will help later on when we need
+to render a scene with multiple entities at a single coordinate and use layers to determine draw order.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>EntityToRender {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>tile: Tile,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>location: Location,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">entities_to_render</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>self) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a + </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = EntityToRender&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_component </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.components.tile;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> spatial_table </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.spatial_table;
+</span><span>        tile_component.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">filter_map</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>(entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>tile)</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>location </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> spatial_table.</span><span style="color:#62a35c;">location_of</span><span>(entity)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>;
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(EntityToRender { tile, location })
+</span><span>        })
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Finally, update the rendering logic in <code>app.rs</code> to understand the new <code>location</code> field of <code>EntityToRender</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= ...</span><span>;
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(entity_to_render.location.coord, </span><span style="color:#0086b3;">0</span><span>, view_cell, context);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.3">part-2.3</a></p>
+<h2 id="walls-and-floors"><a class="zola-anchor" href="#walls-and-floors" aria-label="Anchor link for: walls-and-floors">Walls and Floors</a></h2>
+<p>Let’s add walls and floors, and make it so the player can’t walk through walls.</p>
+<p>Add <code>Tile</code>s for walls and floors:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    Player,
+</span><span>    Floor,
+</span><span>    Wall,
+</span><span>}
+</span></code></pre>
+<p>So that we can spawn new entities in addition to the player, add the <code>EntityAllocator</code> created in <code>GameState::new</code>
+to <code>GameState</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    screen_size: Size,
+</span><span>    entity_allocator: EntityAllocator,
+</span><span>    components: Components,
+</span><span>    spatial_table: SpatialTable,
+</span><span>    player_entity: Entity,
+</span><span>}
+</span><span>
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entity_allocator </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>EntityAllocator::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> components </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Components::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> spatial_table </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>SpatialTable::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            screen_size,
+</span><span>            entity_allocator,
+</span><span>            components,
+</span><span>            spatial_table,
+</span><span>            player_entity,
+</span><span>        };
+</span><span>        game_state.</span><span style="color:#62a35c;">populate</span><span>(screen_size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2</span><span>);
+</span><span>        game_state
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add methods for spawning walls and floors, and update <code>GameState::populate</code> to place floor tiles everywhere, and
+walls in a few select locations.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_wall</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Wall);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_floor</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Floor);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, player_coord: Coord) {
+</span><span>        self.</span><span style="color:#62a35c;">spawn_player</span><span>(player_coord);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.screen_size.</span><span style="color:#62a35c;">coord_iter_row_major</span><span>() {
+</span><span>            self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>        }
+</span><span>        self.</span><span style="color:#62a35c;">spawn_wall</span><span>(player_coord </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>Coord::new(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>));
+</span><span>        self.</span><span style="color:#62a35c;">spawn_wall</span><span>(player_coord </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">2</span><span>));
+</span><span>        self.</span><span style="color:#62a35c;">spawn_wall</span><span>(player_coord </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>Coord::new(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>));
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>To prevent the player walking through walls, update <code>GameState::maybe_move_player</code>. For now, treat all cells with a feature or
+a character as solid. This will change in future parts.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_player_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.screen_size) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_player_coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> dest_layers.character.</span><span style="color:#62a35c;">is_none</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">&amp;&amp;</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                self.spatial_table
+</span><span>                    .</span><span style="color:#62a35c;">update_coord</span><span>(self.player_entity, new_player_coord)
+</span><span>                    .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Finally, update the rendering logic to render wall and floor tiles. The cell containing the player will also contain a floor.
+We need to make sure that the floor is drawn “below” the player. The <code>set_cell_relative</code> method (which draws a cell)
+takes a <code>depth</code> argument. Thus far we’ve been passing 0, but now we’ll derive it from the layer.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{GameState, Layer, Tile};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.tile {
+</span><span>                Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>                    .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>                    .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>                    .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>                    .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>                    .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>)),
+</span><span>                Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>                    .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>                    .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">63</span><span>))
+</span><span>                    .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>)),
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; -</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Character) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">2</span><span>,
+</span><span>            };
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(entity_to_render.location.coord, depth, view_cell, context);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now run the game! It should look like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Try to move the player character through the walls (<code>#</code>)!</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2.4">part-2.4</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-1&#x2F;" aria-label="Previous">
+	  Previous: Part 1 - Drawing and Moving the Player
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-3&#x2F;" aria-label="Next">
+	  Next: Part 3 - Generating a Dungeon
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

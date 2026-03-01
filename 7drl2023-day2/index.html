@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2023: Procedural Generation">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2023-day2/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day2/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-03-07T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day2/river.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2023: Procedural Generation
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Bootstrapping, Boat Gameplay, Vision
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day3&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: More Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2023: Procedural Generation</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-03-07T00:00:00+00:00">
+    March 07, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/procgen" aria-label="tag">procgen</a>
+  
+</p>
+
+
+  
+
+<p>I spent this evening making a procedural generator for the shape of river and
+choosing points along the river to place settlements. While I iterate on
+procedural generation I’m working in a separate project to the main game so I
+don’t need to deal with the complexities of integrating the generated levels
+into the game while I’m also figuring out how level generation will work at all.</p>
+<p>Here’s the debug output of the terrain generator so far showing the shape of the
+river and the points where settlements will go.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day2/river.png" alt="Debug image showing a procedurally-generated river" /></p>
+<span id="continue-reading"></span>
+<p>The algorithm starts with Perlin noise and uses Dijkstra’s algorithm to find a
+path from a point on the left side of the screen to a point on the right side of
+the screen preferring noise values closer to 0. Then there are several
+post-processing steps on the chosen path that check for closed-off sections of
+land created when the river is made wider, and finds point that are good
+candidates for settlements so that when settlements are added it doesn’t connect
+multiple points of the river.</p>
+<p>The plan for tomorrow is to generate the settlements, the starting town, and the
+ocean, and integrate this into the game so that I can test out driving a boat
+around the generated river.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Bootstrapping, Boat Gameplay, Vision
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day3&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: More Procedural Generation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

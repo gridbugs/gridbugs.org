@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Component Pinouts and Notes">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-05-27T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Component Pinouts and Notes
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Component Pinouts and Notes</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-05-27T00:00:00+00:00">
+    May 27, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/electronics" aria-label="tag">electronics</a>
+  
+</p>
+
+
+  
+  <ul>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#78l05-voltage-regulator-in-to-92-package">78L05 Voltage Regulator in TO-92 package</a>
+      
+    </li>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#lm358-and-tl072-dual-op-amps">LM358 and TL072 Dual Op Amps</a>
+      
+    </li>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#tl074-quad-op-amp">TL074 Quad Op Amp</a>
+      
+    </li>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#max495-op-amp">MAX495 Op Amp</a>
+      
+    </li>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-nano">Arduino Nano</a>
+      
+      <ul>
+        
+        <li>
+          <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-nano-pinout">Arduino Nano Pinout</a>
+	  
+        </li>
+        
+        <li>
+          <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-nano-power-supply">Arduino Nano Power Supply</a>
+	  
+        </li>
+        
+        <li>
+          <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-digital-pins">Arduino Digital Pins</a>
+	  
+	  <ul>
+	    
+	    <li>
+              <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-switch-configurations">Arduino Switch Configurations</a>
+	    </li>
+	    
+	    <li>
+              <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#mixing-output-pin-values">Mixing Output Pin Values</a>
+	    </li>
+	    
+	  </ul>
+	  
+        </li>
+        
+        <li>
+          <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#arduino-analog-pins">Arduino Analog Pins</a>
+	  
+        </li>
+        
+      </ul>
+      
+    </li>
+    
+    <li>
+      <a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/#irf3205-mosfet-in-to-220-package">IRF3205 MOSFET in TO-220 package</a>
+      
+    </li>
+    
+  </ul>
+  
+
+<p>This page will list pinouts of some electronic components I commonly find myself
+using, as well as some notes on using them that might not be obvious from
+reading the datasheets.</p>
+<span id="continue-reading"></span><h2 id="78l05-voltage-regulator-in-to-92-package"><a class="zola-anchor" href="#78l05-voltage-regulator-in-to-92-package" aria-label="Anchor link for: 78l05-voltage-regulator-in-to-92-package">78L05 Voltage Regulator in TO-92 package</a></h2>
+<p><a href="https://www.st.com/resource/en/datasheet/l78l.pdf">Datasheet (pdf) for L78L series voltage regulators which includes the 78L05</a></p>
+<p>The 78L05 provides a regulated 5v supply on its output pin if sufficient voltage
+(at least 7v) is supplied to its input.
+If a device’s documentation says that the device requires a regulated 5v power
+supply, this is the kind of thing that it means.</p>
+<p>The TO-92 package is commonly used for transistors but other 3-pin components
+can also be found in this package.</p>
+<p>The pinout in the datasheet is from the bottom-up point of view which I found
+counterintuitive and possibly dangerous for people skimming the manual looking
+for a pinout without reading the text indicating it’s a bottom-up view.
+In my experience, when a voltage source is connected to the output pin of 78L05
+(ie. when it is connected backwards), the same voltage can be measured at its
+input pin. It’s not clear how much current it will allow to flow when connected
+backwards but it’s possible that this could damage whatever component is being
+powered by the incorrectly connected 78L05.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/78l05-to92.png" alt="diagram of 78L05 in TO-92 package with pins labelled" /></p>
+<p>The component has a round side and a flat side.
+As shown in the image above, with the flat side facing you, with the pins
+pointing downwards:</p>
+<ul>
+<li>The <em>left</em> pin is the <em>output</em> and will provide 5v if sufficient voltage
+(at least 7v) is supplied to the input.</li>
+<li>The <em>middle</em> pin is <em>ground</em>.</li>
+<li>The <em>right</em> pin is the <em>input</em>.</li>
+</ul>
+<p>The figure of 7v as the minimum input voltage is based on this image from the
+manual:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/78l05-input-to-output.png" alt="plot showing the relationship between input and output voltage" /></p>
+<p>So the actual minimum input voltage depends on how much current is being drawn
+from the output, but if it’s up to 100mA then 7v will be fine.</p>
+<h2 id="lm358-and-tl072-dual-op-amps"><a class="zola-anchor" href="#lm358-and-tl072-dual-op-amps" aria-label="Anchor link for: lm358-and-tl072-dual-op-amps">LM358 and TL072 Dual Op Amps</a></h2>
+<p><a href="https://www.ti.com/lit/gpn/lm358">Datasheet (pdf) for LM385 Dual Op Amp (also contains information on related components)</a></p>
+<p><a href="https://www.ti.com/lit/ds/symlink/tl072.pdf">Datasheet (pdf) for TL072 Dual Op Amp (also contains information on related components)</a></p>
+<p>Both components include a pair of op amps on a single chip and they have
+identical pinouts. This is the pinout viewed from top-down:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/dual-op-amp.png" alt="pinout of both op amps" /></p>
+<p>This table lists the pins corresponding to their arrangement in the diagram
+above. The semi-circular indentation on the top of the IC is facing upwards.</p>
+<table><thead><tr><th>Left Side</th><th>Right Side</th></tr></thead><tbody>
+<tr><td>1OUT</td><td>VCC+</td></tr>
+<tr><td>1IN-</td><td>2OUT</td></tr>
+<tr><td>1IN+</td><td>2IN-</td></tr>
+<tr><td>VCC-</td><td>2IN+</td></tr>
+</tbody></table>
+<p>My mnemonic for this pinout is that the bottom left is usually ground and the
+top right is usually positive voltage for ICs, and if you don’t have a negative
+supply voltage you’ll probably connect the VCC- pin to ground. Then, a common
+op amp feedback configuration is a voltage forwarder (aka. a buffer amplifier)
+and in this configuration the IN- pin and the OUT pin are connected together. I
+like to pretend that the designer wanted to make it easy to setup a voltage
+forwarder by putting the OUT and IN- pins next to each other for both op amps on
+the chip.</p>
+<h2 id="tl074-quad-op-amp"><a class="zola-anchor" href="#tl074-quad-op-amp" aria-label="Anchor link for: tl074-quad-op-amp">TL074 Quad Op Amp</a></h2>
+<p><a href="https://www.ti.com/lit/ds/symlink/tl072.pdf">Datasheet (pdf) for TL074 Quad Op Amp (also contains information on related components)</a></p>
+<p>This is 4 op-amps in a single chip. This is the pinout viewed top-down:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/tl074.png" alt="pinout of tl074" /></p>
+<p>This table lists the pins corresponding to their arrangement in the diagram
+above. The semi-circular indentation on the top of the IC is facing upwards.</p>
+<table><thead><tr><th>Left Side</th><th>Right Side</th></tr></thead><tbody>
+<tr><td>1OUT</td><td>4OUT</td></tr>
+<tr><td>1IN-</td><td>4IN-</td></tr>
+<tr><td>1IN+</td><td>4IN+</td></tr>
+<tr><td>VCC+</td><td>VCC-</td></tr>
+<tr><td>2IN+</td><td>3IN+</td></tr>
+<tr><td>2IN-</td><td>3IN-</td></tr>
+<tr><td>2OUT</td><td>3OUT</td></tr>
+</tbody></table>
+<h2 id="max495-op-amp"><a class="zola-anchor" href="#max495-op-amp" aria-label="Anchor link for: max495-op-amp">MAX495 Op Amp</a></h2>
+<p><a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/MAX49x.pdf">Datasheet (pdf) for MAX495 Op Amp (also contains information on related components)</a></p>
+<p>This Op Amp is marketed as “Rail to Rail” which means its min and max outputs are close to the + and - supply voltages.</p>
+<p>In the pinouts below I’ve added VCC- and VCC+ labels in addition to the VEE and VCC labels from the manual
+for consistency with other component pinouts.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/max495.png" alt="pinout of max495" /></p>
+<p>This table lists the pins corresponding to their arrangement in the diagram
+above. The semi-circular indentation on the top of the IC is facing upwards.</p>
+<table><thead><tr><th>Left Side</th><th>Right Side</th></tr></thead><tbody>
+<tr><td>NULL</td><td>N.C.</td></tr>
+<tr><td>IN1-</td><td>VCC (ie. VCC+)</td></tr>
+<tr><td>IN1+</td><td>OUT</td></tr>
+<tr><td>VEE (ie. VCC-)</td><td>NULL</td></tr>
+</tbody></table>
+<p>The inputs are numbered even though there is only one op-amp on the chip. The
+output is not numbered in the manual but it could just as well be called OUT1.</p>
+<p>The NULL pins are not the same as the N.C. (Not Connected) pin. The NULL pins
+can be used to adjust something called “input offset voltage”. There’s more
+info in the manual.</p>
+<h2 id="arduino-nano"><a class="zola-anchor" href="#arduino-nano" aria-label="Anchor link for: arduino-nano">Arduino Nano</a></h2>
+<p><a href="https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf">Datasheet (pdf) for Atmel Atmega328P (the microcontroller on the Arduino Nano</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/Arduino_Nano-Rev3.2-SCH.pdf">Schematic of the Arduino Nano</a></p>
+<h3 id="arduino-nano-pinout"><a class="zola-anchor" href="#arduino-nano-pinout" aria-label="Anchor link for: arduino-nano-pinout">Arduino Nano Pinout</a></h3>
+<p>This is the pinout of the Arduino Nano from the Arduino documentation, except
+I’ve modified it to clarify that pins A6 and A7 can’t be used as digital I/O
+port pins.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-nano.jpg" alt="pinout of the arduino nano" /></p>
+<p>Here’s the pinout in tabular form. The positions of pins correspond to a
+top-down view of the Arduino Nano with the usb port facing upwards. Each entry
+is named after what is literally printed on the PCB next to each pin. In
+parentheses after each name are the I/O port pin function (PXn) and the ADC
+channel (ADCn) if any.</p>
+<table><thead><tr><th>Left Side</th><th>Right Side</th></tr></thead><tbody>
+<tr><td>D13 (PB5)</td><td>D12 (PB4)</td></tr>
+<tr><td>3V3</td><td>D11 (PB3)</td></tr>
+<tr><td>REF</td><td>D10 (PB2)</td></tr>
+<tr><td>A0 (PC0, ADC0)</td><td>D9 (PB1)</td></tr>
+<tr><td>A1 (PC1, ADC1)</td><td>D8 (PB0)</td></tr>
+<tr><td>A2 (PC2, ADC2)</td><td>D7 (PD7)</td></tr>
+<tr><td>A3 (PC3, ADC3)</td><td>D6 (PD6)</td></tr>
+<tr><td>A4 (PC4, ADC4)</td><td>D5 (PD5)</td></tr>
+<tr><td>A5 (PC5, ADC5)</td><td>D4 (PD4)</td></tr>
+<tr><td>A6 (ADC6)</td><td>D3 (PD3)</td></tr>
+<tr><td>A7 (ADC7)</td><td>D2 (PD2)</td></tr>
+<tr><td>5V</td><td>GND</td></tr>
+<tr><td>RST (PC6)</td><td>RST (PC6)</td></tr>
+<tr><td>GND</td><td>RX0 (PD0)</td></tr>
+<tr><td>VIN</td><td>TX1 (PD1)</td></tr>
+</tbody></table>
+<h3 id="arduino-nano-power-supply"><a class="zola-anchor" href="#arduino-nano-power-supply" aria-label="Anchor link for: arduino-nano-power-supply">Arduino Nano Power Supply</a></h3>
+<p>You can power the Arduino Nano by supplying between 7 and 12 volts to the VIN
+pin, or by supplying regulated 5 volts to the 5V pin (such as with a 78L05
+voltage regulator). When powering via the VIN pin, the 5V pin can be used as a
+5V power supply for powering other components (including other Arduino Nanos, in
+which case you would connect the 5V pin on one Arduino Nano to the 5V pin on
+other other). This works because in between the VIN and 5V pins there is a 5v
+voltage regulator similar to the 78L05 (but not identical - the Arduino Nano
+uses a
+<a href="https://www.ti.com/lit/ds/symlink/lm1117.pdf?ts=168433779491">LM117IMPX-5.0</a>).
+It supplies the Arduino with regulated 5V but can supply other things too via
+the 5V pin, because its output connects directly to this pin.</p>
+<p>Some sources will recommend against supplying your own voltage regulator and
+powering via the 5V pin and using the VIN pin instead. Indeed there is little point
+using the 5V pin as the onboard voltage regulator should be just as good as
+whatever you use instead to produce the regulated 5v. One reason you might do
+this anyway is because the voltage regulator could wear out over time and it’s
+much cheaper to replace a voltage regulator than an entire Arduino. You could
+wait until the onboard regulator fails before circumventing it with an external
+component but this might be hard once the Arduino is soldered in place compared
+to replacing the external voltage regulator with a new one.</p>
+<h3 id="arduino-digital-pins"><a class="zola-anchor" href="#arduino-digital-pins" aria-label="Anchor link for: arduino-digital-pins">Arduino Digital Pins</a></h3>
+<p>The <a href="https://docs.arduino.cc/learn/microcontrollers/digital-pins">Arduino Digital Pin documentation</a>
+is a good starting point.</p>
+<p>Some of the pins are multiplexed and have other functions that prevent them from
+operating as digital IO pins, but by default all digital pins behave as IO pins.</p>
+<p>There are 3 registers per IO port with a bit for each pin:</p>
+<ul>
+<li><code>DDx</code> (Data Direction) determines whether a pin is an input pin or an output
+pin. 0 = input, 1 = output. The default is all 0s (all input pins).</li>
+<li><code>PINx</code> can be read to determine the state of input pins.</li>
+<li><code>PORTx</code> can be written to set the state of output pins. Writing a 1 to a bit
+in this register corresponding to an input pin enables the pull-up resistor
+for that pin.</li>
+</ul>
+<h4 id="arduino-switch-configurations"><a class="zola-anchor" href="#arduino-switch-configurations" aria-label="Anchor link for: arduino-switch-configurations">Arduino Switch Configurations</a></h4>
+<p>The main consideration when attaching buttons is not letting the input pin
+“float”; the pin should always be connected to a voltage source or ground. This
+is the purpose of “pull-up” and “pull-down” resistors. The resistor connects the
+pin to the voltage source that will represent the “off” state (this could be
+logic 1 or logic 0), and then when the button is pressed, the pin is connected
+<em>directly</em> to the voltage source representing “on”.</p>
+<p>Here is an example where the input pin sees 0v via the 10K pull-down resistor to
+ground, but when the button is pressed the pin sees 5v.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-nano-pull-down-resistor.png" alt="diagram showing an input pin with attached switch and 10K pull-down resistor" /></p>
+<p>Note that input pins have very high impedance, so they draw almost no current.
+We don’t have to worry about connecting a voltage source directly to the pin.</p>
+<p>Here’s another example where the input pin sees 5v via the 10K pull-up
+resistor, but when the button is pressed the input pin sees 0v.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-nano-pull-up-resistor.png" alt="diagram showing an input pin with attached switch and 10K pull-up resistor to 5v" /></p>
+<p>When the switch is open the pin sees (almost) the full 5 volts because the pin has
+incredibly high impedance; it basically acts like an open circuit for the
+purposes of calculating current and voltage drop.</p>
+<p>This example shows how one could connect a switch with the Arduino’s internal
+pull-up resistor enabled (write a 1 to the PORTx bit for the input pin). The
+following example is functionally equivalent to the previous example, but the
+pull-up resistor is inside the Atmega328P chip on the Arduino.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-nano-internal-pull-up-resistor.png" alt="diagram showing an input pin with attached switch to ground with the pin configured to use the pin’s internal pull-up resistor" /></p>
+<p>When dealing with physical switches, one problem that can happen is “bouncing”
+which is when the physical connection rapidly closes and opens for a brief
+period after the switch is pressed. This can be solved in software by
+introducing a short delay where the switch is ignored for a brief period after
+its state changes, or it can be solved in hardware by adding a capacitor in
+parallel with the switch. The charging and discharging of the capacitor smooths
+out the rapid connecting and disconnecting, and the pin only sees the state
+change after enough time has passed for the capacitor to charge or discharge
+(depending on whether a pull-down or pull-up resistor is being used).</p>
+<p>This example shows how to connect a capacitor to the internal pull-up resistor
+example above, though the same technique can be used for all the examples.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-nano-internal-pull-up-resistor-debounced.png" alt="diagram showing an input pin with attached switch to ground with the pin configured to use the pin’s internal pull-up resistor" /></p>
+<h4 id="mixing-output-pin-values"><a class="zola-anchor" href="#mixing-output-pin-values" aria-label="Anchor link for: mixing-output-pin-values">Mixing Output Pin Values</a></h4>
+<p>This demonstrates a way of mixing the voltages at two output pins by connecting
+them together through resistors to a common node. The diagram below shows two
+pins connected in this way but it works for arbitrarily many pins. If the
+resistors all have the same resistance then the common node will have a voltage
+that is the mean of voltages at the output pins, but using different resistors
+results in the weighted mean instead.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-output-pins-mean.png" alt="diagram showing two output pins connected through resistors (labeled R1 and R2) to a common node M, with plots comparing the voltages at the pins and the voltage at the node M. Text says ‘R1 = R2, Voltage at M is mean of output pin voltages’" /></p>
+<p>This works because unlike input pins which have very high impedance, <em>output</em> pins have
+very <em>low</em> impedance (both when acting as current sources <em>and</em> current sinks).
+This means that they can produce relatively large amounts of current (the docs
+say 40mA) and also they can consume a lot of current. This means that when an
+output pin is producing logic 0 (0v), it serves a similar role to ground (it has
+0v and it’s a current sink). Thus we can analyse the circuit above as we would a
+simple voltage divider. When one output is low and one output is high, then half
+the high voltage is seen between the two resistors provided that they have the same resistance.</p>
+<p>This idea can be extended to implement a digital to analog converter by
+combining the voltages of many pins through carefully chosen resistances.</p>
+<p>Note that as with naive voltage divider circuits (this is really just a naive
+voltage divider circuit) the output of this circuit (the node with mixed voltage) has
+high impedance (due to the resistors used). This means its voltage will rapidly
+reduce as current is drawn through that node of the circuit.
+One way to fix this problem is to
+connect it to a voltage forwarder op-amp configuration:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/arduino-output-pins-mean-voltage-forwarder.png" alt="diagram showing two output pins connected through resistors (labeled R1 and R2) through a voltage forwarder to a common node M" /></p>
+<p>Note that at this point we have almost implemented a non-inverting voltage adder (a common
+op-amp configuration). All that’s missing are resistors in the feedback network
+to increase the gain of the op-amp to be equal to the number of pins being
+combined. With a voltage forwarder the gain is 1 so its output is the (possibly
+weighted) mean
+of voltages rather than the (possibly weighted) sum of voltages.</p>
+<h3 id="arduino-analog-pins"><a class="zola-anchor" href="#arduino-analog-pins" aria-label="Anchor link for: arduino-analog-pins">Arduino Analog Pins</a></h3>
+<p>The ADC can be configured to use an internal reference voltage by setting the
+<code>REFS0</code> and <code>REFS1</code> bits of the <code>ADMUX</code> register, avoiding the need to connect
+a reference voltage to the <code>AREF</code> pin. To use the supply voltage as the
+reference voltage, use the “AV CC with external capacitor at <code>AREF</code> pin” by
+setting <code>REFS0</code> and <code>REFS1</code> to 1 and 0 respectively. In this configuration,
+connect a 100nF capacitor between <code>AREF</code> and ground to reduce noise.</p>
+<h2 id="irf3205-mosfet-in-to-220-package"><a class="zola-anchor" href="#irf3205-mosfet-in-to-220-package" aria-label="Anchor link for: irf3205-mosfet-in-to-220-package">IRF3205 MOSFET in TO-220 package</a></h2>
+<p>The IRF3205 is an N-Channel MOSFET.</p>
+<p>Facing the front of the component (ie. the text is visible) with the pins pointing downwards, the pinout from left to right is:</p>
+<ol>
+<li>Gate</li>
+<li>Drain</li>
+<li>Source</li>
+</ol>
+<p><img src="https://gridbugs.github.io/gridbugs.org/component-pinouts-and-notes/irf3205.jpg" alt="Photo of an IRF3205 MOSFET with the pins labeled from left to right: “1: Gate”, “2: Drain”, “3: Source”, and an overlay with text “IRF3205 N-Channel MOSFET”" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;programming-an-arduino-the-hard-way&#x2F;" aria-label="Previous">
+	  Previous: Programming an Arduino the Hard Way
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;building-circuits-like-the-ship-of-theseus&#x2F;" aria-label="Next">
+	  Next: Building Circuits like the Ship of Theseus
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

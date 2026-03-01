@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Fixing my Old OS Assignment with Machine Code Hacks">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/fixing-my-old-os-assignment-with-machine-code-hacks/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/fixing-my-old-os-assignment-with-machine-code-hacks/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2025-08-24T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/fixing-my-old-os-assignment-with-machine-code-hacks/nslu2.jpg">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Fixing my Old OS Assignment with Machine Code Hacks
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Fixing my Old OS Assignment with Machine Code Hacks</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2025-08-24T00:00:00+00:00">
+    August 24, 2025
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/osdev" aria-label="tag">osdev</a>
+  
+</p>
+
+
+  
+
+<p>Back in 2012 I took an Operating Systems course, the main assessment of which
+was a 12 week pair assignment implementing a user-level OS personality for the
+<a href="https://sel4.systems/">seL4 microkernel</a>. I recently got the urge to boot up
+our little OS. I saved the contents of my university computer system home directory
+before I graduated so I still have a copy of the code, and
+fortunately I didn’t <code>make clean</code> the last time I worked on it so the bootable
+(at least in theory!) disk image is still in the project directory.</p>
+<p>Also fortunately my project partner somehow forgot to return the hardware loaned
+to them by the university and over the following years it ended up in one of my
+(ahem) several boxes of junk that I’ll definitely do something with someday.</p>
+<p>And for this <a href="https://en.wikipedia.org/wiki/NSLU2">Storage Link for USB 2.0 Disk Drives</a>, a.k.a NSLU2,
+affectionately referred to as the Slug, today was that day.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/fixing-my-old-os-assignment-with-machine-code-hacks/nslu2.jpg" alt="My Network Storage Link for USB 2.0 Disk Drives" /></p>
+<h2 id="powering-it-on"><a class="zola-anchor" href="#powering-it-on" aria-label="Anchor link for: powering-it-on">Powering it On</a></h2>
+<p>Plugging it into power and switching it on illuminated the power indicator LED.
+There’s no screen or input devices, so all interaction will be via an
+aftermarket USB serial port. In the image below the USB serial port is the
+left-most port which was clearly made by a power tool.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/fixing-my-old-os-assignment-with-machine-code-hacks/back.jpg" alt="Back of the slug showing the aftermarket serial port" /></p>
+<p>Plugging it into my computer with a USB cable causes the serial device to show up in the
+output of <code>dmesg</code>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>[138157.363235] usb 1-5: new full-speed USB device number 18 using xhci_hcd
+</span><span>[138157.511474] usb 1-5: New USB device found, idVendor=0403, idProduct=6001, bcdDevice= 6.00
+</span><span>[138157.511481] usb 1-5: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+</span><span>[138157.511483] usb 1-5: Product: USB &lt;-&gt; UNSW-AOS
+</span><span>[138157.511485] usb 1-5: Manufacturer: FTDI
+</span><span>[138157.511487] usb 1-5: SerialNumber: 12345678
+</span><span>[138157.516506] ftdi_sio 1-5:1.0: FTDI USB Serial Device converter detected
+</span><span>[138157.516539] usb 1-5: Detected FT232R
+</span><span>[138157.521742] usb 1-5: FTDI USB Serial Device converter now attached to ttyUSB0
+</span></code></pre>
+<p>Running <code>picocom</code> to open a terminal on <code>/dev/ttyUSB0</code>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ picocom /dev/ttyUSB0
+</span><span>picocom v2024-07
+</span><span>
+</span><span>port is        : /dev/ttyUSB0
+</span><span>flowcontrol    : none
+</span><span>baudrate is    : 9600
+</span><span>parity is      : none
+</span><span>databits are   : 8
+</span><span>stopbits are   : 1
+</span><span>txdelay is     : 0 ns
+</span><span>escape is      : C-a
+</span><span>local echo is  : no
+</span><span>noinit is      : no
+</span><span>noreset is     : no
+</span><span>hangup is      : no
+</span><span>nolock is      : no
+</span><span>send_cmd is    : /nix/store/cmpvp7nx52dmbjaqkiscgkdzqzaikmaz-lrzsz-0.12.20/bin/sz -vv
+</span><span>receive_cmd is : /nix/store/cmpvp7nx52dmbjaqkiscgkdzqzaikmaz-lrzsz-0.12.20/bin/rz -vv -E
+</span><span>imap is        :
+</span><span>omap is        :
+</span><span>emap is        : crcrlf,delbs,
+</span><span>logfile is     : none
+</span><span>initstring     : none
+</span><span>exit_after is  : not set
+</span><span>exit is        : no
+</span><span>minimal cmds is: no
+</span><span>
+</span><span>Type [C-a] [C-h] to see available commands
+</span><span>Terminal ready
+</span></code></pre>
+<p>…but there was no output.</p>
+<p>I couldn’t remember the process we used to load our OS project onto the slug. I
+was hoping that it would already be loaded on there, and powering it on would
+print something to the terminal, but no luck there.</p>
+<p>On a whim I searched my entire old uni home directory for “ttyUSB0” since
+I assumed the project would be transferred over the serial port and thus I would
+have some script that referenced the name of the serial device. This assumption
+would later turn out to be false but I did find something helpful in my search:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ grep -rni &#39;ttyUSB0&#39;
+</span><span>nslu2-util/nslu2.c:67:  char defport[] = &quot;/dev/ttyUSB0&quot;;
+</span></code></pre>
+<p>The <code>nslu2-util</code> program is a command-line utility for starting, stopping,
+and resetting the slug. Students in the OS course were given a copy of the tool.
+It’s a tiny C project with a <code>Makefile</code> and running <code>make</code> built an <code>nslu2</code>
+executable:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ./nslu2 -h
+</span><span>Usage: nslu2 &lt;-p port&gt; up|down|reset
+</span></code></pre>
+<p>So I ran <code>./nslu2 reset</code> and this caused something to appear on my <code>picocom</code>
+serial terminal:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Terminal ready
+</span><span>&gt;R+;#23/#766&#39;2&quot;*&quot;&quot;3+&quot;:
+</span></code></pre>
+<p>Getting garbage text over a serial port usually means the baudrate is wrong.
+The default baudrate was 9600. After trying 115200 instead and resetting the slug
+I could read the output:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ picocom -b 115200 /dev/ttyUSB0
+</span><span>...
+</span><span>Terminal ready
+</span><span>++
+</span><span>Ethernet eth0: MAC address 00:14:bf:68:99:03
+</span><span>IP: 192.168.168.2/255.255.255.0, Gateway: 192.168.168.1
+</span><span>Default server: 0.0.0.0, DNS server IP: 0.0.0.0
+</span><span>
+</span><span>RedBoot(tm) bootstrap and debug environment [ROMRAM]
+</span><span>Red Hat certified release, version 1.92 - built 22:30:50, Jul 22 2008
+</span><span>
+</span><span>Platform: IXDP425 Development Platform (XScale)
+</span><span>Copyright (C) 2000, 2001, 2002, Red Hat, Inc.
+</span><span>
+</span><span>RAM: 0x00000000-0x02000000, 0x000724b0-0x01ff3000 available
+</span><span>FLASH: 0x50000000 - 0x50800000, 64 blocks of 0x00020000 bytes each.
+</span><span>== Executing boot script in 2.000 seconds - enter ^C to abort
+</span><span>RedBoot&gt; load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin;go
+</span><span>Unable to reach host 192.168.168.1 (192.168.168.1)
+</span><span>
+</span></code></pre>
+<h2 id="redboot"><a class="zola-anchor" href="#redboot" aria-label="Anchor link for: redboot">RedBoot</a></h2>
+<p>The printout indicates that the slug is running a default boot script:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin;go
+</span></code></pre>
+<p>I don’t remember interacting with RedBoot as a student, this command must have
+once caused our OS project to start running. That script would have been set up by the
+people running the OS course; it would be different or absent on a brand new
+slug.</p>
+<p>The line above is also interesting:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>== Executing boot script in 2.000 seconds - enter ^C to abort
+</span></code></pre>
+<p>Resetting the slug and hitting ctrl+c within 2 seconds of seeing that starts an
+interactive shell. Luckily this shell accepts a <code>help</code> command. I’ll paste the
+entire output here in case it’s helpful to someone in the future:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; help
+</span><span>go to assign mode
+</span><span>   assign
+</span><span>Set/Query the system console baud rate
+</span><span>   baudrate [-b &lt;rate&gt;]
+</span><span>sercomm boot flow
+</span><span>   boot
+</span><span>Manage machine caches
+</span><span>   cache [ON | OFF]
+</span><span>Display/switch console channel
+</span><span>   channel [-1|&lt;channel number&gt;]
+</span><span>Compute a 32bit checksum [POSIX algorithm] for a range of memory
+</span><span>   cksum -b &lt;location&gt; -l &lt;length&gt;
+</span><span>Display (hex dump) a range of memory
+</span><span>   dump -b &lt;location&gt; [-l &lt;length&gt;] [-s] [-1|2|4]
+</span><span>Execute an image - with MMU off
+</span><span>   exec [-w timeout] [-b &lt;load addr&gt; [-l &lt;length&gt;]]
+</span><span>        [-r &lt;ramdisk addr&gt; [-s &lt;ramdisk length&gt;]]
+</span><span>        [-c &quot;kernel command line&quot;] [&lt;entry_point&gt;]
+</span><span>Manage FLASH images
+</span><span>   fis {cmds}
+</span><span>Execute code at a location
+</span><span>   go [-w &lt;timeout&gt;] [entry]
+</span><span>Help about help?
+</span><span>   help [&lt;topic&gt;]
+</span><span>Set/change IP addresses
+</span><span>   ip_address [-l &lt;local_ip_address&gt;] [-h &lt;server_address&gt;]
+</span><span>Load a file
+</span><span>   load [-r] [-v] [-d] [-h &lt;host&gt;] [-m &lt;varies&gt;] [-c &lt;channel_number&gt;]
+</span><span>        [-b &lt;base_address&gt;] &lt;file_name&gt;
+</span><span>Compare two blocks of memory
+</span><span>   mcmp -s &lt;location&gt; -d &lt;location&gt; -l &lt;length&gt; [-1|-2|-4]
+</span><span>Fill a block of memory with a pattern
+</span><span>   mfill -b &lt;location&gt; -l &lt;length&gt; -p &lt;pattern&gt; [-1|-2|-4]
+</span><span>move kernel&amp;ramdisk to ram
+</span><span>   move
+</span><span>Network connectivity test
+</span><span>   ping [-v] [-n &lt;count&gt;] [-l &lt;length&gt;] [-t &lt;timeout&gt;] [-r &lt;rate&gt;]
+</span><span>        [-i &lt;IP_addr&gt;] -h &lt;IP_addr&gt;
+</span><span>Reset the system
+</span><span>   reset
+</span><span>Set/Read MAC address for NPE ethernet ports
+</span><span>   set_npe_mac [-p &lt;portnum&gt;] [xx:xx:xx:xx:xx:xx]
+</span><span>go to upgrade mode
+</span><span>   upgrade
+</span><span>Display RedBoot version information
+</span><span>   version
+</span><span>Display (hex dump) a range of memory
+</span><span>   x -b &lt;location&gt; [-l &lt;length&gt;] [-s] [-1|2|4]
+</span></code></pre>
+<p>This tells us that the default boot script is running the <code>load</code> command to download the OS
+image over the network and then the <code>go</code> command to boot it. This unlocked a memory of
+running some software (I forget exactly what) on my laptop to serve the OS image
+over the network and plugging the slug directly into my laptop with an Ethernet
+cable. Based on the <code>load -r -v -b 0x00100000 -h 192.168.168.1 bootimg.bin</code>
+command, in this setup my laptop would have had the IP address <code>192.168.168.1</code>,
+and the bootable OS image was in a file named <code>bootimg.bin</code>.</p>
+<p>Searching my old home directory for a <code>bootimg.bin</code> and fortunately I still have one:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$  find . -name bootimg.bin
+</span><span>./aos/aoshg/images/bootimg.bin
+</span></code></pre>
+<p>But the <code>192.168.168.1</code> address isn’t going to work. My home network uses
+addresses in the <code>192.168.1.*</code> range, so unless I set up a computer with a spare
+Ethernet port as a router and plug the slug directly into it, I’m going to have
+to change the network configuration of the slug. Fortunately there’s a command
+for that:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Set/change IP addresses
+</span><span>   ip_address [-l &lt;local_ip_address&gt;] [-h &lt;server_address&gt;]
+</span></code></pre>
+<p>Running <code>ip_address</code> with no arguments prints the current configuration:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; ip_addr
+</span><span>IP: 192.168.168.2/255.255.255.0, Gateway: 192.168.168.1
+</span><span>Default server: 0.0.0.0, DNS server IP: 0.0.0.0
+</span></code></pre>
+<p>And I can change the address with:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; ip_addr -l 192.168.1.22
+</span><span>IP: 192.168.1.22/255.255.255.0, Gateway: 192.168.168.1
+</span><span>Default server: 0.0.0.0, DNS server IP: 0.0.0.0
+</span></code></pre>
+<p>I chose <code>192.168.1.22</code> arbitrarily among the unused IP addresses on my home
+network. After this change I could <code>ping</code> that address from my computer, and
+also use RedBoot’s own <code>ping</code> command to ping my computer (whose address is
+<code>192.168.1.7</code>):</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; ping -h 192.168.1.7
+</span><span>Network PING - from 192.168.1.22 to 192.168.1.7
+</span><span>PING - received 10 of 10 expected
+</span></code></pre>
+<p>So the slug is on my home network now and it can see my development machine
+where <code>bootimg.bin</code> is located. Now I just need a way to send <code>bootimg.bin</code> over
+the network to the slug. The documentation printed by <code>help</code> about the <code>load</code>
+command doesn’t go into much detail about what network protocol RedBoot will use
+to transfer a file:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Load a file
+</span><span>   load [-r] [-v] [-d] [-h &lt;host&gt;] [-m &lt;varies&gt;] [-c &lt;channel_number&gt;]
+</span><span>        [-b &lt;base_address&gt;] &lt;file_name&gt;
+</span></code></pre>
+<p>I found some better documentation
+<a href="https://doc.ecoscentric.com/ref/download-command.html">online</a> which explained
+that the <code>-m</code> option accepts <code>TFTP</code> or <code>HTTP</code>. There’s no way to
+specify the port number. For some reason this caused me to prefer
+<a href="https://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol">TFTP</a>, possibly
+because I’m so used to HTTP servers running on ports besides the default (80)
+when running websites locally, but not so for TFTP. I actually implemented a
+<a href="https://crates.io/crates/tftp-ro">simple send-only TFTP server</a> a few years
+ago when I got frustrated that all the TFTP servers I could find wouldn’t let
+me just serve files out of the current directory, so that’s what I’ll be using
+here.</p>
+<p>To install it:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ cargo install tftp-ro
+</span></code></pre>
+<p>And then I ran it from the directory containing <code>bootimg.bin</code> like:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ sudo tftp-ro -v -d .
+</span><span>[2025-08-24T07:46:46Z INFO  tftp_ro] Listening on 0.0.0.0:69
+</span><span>[2025-08-24T07:46:46Z INFO  tftp_ro] Serving files out of .
+</span></code></pre>
+<p>Then I tried downloading the file to the slug:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; load -r -v -b 0x00100000 -h 192.168.1.7 -m TFTP bootimg.bin
+</span><span>Can&#39;t load &#39;bootimg.bin&#39;: operation timed out
+</span></code></pre>
+<p>I’m not sure if this is a bug or performance issue with my TFTP server but my
+quick fix was to compress the image. RedBoot’s <code>load</code> command takes a flag <code>-d</code>
+which decompresses the image assuming it’s compressed with gzip.</p>
+<p>So I compressed the image:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ gzip -k bootimg.bin
+</span></code></pre>
+<p>…and tried <code>load</code>-ing it again:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; load -r -v -d -b 0x00100000 -h 192.168.1.7 -m TFTP bootimg.bin.gz
+</span><span>\
+</span><span>Raw file loaded 0x00100000-0x0017bfff, assumed entry at 0x00100000
+</span></code></pre>
+<p>Success! RedBoot remembers that we loaded that image starting at address
+<code>0x00100000</code>, so we can now run the command <code>go</code> to start executing at that address:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>RedBoot&gt; go
+</span><span>ELF-loader image started:   paddr=[0x00100000..0x0017c000]
+</span><span>ELF-loading kernel image:   paddr=[0x01000000..0x01039154] vaddr=[0xf0000000..0xf0039154] v_entry=0xf0000000
+</span><span>ELF-loading userland image: paddr=[0x00407000..0x005d0000] vaddr=[0x00007000..0x001d0000] v_entry=0x000080b4
+</span><span>Enabling MMU and paging
+</span><span>Jumping to kernel-image entry point
+</span><span>Bootstrapping kernel
+</span><span>
+</span><span>SOS Starting...
+</span><span>Info Page:  0x001d1000
+</span><span>IPC Buffer: 0x001d0000
+</span><span>Node ID: 0 (of 1)
+</span><span>IOPT levels: 0
+</span><span>Init cnode size bits: 12
+</span><span>
+</span><span>Cap details:
+</span><span>Type              Start      End
+</span><span>Empty             0x00000266 0x00001000
+</span><span>Shared frames     0x00000000 0x00000000
+</span><span>User image frames 0x0000000c 0x000001d5
+</span><span>User image PTs    0x000001d5 0x000001d7
+</span><span>Untypeds          0x000001d7 0x000001f7
+</span><span>
+</span><span>Untyped details:
+</span><span>Untyped Slot       Paddr      Bits
+</span><span>  0     0x000001d7 0x01000000 12
+</span><span>  1     0x000001d8 0x01001000 12
+</span><span>  2     0x000001d9 0x01002000 12
+</span><span>  3     0x000001da 0x01003000 12
+</span><span>  4     0x000001db 0x01004000 12
+</span><span>  5     0x000001dc 0x01005000 12
+</span><span>  6     0x000001dd 0x01006000 12
+</span><span>  7     0x000001de 0x01007000 12
+</span><span>  8     0x000001df 0x01008000 12
+</span><span>  9     0x000001e0 0x01009000 12
+</span><span> 10     0x000001e1 0x0100a000 12
+</span><span> 11     0x000001e2 0x0100b000 12
+</span><span> 12     0x000001e3 0x0100c000 12
+</span><span> 13     0x000001e4 0x0100d000 12
+</span><span> 14     0x000001e5 0x0100e000 12
+</span><span> 15     0x000001e6 0x0100f000 12
+</span><span> 16     0x000001e7 0x01ff0000 13
+</span><span> 17     0x000001e8 0x01064000 14
+</span><span> 18     0x000001e9 0x01068000 15
+</span><span> 19     0x000001ea 0x01070000 16
+</span><span> 20     0x000001eb 0x01fe0000 16
+</span><span> 21     0x000001ec 0x01fc0000 17
+</span><span> 22     0x000001ed 0x01f80000 18
+</span><span> 23     0x000001ee 0x01080000 19
+</span><span> 24     0x000001ef 0x01f00000 19
+</span><span> 25     0x000001f0 0x01100000 20
+</span><span> 26     0x000001f1 0x01e00000 20
+</span><span> 27     0x000001f2 0x01200000 21
+</span><span> 28     0x000001f3 0x01c00000 21
+</span><span> 29     0x000001f4 0x01400000 22
+</span><span> 30     0x000001f5 0x01800000 22
+</span><span> 31     0x000001f6 0x0103a000 13
+</span><span>
+</span><span>Num device regions: 13
+</span><span>Device Addr     Size Start      End
+</span><span> 0 0xc8001000 12 0x000001f7 0x000001f8
+</span><span> 1 0xc8002000 12 0x000001f8 0x000001f9
+</span><span> 2 0xc8004000 12 0x000001f9 0x000001fa
+</span><span> 3 0xc8005000 12 0x000001fa 0x000001fb
+</span><span> 4 0xc8006000 12 0x000001fb 0x000001fc
+</span><span> 5 0xc8007000 12 0x000001fc 0x000001fd
+</span><span> 6 0xc8008000 12 0x000001fd 0x000001fe
+</span><span> 7 0xc8009000 12 0x000001fe 0x000001ff
+</span><span> 8 0xc800a000 12 0x000001ff 0x00000200
+</span><span> 9 0xc800b000 12 0x00000200 0x00000201
+</span><span>10 0x50000000 12 0x00000201 0x00000261
+</span><span>11 0x60000000 12 0x00000261 0x00000265
+</span><span>12 0xc4000000 12 0x00000265 0x00000266
+</span><span>-----------------------------------------
+</span><span>
+</span><span>Parsing Dite data:
+</span><span>Found section              sos at index 0 (0x00007018)
+</span><span>        flags 0
+</span><span>        entry 80b4
+</span><span>        base 0x00008000
+</span><span>        size 1838928
+</span><span>        magic (nil)
+</span><span>        pbase 0x00008000
+</span><span>Found section         tty_test at index 1 (0x00007040)
+</span><span>        flags 0
+</span><span>        entry 0
+</span><span>        base 0x001c9000
+</span><span>        size 27863
+</span><span>        magic (nil)
+</span><span>        pbase 0x001c9000
+</span><span>DMA memory is at 0x10000000 to 0x10400000
+</span><span>Initialising the frame table!
+</span><span>Made a frame, physical address 181d000, cap 1646
+</span><span>Made a frame, physical address 181e000, cap 1647
+</span><span>Made a frame, physical address 181f000, cap 1648
+</span><span>...
+</span><span>Made a frame, physical address 18e2000, cap 1843
+</span><span>Made a frame, physical address 18e3000, cap 1844
+</span><span>Made a frame, physical address 18e4000, cap 1845
+</span><span>Initialising the pager!
+</span><span>Leaking a frame.
+</span><span>Mapping our leaked frame to the MASTER_PAGEDIR address (leaking a hardware page table, unavoidable)
+</span><span>Leaking a frame.
+</span><span>Mapping our leaked frame to the MASTER_PAGETABLE address (probably not but possibly also leaking a hardware page table)
+</span><span>Creating the original 4 capdirs
+</span><span>We are mapping in a kernel page at vaddr e3ffa000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr e4000000 to pd 3
+</span><span>Trying to map in a hardware page table at vaddr e4000000 for pd 3
+</span><span>We are mapping in a kernel page at vaddr e3ffb000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr e3ffc000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr e3ffd000 to pd 3
+</span><span>Adding to capdir (cap dir 0 is 0xe3ffa000)
+</span><span>Pager initialised!  Moving morecore across to pager-based allocation!
+</span><span>
+</span><span>Starting network_init
+</span><span>
+</span><span>        Network Mask: 225.225.225.0
+</span><span>  Gateway IP Address: 192.168.168.1
+</span><span>    Local IP Address: 192.168.168.2
+</span><span>
+</span><span>Device memory at 0xb8005000 to 0xb8006000
+</span><span>Device memory at 0x40000000 to 0x40060000
+</span><span>Device memory at 0x50000000 to 0x50004000
+</span><span>Device memory at 0xb8006000 to 0xb8007000
+</span><span>Device memory at 0xb8007000 to 0xb8008000
+</span><span>Device memory at 0xb8008000 to 0xb8009000
+</span><span>Undelivered IRQ: 2
+</span><span>Device memory at 0xb4000000 to 0xb4001000
+</span><span>Device memory at 0xb8009000 to 0xb800a000
+</span><span>Device memory at 0xb800a000 to 0xb800b000
+</span><span>waiting for PHY 0 to become ready...
+</span><span>
+</span><span>Network failed to respond to ARP query
+</span><span>
+</span><span>seL4 root server abortedDebug halt syscall from user thread 0xf0063e00
+</span><span>halting...
+</span></code></pre>
+<p>This is debug output from our OS project which is pretty exciting. It’s running!
+It’s failing an assertion after unsuccessfully attempting to
+connect to the network. It has the same IP addresses hard-coded
+into it as the initial boot script, so can’t connect to my home network, and the code
+is written in such a way that doesn’t let it proceed to boot without network access.</p>
+<p>We’ll get to fixing this, but first let’s talk about the goal of this endeavour.</p>
+<h2 id="call-me-maybe"><a class="zola-anchor" href="#call-me-maybe" aria-label="Anchor link for: call-me-maybe">Call Me Maybe</a></h2>
+<p>I built an <a href="https://en.wikipedia.org/wiki/Easter_egg_(media)">Easter egg</a> into
+the OS. The slug has a buzzer, and there’s a particular bit in a hardware register that
+can be toggled at a given frequency to buzz at that frequency. I wrote this
+code in mid 2012 and so the obvious song to play according to 20 year old me
+was <a href="https://www.youtube.com/watch?v=fWNaR-rxAic">Call Me Maybe by Carly Rae Jepsen</a>. I remember implementing a device driver
+with a unix-style “everything’s a file” interface, where opening the file
+<code>/dev/maybe</code> would lock up the OS while it buzzed the hottest song of 2012.</p>
+<p>Unfortunately it appears the snapshot of the project I stored on the university
+server was not its final form. I did most of the work for this project on a
+netbook (remember netbooks?!) which has sadly been lost to the ages. The
+implementation of <code>/dev/maybe</code> is not in this version, but it still has the
+logic to play the song and print the lyrics to the terminal:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">call_me_maybe</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span>beat_len) {
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;Hey I just met you</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    tone(NOTE_G4, beat_len);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, </span><span style="color:#0086b3;">3</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;And this is crazy</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;But here&#39;s my number</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_C5, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;So call me maybe</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_A4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_A4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>}
+</span></code></pre>
+<p>Rather than playing the song by reading a file, this version of the project
+would play it immediately after booting if a certain compile-time flag was set:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>    if (I_JUST_MET_YOU) {
+</span><span>        call_me_maybe(500000);
+</span><span>    }
+</span></code></pre>
+<p>However the flag was not set:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">#define </span><span>I_JUST_MET_YOU </span><span style="color:#0086b3;">0
+</span></code></pre>
+<p>The C compiler was probably smart enough to elide the entire call to
+<code>call_me_maybe</code> since that condition is never true. Fortunately the presence of
+the song’s lyrics in the bootable image tells us that the <code>call_me_maybe</code> function did
+make it into the image despite never being called:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ strings bootimg.bin | grep Hey
+</span><span>Hey I just met you
+</span></code></pre>
+<p>So once the network issue is fixed, my goal is going to be getting Call Me Maybe
+to play on the buzzer of my slug.</p>
+<p><em>Why don’t you just call the <code>call_me_maybe</code> function?</em></p>
+<p>Well…</p>
+<h2 id="fixing-the-network"><a class="zola-anchor" href="#fixing-the-network" aria-label="Anchor link for: fixing-the-network">Fixing the Network</a></h2>
+<p>I can’t build the project. I have the source code, and luckily I have a mostly
+working bootable image. I also have the object files for each source file which
+were built with debug symbols. But I don’t have the software necessary to
+change the source code and rebuild the image to incorporate those changes.</p>
+<p>And I refuse to do the kind of archaeology that would be required to get a
+32-bit ARM compiler toolchain and seL4 build scripts circa 2012 running on a modern OS.
+Getting all the tools working was hard enough back in 2012.</p>
+<p>In order to get past the failing assertion we need the OS to choose an IP
+address in a valid range for my home network. Currently it tries to use
+192.168.168.2:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>        Network Mask: 225.225.225.0
+</span><span>  Gateway IP Address: 192.168.168.1
+</span><span>    Local IP Address: 192.168.168.2
+</span></code></pre>
+<p>The network information is a compile-time constant string which means these
+strings are literally present in the binary:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ strings bootimg.bin | grep &#39;192\.168&#39;
+</span><span>192.168.168.1
+</span><span>192.168.168.2
+</span></code></pre>
+<p>To change them to suitable addresses, one can simply <em>modify the binary
+directly</em>! I don’t own a <a href="https://xkcd.com/378/">magnetized needle</a> so instead
+I’ll use the tool <code>hexedit</code>.</p>
+<p>The <code>hexedit</code> tool lets you print and modify the raw bytes in any type of file.
+When you run <code>hexedit bootimg.bin</code> it prints the hexadecimal and ASCII
+representations of the binary data in the file:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>000000B0   E5 9F 03 24  E5 9F 13 24  E5 9F 23 24  EB 00 04 97  ...$...$..#$....
+</span><span>000000C0   E5 9F 03 20  EB 00 00 F6  E3 50 00 00  0A 00 00 02  ... .....P......
+</span><span>000000D0   E5 9F 03 14  EB 00 04 9F  EB 00 00 D1  E5 9F 43 04  ..............C.
+</span><span>000000E0   E1 A0 00 04  E3 A0 10 01  E2 8D 20 40  E2 8D 30 38  .......... @..08
+</span><span>000000F0   EB 00 01 F3  E1 A0 00 04  E3 A0 10 00  E2 8D 20 20  ..............
+</span><span>00000100   E2 8D 30 18  EB 00 01 EE  E1 A0 00 04  EB 00 01 DB  ..0.............
+</span><span>00000110   E1 A0 90 01  E5 9D 30 1C  E5 8D 30 00  E5 8D 10 04  ......0...0.....
+</span><span>00000120   E5 9F 02 C8  E5 9D 10 44  E5 9D 20 3C  E5 9D 30 24  .......D.. &lt;..0$
+</span><span>00000130   EB 00 04 7A  E5 9F 62 A4  E5 9F A2 A4  E5 9D 00 44  ...z..b........D
+</span><span>00000140   E5 9D 10 3C  E2 41 10 01  E1 A0 20 06  E1 A0 30 0A  ...&lt;.A.... ...0.
+</span><span>00000150   EB FF FF CC  E3 50 00 00  0A 00 00 02  E5 9F 02 90  .....P..........
+</span><span>00000160   EB 00 04 7C  EB 00 00 AE  E5 9F 02 78  E3 A0 10 01  ...|.......x....
+</span><span>00000170   EB 00 02 35  E3 50 00 00  1A 00 00 02  E5 9F 02 74  ...5.P.........t
+</span><span>00000180   EB 00 04 74  EB 00 00 A6  E5 9F 02 6C  EB 00 00 C4  ...t.......l....
+</span><span>00000190   E3 50 00 00  0A 00 00 02  E5 9F 02 60  EB 00 04 6D  .P.........`...m
+</span><span>000001A0   EB 00 00 9F  E5 9F 42 50  E1 A0 00 04  E3 A0 10 01  ......BP........
+</span><span>-**  bootimg.bin       --0x0/0x7C000--0%---------------------------------------
+</span></code></pre>
+<p>To find the IP addresses, we’ll be changing, search for a sequence of hexadecimal digits representing
+the ASCII encoding of part of the address.</p>
+<p>Here’s an ASCII table so you can play along at home:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Dec Hex    Dec Hex    Dec Hex  Dec Hex  Dec Hex  Dec Hex   Dec Hex   Dec Hex
+</span><span>  0 00 NUL  16 10 DLE  32 20    48 30 0  64 40 @  80 50 P   96 60 `  112 70 p
+</span><span>  1 01 SOH  17 11 DC1  33 21 !  49 31 1  65 41 A  81 51 Q   97 61 a  113 71 q
+</span><span>  2 02 STX  18 12 DC2  34 22 &quot;  50 32 2  66 42 B  82 52 R   98 62 b  114 72 r
+</span><span>  3 03 ETX  19 13 DC3  35 23 #  51 33 3  67 43 C  83 53 S   99 63 c  115 73 s
+</span><span>  4 04 EOT  20 14 DC4  36 24 $  52 34 4  68 44 D  84 54 T  100 64 d  116 74 t
+</span><span>  5 05 ENQ  21 15 NAK  37 25 %  53 35 5  69 45 E  85 55 U  101 65 e  117 75 u
+</span><span>  6 06 ACK  22 16 SYN  38 26 &amp;  54 36 6  70 46 F  86 56 V  102 66 f  118 76 v
+</span><span>  7 07 BEL  23 17 ETB  39 27 &#39;  55 37 7  71 47 G  87 57 W  103 67 g  119 77 w
+</span><span>  8 08 BS   24 18 CAN  40 28 (  56 38 8  72 48 H  88 58 X  104 68 h  120 78 x
+</span><span>  9 09 HT   25 19 EM   41 29 )  57 39 9  73 49 I  89 59 Y  105 69 i  121 79 y
+</span><span> 10 0A LF   26 1A SUB  42 2A *  58 3A :  74 4A J  90 5A Z  106 6A j  122 7A z
+</span><span> 11 0B VT   27 1B ESC  43 2B +  59 3B ;  75 4B K  91 5B [  107 6B k  123 7B {
+</span><span> 12 0C FF   28 1C FS   44 2C ,  60 3C &lt;  76 4C L  92 5C \  108 6C l  124 7C |
+</span><span> 13 0D CR   29 1D GS   45 2D -  61 3D =  77 4D M  93 5D ]  109 6D m  125 7D }
+</span><span> 14 0E SO   30 1E RS   46 2E .  62 3E &gt;  78 4E N  94 5E ^  110 6E n  126 7E ~
+</span><span> 15 0F SI   31 1F US   47 2F /  63 3F ?  79 4F O  95 5F _  111 6F o  127 7F DEL
+</span></code></pre>
+<p>For example to find <code>192</code>, search for <code>0x313932</code>:</p>
+<pre><code><span>0005F5E0   30 00 00 00  4E 65 74 77  6F 72 6B 20  4D 61 73 6B  0...Network Mask
+</span><span>0005F5F0   00 00 00 00  <span style="background-color:red">31 39 32 2E  31 36 38 2E  31 36 38 2E</span>  ....<span style="background-color:red">192.168.168.</span>
+</span><span>0005F600   <span style="background-color:red">31</span> 00 00 00  47 61 74 65  77 61 79 20  49 50 20 41  <span style="background-color:red">1</span>...Gateway IP A
+</span><span>0005F610   64 64 72 65  73 73 00 00  00 00 00 00  <span style="background-color:green">31 39 32 2E</span>  ddress......<span style="background-color:green">192.</span>
+</span><span>0005F620   <span style="background-color:green">31 36 38 2E  31 36 38 2E  32</span> 00 00 00  4C 6F 63 61  <span style="background-color:green">168.168.2</span>...Loca
+</span><span>0005F630   6C 20 49 50  20 41 64 64  72 65 73 73  00 00 00 00  l IP Address....
+</span><span>0005F640   00 00 00 00  6E 65 74 69  66 20 21 3D  20 4E 55 4C  ....netif != NUL
+</span><span>---  bootimg.bin       --0x5F5E4/0x7C000--77%----------------------------------
+</span></code></pre>
+<p>The ASCII representation of the data confirms that we’re in the right place.</p>
+<p>The game is that all the changes to the binary file must be made by updating values in-place.
+It’s not possible to insert new bytes between existing bytes, nor to remove bytes.
+This is because parts of the code will refer to other parts of the code and
+static data (like these IP addresses) by their relative offset from one
+another. If we insert or remove bytes then that will change the relative
+position of all following bytes, causing references to no longer point to the
+correct place.</p>
+<p>I changed the local and gateway addresses to <code>192.168.1.25</code> and <code>192.168.1.1</code>
+respectively, again choosing an arbitrary unused valid address for the local
+address and my router’s address as the gateway address. The new addresses are
+made up of fewer characters than the original addresses so they’ll fit in the
+allocated space. I overwrote the remaining characters of the original strings
+with 0s as these as null-terminated C strings (so technically I just needed to
+put a single 0 byte immediately after the end of each string).</p>
+<pre><code><span>0005F5E0   30 00 00 00  4E 65 74 77  6F 72 6B 20  4D 61 73 6B  0...Network Mask
+</span><span>0005F5F0   00 00 00 00  <span style="background-color:red">31 39 32 2E  31 36 38 2E  31 2E 31</span> 00  ....<span style="background-color:red">192.168.1.1</span>.
+</span><span>0005F600   00 00 00 00  47 61 74 65  77 61 79 20  49 50 20 41  ....Gateway IP A
+</span><span>0005F610   64 64 72 65  73 73 00 00  00 00 00 00  <span style="background-color:green">31 39 32 2E</span>  ddress......<span style="background-color:green">192.</span>
+</span><span>0005F620   <span style="background-color:green">31 36 38 2E  31 2E 32 35</span>  00 00 00 00  4C 6F 63 61  <span style="background-color:green">168.1.25</span>....Loca
+</span><span>0005F630   6C 20 49 50  20 41 64 64  72 65 73 73  00 00 00 00  l IP Address....
+</span><span>0005F640   00 00 00 00  6E 65 74 69  66 20 21 3D  20 4E 55 4C  ....netif != NUL
+</span><span>-**  bootimg.bin       --0x5F629/0x7C000--77%----------------------------------
+</span></code></pre>
+<p>After re-<code>gzip</code>-ing the image and resetting the slug, and rerunning all the
+RedBoot commands as before, the OS makes it past the network initialization
+successfully:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Starting network_init
+</span><span>
+</span><span>        Network Mask: 225.225.225.0
+</span><span>  Gateway IP Address: 192.168.1.1
+</span><span>    Local IP Address: 192.168.1.25
+</span><span>
+</span><span>Device memory at 0xb8005000 to 0xb8006000
+</span><span>Device memory at 0x40000000 to 0x40060000
+</span><span>Device memory at 0x50000000 to 0x50004000
+</span><span>Device memory at 0xb8006000 to 0xb8007000
+</span><span>Device memory at 0xb8007000 to 0xb8008000
+</span><span>Device memory at 0xb8008000 to 0xb8009000
+</span><span>Undelivered IRQ: 2
+</span><span>Device memory at 0xb4000000 to 0xb4001000
+</span><span>Device memory at 0xb8009000 to 0xb800a000
+</span><span>Device memory at 0xb800a000 to 0xb800b000
+</span><span>waiting for PHY 0 to become ready....
+</span><span>
+</span><span>Mounting NFS
+</span><span>Error receiving time using UDP time protocol
+</span><span>Failed to initialise NFS
+</span><span>
+</span><span>Setting up capabilities for timer...
+</span><span>
+</span><span>Starting timer...
+</span><span>Undelivered IRQ: 5
+</span><span>[timer] starting timer!
+</span><span>[timer] base address: c8005000
+</span><span>[timer] frame count: 1
+</span><span>[timer] frame size: 4096
+</span><span>[timer] paging success
+</span><span>Getting timestamp...
+</span><span>[gpio] starting
+</span><span>[gpio] found region 0x001d13a8
+</span><span>[gpio] paging success
+</span><span>
+</span><span>Starting &quot;tty_test&quot;...
+</span><span>Loading first process.  Trying to set up a page table!
+</span><span>init&#39;d some startup stuff! - only_process_page_dir is at 0x000b9cb0, only_procss_vroot (sel4_pd) is 1985
+</span><span> * Loading segment 00008000--&gt;0000a3c0
+</span><span>We are mapping in a kernel page at vaddr 8000 to pd 1985
+</span><span>Trying to map in a hardware page table at vaddr 0 for pd 1985
+</span><span>We are mapping in a kernel page at vaddr d0008000 to pd 3
+</span><span>Trying to map in a hardware page table at vaddr d0000000 for pd 3
+</span><span>We are mapping in a kernel page at vaddr e4001000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr 9000 to pd 1985
+</span><span>We are mapping in a kernel page at vaddr d0009000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr a000 to pd 1985
+</span><span>We are mapping in a kernel page at vaddr d000a000 to pd 3
+</span><span> * Loading segment 000123c0--&gt;00013490
+</span><span>We are mapping in a kernel page at vaddr 12000 to pd 1985
+</span><span>We are mapping in a kernel page at vaddr d0012000 to pd 3
+</span><span>We are mapping in a kernel page at vaddr 13000 to pd 1985
+</span><span>We are mapping in a kernel page at vaddr d0013000 to pd 3
+</span><span>Mapping in a hardware page (vaddr 8ffff000, pd 1985)
+</span><span>We are mapping in a kernel page at vaddr 8ffff000 to pd 1985
+</span><span>Trying to map in a hardware page table at vaddr 8ff00000 for pd 1985
+</span><span>Paged in the stack frame.
+</span><span>
+</span><span>SOS entering syscall loop
+</span><span>vm fault at 0x8ffdffd0, pc = 0x000083a0, Data fault
+</span><span>Mapping in a hardware page (vaddr 8ffdffd0, pd 1985)
+</span><span>We are mapping in a kernel page at vaddr 8ffdf000 to pd 1985
+</span><span>vm fault at 0x8ffe0fe8, pc = 0x000083ac, Data fault
+</span><span>Mapping in a hardware page (vaddr 8ffe0fe8, pd 1985)
+</span><span>We are mapping in a kernel page at vaddr 8ffe0000 to pd 1985
+</span><span>vm fault at 0x8ffe1fe8, pc = 0x000083ac, Data fault
+</span><span>Mapping in a hardware page (vaddr 8ffe1fe8, pd 1985)
+</span><span>...
+</span><span>We are mapping in a kernel page at vaddr 8fffc000 to pd 1985
+</span><span>vm fault at 0x8fffdfe8, pc = 0x000083ac, Data fault
+</span><span>Mapping in a hardware page (vaddr 8fffdfe8, pd 1985)
+</span><span>We are mapping in a kernel page at vaddr 8fffd000 to pd 1985
+</span><span>vm fault at 0x8fffefe8, pc = 0x000083ac, Data fault
+</span><span>Mapping in a hardware page (vaddr 8fffefe8, pd 1985)
+</span><span>We are mapping in a kernel page at vaddr 8fffe000 to pd 1985
+</span><span>brk syscall, tty_brk = 32498
+</span><span>vm fault at 0x0003249c, pc = 0x000096a4, Data fault
+</span><span>PANIC /home/steve/src/aos/aoshg/apps/sos/src/main.c-handle_page_fault:161 segmentation fault
+</span><span>
+</span><span>Debug halt syscall from user thread 0xf0063e00
+</span><span>halting...
+</span></code></pre>
+<p>It still crashes eventually but that’s ok. Remember this is a snapshot of the project when
+it was half finished. What matters is that it prints the line:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>SOS entering syscall loop
+</span></code></pre>
+<p>Looking at the <code>main</code> function:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    gpio_init(_boot_info);
+</span><span>    buzzer_init();
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span>(I_JUST_MET_YOU) {
+</span><span>        call_me_maybe(</span><span style="color:#0086b3;">500000</span><span>);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">/* Start the user application */
+</span><span>    start_first_process(TTY_NAME, _sos_ipc_ep_cap);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">/* Initialise the serial connection for tty_test */
+</span><span>    console_init();
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">/* Wait on synchronous endpoint for IPC */
+</span><span>    dprintf(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">SOS entering syscall loop</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>The printout happens after the buzzer has been initialized. This means that
+all the necessary hardware initialization has taken place to play the song.
+So now we just need to call the <code>call_me_maybe</code> function.</p>
+<h2 id="just-calling-the-call-me-maybe-function"><a class="zola-anchor" href="#just-calling-the-call-me-maybe-function" aria-label="Anchor link for: just-calling-the-call-me-maybe-function">Just calling the <code>call_me_maybe</code> function</a></h2>
+<p>To call a function we need to know its address. Specifically its <em>virtual</em>
+address. This is determined at runtime by how memory is mapped by the page
+table. The logic for setting up the page table up exists somewhere in the project, but trying
+to determine which virtual address maps to a particular offset into the bootable
+image without the ability to instrument the code or any debugging tooling sounds
+unpleasant.</p>
+<p>No matter what approach I eventually take, I want to know where in the
+binary image <code>call_me_maybe</code> is located. To do this we’ll benefit from some
+slightly more sophisticated tools. It will be helpful to be able to use the
+debug symbols in object files to learn which sequences of instructions in the
+binary correspond to which functions in the source code. Short of setting up an
+ARM toolchain, I found that the <code>objdump</code> implementation that comes with LLVM
+(specifically the <code>llvm</code> derivation from nixpkgs) can disassemble the object
+files in the project well enough, despite them having been compiled for a
+foreign architecture (I’m using the x86_64 llvm package and these files were
+compiled for 32-bit ARM).</p>
+<p>Since <code>call_me_maybe</code> is defined in <code>buzzer.c</code>, I ran <code>llvm-objdump -d build/arm/nslu2/sos/src/buzzer.o</code>. The relevant part of the output is:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>00000054 &lt;buzzer_init&gt;:
+</span><span>      54: e3 a0 23 3a   blo     #9339788 &lt;$d+0x8e815c&gt;
+</span><span>      58: e5 9f 30 04   ldrteq  r9, [r0], #-4069
+</span><span>      5c: e5 83 20 00   eoreq   r8, r0, r5, ror #7
+</span><span>      60: e1 2f ff 1e   cdpne   p15, #15, c2, c15, c1, #7
+</span><span>
+</span><span>00000064 &lt;$d&gt;:
+</span><span>      64:       00 00 00 00     .word   0x00000000
+</span><span>
+</span><span>00000068 &lt;tone&gt;:
+</span><span>      68: e9 2d 40 f8   &lt;unknown&gt;
+</span><span>      6c: e1 a0 40 01   smlaltteq       r10, r0, r1, r0
+</span><span>      70: e1 a0 10 80   andshi  r10, r0, r1, ror #1
+</span><span>      74: e3 a0 09 3d   stclo   p0, c10, [r9, #-908]
+</span><span>      78: e2 80 0d 09   stmdbeq sp, {r1, r5, r6, r7, pc}
+</span><span>      7c: eb ff ff fe   cdp2    p15, #15, c15, c15, c11, #7
+</span><span>      80: e1 a0 60 00   rsbeq   r10, r0, r1, ror #1
+</span><span>      84: e1 a0 00 04   streq   r10, [r0], #-225
+</span><span>      88: e1 a0 10 86   ldrhi   r10, [r0], -r1, ror #1
+</span><span>      8c: eb ff ff fe   cdp2    p15, #15, c15, c15, c11, #7
+</span><span>      90: e2 50 70 00   rsbseq  r5, r0, r2, ror #1
+</span><span>      94: da 00 00 10   ldrdne  r0, r1, [r0], -r10
+</span><span>      98: e3 a0 40 00   subeq   r10, r0, r3, ror #1
+</span><span>      9c: e5 9f 50 3c   mrrclo  p15, #14, r9, r0, c5
+</span><span>      a0: e5 95 30 00   eorseq  r9, r0, r5, ror #11
+</span><span>      a4: e5 93 20 00   eoreq   r9, r0, r5, ror #7
+</span><span>      a8: e3 82 20 10   eorne   r8, r0, r3, ror #5
+</span><span>      ac: e5 83 20 00   eoreq   r8, r0, r5, ror #7
+</span><span>      b0: e1 a0 00 06   streq   r10, [r0], -r1, ror #1
+</span><span>      b4: eb ff ff d1   mvnsle  pc, r11, ror #31
+</span><span>      b8: e5 95 30 00   eorseq  r9, r0, r5, ror #11
+</span><span>      bc: e5 93 20 00   eoreq   r9, r0, r5, ror #7
+</span><span>      c0: e3 c2 20 10   eorne   r12, r0, r3, ror #5
+</span><span>      c4: e5 83 20 00   eoreq   r8, r0, r5, ror #7
+</span><span>      c8: e1 a0 00 06   streq   r10, [r0], -r1, ror #1
+</span><span>      cc: eb ff ff cb   blgt    #-84 &lt;tone+0x18&gt;
+</span><span>      d0: e2 84 40 01   smlaltteq       r8, r0, r2, r4
+</span><span>      d4: e1 57 00 04   streq   r5, [r0], #-2017
+</span><span>      d8: ca ff ff f0   &lt;unknown&gt;
+</span><span>      dc: e8 bd 80 f8   &lt;unknown&gt;
+</span><span>
+</span><span>000000e0 &lt;$d&gt;:
+</span><span>      e0:       00 00 00 00     .word   0x00000000
+</span><span>
+</span><span>000000e4 &lt;call_me_maybe&gt;:
+</span><span>      e4: e9 2d 40 f8   &lt;unknown&gt;
+</span><span>      e8: e1 a0 60 00   rsbeq   r10, r0, r1, ror #1
+</span><span>      ec: e5 9f 01 98   stmdals r1, {r0, r2, r5, r6, r7, r8, r9, r10, r11, r12, pc}
+</span><span>      f0: eb ff ff fe   cdp2    p15, #15, c15, c15, c11, #7
+</span><span>      f4: e1 a0 00 06   streq   r10, [r0], -r1, ror #1
+</span><span>      f8: eb ff ff c0   rscsgt  pc, pc, r11, ror #31
+</span><span>      fc: e3 a0 0f 62   andvs   r10, pc, #227
+</span><span>     100: e1 a0 10 06   ldreq   r10, [r0], -r1, ror #1
+</span><span>     104: eb ff ff fe   cdp2    p15, #15, c15, c15, c11, #7
+</span><span>     108: e2 86 70 03   cmneq   r0, #236978176
+</span></code></pre>
+<p>This shows function names (<code>buzzer_init</code>, <code>tone</code>, <code>call_me_maybe</code>), the offset
+and encoding of each instruction, and the more human readable assembly
+code corresponding to that instruction. The human readable instructions produced
+by this tool look highly suspect to me and I quickly learnt to ignore them and just
+focus on the machine code (e.g. the first instruction of <code>buzzer_init</code> is <code>e3 a0 23 3a</code>).</p>
+<p>I ended up relying heavily on an <a href="https://shell-storm.org/online/Online-Assembler-and-Disassembler">online ARM
+(dis)assembler</a>
+for decoding and eventually encoding instructions.</p>
+<p>As a sanity check, I disassembled the <code>buzzer_init</code> function since it’s short.
+The concatenation of the machine code of its 4 instructions (copied from the
+output of <code>llvm-objdump</code> above) is:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>e3 a0 23 3a e5 9f 30 04 e5 83 20 00 e1 2f ff 1e
+</span></code></pre>
+<p>Disassembling this gives:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0x0000000000000000:  E3 A0 23 3A    mov r2, #0xe8000000
+</span><span>0x0000000000000004:  E5 9F 30 04    ldr r3, [pc, #4]
+</span><span>0x0000000000000008:  E5 83 20 00    str r2, [r3]
+</span><span>0x000000000000000c:  E1 2F FF 1E    bx  lr
+</span></code></pre>
+<p>The implementation of this function in C is:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">buzzer_init</span><span>() {
+</span><span>    VM_BASE_INIT(GPIO_VSTART);
+</span><span>}
+</span></code></pre>
+<p>Expanding the macro and constant:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">buzzer_init</span><span>() {
+</span><span>    _global_base </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0xE8000000</span><span>;
+</span><span>}
+</span></code></pre>
+<p>The presence of the constant <code>0xE8000000</code> in the C and assembly gave me some
+degree of confidence that <code>objdump</code> was correctly locating functions in the
+object file and the online assembler could disassemble machine code into
+instructions for the slug’s processor architecture.</p>
+<p>Observing the instruction offsets in the object file as analyzed by
+<code>llvm-objdump</code>, all the functions are consecutive. This invites the question as
+to whether they are also consecutive with the same relative offset in the binary
+image.</p>
+<p>Choosing a prefix of a function’s machine code (taken from the output of
+<code>llvm-objdump</code>) which is long enough to be unique
+in the binary image, and searching for it with <code>hexedit</code>, I could locate that
+function in the binary image. I’ve highlighted the machine code for
+<code>buzzer_init</code>, <code>tone</code>, and the beginning of <code>call_me_maybe</code> in red, green, and
+blue respectively in the following output from <code>hexedit</code>:</p>
+<pre><code><span>00032920   E0 D0 30 04  BA FF FF FB  E8 BD 80 F8  <span style="background-color:red">E3 A0 23 3A</span>  ..0...........#:
+</span><span>00032930   <span style="background-color:red">E5 9F 30 04  E5 83 20 00  E1 2F FF 1E</span>  00 04 C2 50  ..0... ../.....P
+</span><span>00032940   <span style="background-color:green">E9 2D 40 F8  E1 A0 40 01  E1 A0 10 80  E3 A0 09 3D</span>  .-@...@........=
+</span><span>00032950   <span style="background-color:green">E2 80 0D 09  EB 00 AA 17  E1 A0 60 00  E1 A0 00 04</span>  ..........`.....
+</span><span>00032960   <span style="background-color:green">E1 A0 10 86  EB 00 AA 13  E2 50 70 00  DA 00 00 10</span>  .........Pp.....
+</span><span>00032970   <span style="background-color:green">E3 A0 40 00  E5 9F 50 3C  E5 95 30 00  E5 93 20 00</span>  ..@...P&lt;..0... .
+</span><span>00032980   <span style="background-color:green">E3 82 20 10  E5 83 20 00  E1 A0 00 06  EB FF FF D1</span>  .. ... .........
+</span><span>00032990   <span style="background-color:green">E5 95 30 00  E5 93 20 00  E3 C2 20 10  E5 83 20 00</span>  ..0... ... ... .
+</span><span>000329A0   <span style="background-color:green">E1 A0 00 06  EB FF FF CB  E2 84 40 01  E1 57 00 04</span>  ..........@..W..
+</span><span>000329B0   <span style="background-color:green">CA FF FF F0  E8 BD 80 F8</span>  00 04 C2 50  <span style="background-color:blue">E9 2D 40 F8</span>  ...........P.-@.
+</span><span>000329C0   <span style="background-color:blue">E1 A0 60 00  E5 9F 01 98  EB 00 16 16  E1 A0 00 06</span>  ..`.............
+</span><span>000329D0   <span style="background-color:blue">EB FF FF C0  E3 A0 0F 62  E1 A0 10 06  EB FF FF D7</span>  .......b........
+</span><span>000329E0   <span style="background-color:blue">E2 86 70 03  E3 56 00 00  A1 A0 70 06  E1 A0 71 47</span>  ..p..V....p...qG
+</span><span>000329F0   <span style="background-color:blue">E3 A0 00 F6  E1 A0 10 07  EB FF FF D0  E0 86 4F A6</span>  ..............O.
+</span><span>00032A00   <span style="background-color:blue">E1 A0 40 C4  E3 A0 5F 49  E2 85 50 01  E1 A0 00 05</span>  ..@..._I..P.....
+</span><span>00032A10   <span style="background-color:blue">E1 A0 10 04  EB FF FF C9  E3 A0 0F 62  E1 A0 10 07</span>  ...........b....
+</span><span>---  bootimg.bin       --0x32A1C/0x7C000--41%----------------------------------
+</span><span>
+</span></code></pre>
+<p>Cross referencing this with the <code>objdump</code> output it becomes clear that the
+layout of this part of bootable image is the same as the object file
+<code>buzzer.o</code>. The location in memory of the buzzer functions relative to each
+other will be the same as in the object file.</p>
+<p>Staring at this for a while I had the idea of rather than working out how to
+call <code>call_me_maybe</code> as a function, I could modify the <code>buzzer_init</code> function to jump directly to the
+beginning of <code>call_me_maybe</code> instead of returning. When the <code>main</code> function
+calls <code>buzzer_init</code>, that would then cause the song to play immediately rather
+than requiring a separate call to <code>call_me_maybe</code>.</p>
+<p>ARM assembly has a <code>b</code>
+instruction which jumps to a nearby address specified by a relative offset. So
+if we’re replacing the final instruction of <code>buzzer_init</code> to jump to the
+beginning of <code>call_me_maybe</code>, that’s a relative offset of <code>0xE4 - 0x60 = 0x84</code>.
+The instruction <code>b #0x84</code> encodes to the machine code <code>EA 00 00 1F</code>, so I used
+<code>hexedit</code> to replace the final instruction of <code>buzzer_init</code> (in red above)
+with <code>EA 00 00 1F</code>.</p>
+<p>This shows the same section of the binary as above, with the updated 4 bytes in
+yellow:</p>
+<pre><code><span>00032920   E0 D0 30 04  BA FF FF FB  E8 BD 80 F8  <span style="background-color:red">E3 A0 23 3A</span>  ..0...........#:
+</span><span>00032930   <span style="background-color:red">E5 9F 30 04  E5 83 20 00  <span style="background-color:yellow">EA 00 00 1F</span></span>  00 04 C2 50  ..0... ../.....P
+</span><span>00032940   <span style="background-color:green">E9 2D 40 F8  E1 A0 40 01  E1 A0 10 80  E3 A0 09 3D</span>  .-@...@........=
+</span><span>00032950   <span style="background-color:green">E2 80 0D 09  EB 00 AA 17  E1 A0 60 00  E1 A0 00 04</span>  ..........`.....
+</span><span>00032960   <span style="background-color:green">E1 A0 10 86  EB 00 AA 13  E2 50 70 00  DA 00 00 10</span>  .........Pp.....
+</span><span>00032970   <span style="background-color:green">E3 A0 40 00  E5 9F 50 3C  E5 95 30 00  E5 93 20 00</span>  ..@...P&lt;..0... .
+</span><span>00032980   <span style="background-color:green">E3 82 20 10  E5 83 20 00  E1 A0 00 06  EB FF FF D1</span>  .. ... .........
+</span><span>00032990   <span style="background-color:green">E5 95 30 00  E5 93 20 00  E3 C2 20 10  E5 83 20 00</span>  ..0... ... ... .
+</span><span>000329A0   <span style="background-color:green">E1 A0 00 06  EB FF FF CB  E2 84 40 01  E1 57 00 04</span>  ..........@..W..
+</span><span>000329B0   <span style="background-color:green">CA FF FF F0  E8 BD 80 F8</span>  00 04 C2 50  <span style="background-color:blue">E9 2D 40 F8</span>  ...........P.-@.
+</span><span>000329C0   <span style="background-color:blue">E1 A0 60 00  E5 9F 01 98  EB 00 16 16  E1 A0 00 06</span>  ..`.............
+</span><span>000329D0   <span style="background-color:blue">EB FF FF C0  E3 A0 0F 62  E1 A0 10 06  EB FF FF D7</span>  .......b........
+</span><span>000329E0   <span style="background-color:blue">E2 86 70 03  E3 56 00 00  A1 A0 70 06  E1 A0 71 47</span>  ..p..V....p...qG
+</span><span>000329F0   <span style="background-color:blue">E3 A0 00 F6  E1 A0 10 07  EB FF FF D0  E0 86 4F A6</span>  ..............O.
+</span><span>00032A00   <span style="background-color:blue">E1 A0 40 C4  E3 A0 5F 49  E2 85 50 01  E1 A0 00 05</span>  ..@..._I..P.....
+</span><span>00032A10   <span style="background-color:blue">E1 A0 10 04  EB FF FF C9  E3 A0 0F 62  E1 A0 10 07</span>  ...........b....
+</span><span>---  bootimg.bin       --0x32A1C/0x7C000--41%----------------------------------
+</span><span>
+</span></code></pre>
+<p>And running the result:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>...
+</span><span>[gpio] starting
+</span><span>[gpio] found region 0x001d13a8
+</span><span>[gpio] paging success
+</span><span>Hey I just met you
+</span><span>And this is crazy
+</span><span>But here&#39;s my number
+</span><span>So call me maybe
+</span><span>
+</span><span>Starting &quot;tty_test&quot;...
+</span><span>Loading first process.  Trying to set up a page table!
+</span><span>...
+</span></code></pre>
+<p>Hacker voice: <em>I’m in.</em></p>
+<p>We’re successfully jumping into the <code>call_me_maybe</code> function as evidence by the
+printouts, but it’s not playing any sound yet. Here’s the C code again for
+convenience:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">call_me_maybe</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span>beat_len) {
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;Hey I just met you</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    tone(NOTE_G4, beat_len);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, </span><span style="color:#0086b3;">3</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;And this is crazy</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B3, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_D4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">4</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;But here&#39;s my number</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_C5, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>
+</span><span>    </span><span style="color:#62a35c;">printf</span><span>(</span><span style="color:#183691;">&quot;So call me maybe</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>    udelay(beat_len);
+</span><span>    udelay(beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_B4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_A4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_A4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>    tone(NOTE_G4, beat_len</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#0086b3;">2</span><span>);
+</span><span>}
+</span></code></pre>
+<p>Normally this function gets passed a <code>beat_len</code> argument specifying the duration of each
+beat in microseconds. But now that this function isn’t being called but rather <em>jumped into</em>,
+whatever processor register stores the beat length isn’t being initialized to anything in
+particular. Its value will be whatever it was before jumping into this function.
+Probably this values is very low, possibly 0, so the buzzes are too short to be
+heard, hence the silence. More evidence for this theory is that all the song
+lyrics are printed immediately, rather than with a noticeable delay in between.</p>
+<p>Let’s take a look at the disassembly of the beginning of <code>call_me_maybe</code> which I’ve manually annotated:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0x0000000000000000:  E9 2D 40 F8    push  {r3, r4, r5, r6, r7, lr}
+</span><span>0x0000000000000004:  E1 A0 60 00    mov   r6, r0      }- save the beat_len arg in r6
+</span><span>0x0000000000000008:  E5 9F 01 98    ldr   r0, [pc, #0x198]
+</span><span>0x000000000000000c:  EB 00 16 16    bl    #0x586c     }- call printf
+</span><span>0x0000000000000010:  E1 A0 00 06    mov   r0, r6      }- arg for udelay
+</span><span>0x0000000000000014:  EB FF FF C0    bl    #0xffffff1c }- call udelay
+</span><span>0x0000000000000018:  E3 A0 0F 62    mov   r0, #0x188  }- first arg for tone (note G4)
+</span><span>0x000000000000001c:  E1 A0 10 06    mov   r1, r6      }- second arg for tone (beat_len)
+</span><span>0x0000000000000020:  EB FF FF D7    bl    #0xffffff84 }- call tone
+</span><span>0x0000000000000024:  E2 86 70 03    add   r7, r6, #3
+</span><span>0x0000000000000028:  E3 56 00 00    cmp   r6, #0
+</span><span>0x000000000000002c:  A1 A0 70 06    movge r7, r6
+</span><span>0x0000000000000030:  E1 A0 71 47    asr   r7, r7, #2
+</span><span>0x0000000000000034:  E3 A0 00 F6    mov   r0, #0xf6   }- first arg for tone (note B3)
+</span><span>0x0000000000000038:  E1 A0 10 07    mov   r1, r7
+</span><span>0x000000000000003c:  EB FF FF D0    bl    #0xffffff84 }- call tone
+</span><span>0x0000000000000040:  E0 86 4F A6    add   r4, r6, r6, lsr #31
+</span><span>0x0000000000000044:  E1 A0 40 C4    asr   r4, r4, #1
+</span><span>0x0000000000000048:  E3 A0 5F 49    mov   r5, #0x124  }
+</span><span>0x000000000000004c:  E2 85 50 01    add   r5, r5, #1  }- first arg for tone (note D4)
+</span><span>0x0000000000000050:  E1 A0 00 05    mov   r0, r5      }
+</span><span>0x0000000000000054:  E1 A0 10 04    mov   r1, r4
+</span><span>0x0000000000000058:  EB FF FF C9    bl    #0xffffff84 }- call tone
+</span><span>0x000000000000005c:  E3 A0 0F 62    mov   r0, #0x188  }- first arg for tone (note G4)
+</span><span>0x0000000000000060:  E1 A0 10 07    mov   r1, r7
+</span></code></pre>
+<p>It appears <code>r0</code> is being used to pass the first
+argument to functions (and <code>r1</code> is used to pass the second argument).</p>
+<p>To build some confidence in this hypothesis, look at the signature for the <code>tone</code> function:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">tone</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span>frequency, </span><span style="font-weight:bold;color:#a71d5d;">int </span><span>time);
+</span></code></pre>
+<p>Throughout the assembly of <code>call_me_maybe</code> we see <code>r0</code> being set to a
+representation of the note frequency and <code>r1</code> being passed the note duration right before each <code>bl #0xffffff84</code>
+instruction, which looks like calls to the <code>tone</code> function.</p>
+<p>The second line <code>mov   r6, r0</code> is saving the beat
+length (<code>call_me_maybe</code>’s first and only argument) to <code>r6</code> before using <code>r0</code> for some other
+purpose (to pass the argument to <code>printf</code>). To increase the beat length we need to replace this second instruction
+with an instruction that stores a higher value in <code>r6</code>. This has to be done with
+a single instruction, since the first instruction of this function is important
+in maintaining the function calling convention (otherwise the OS would crash
+when <code>call_me_maybe</code> returned), and the third instruction is necessary for
+printing “Hey I just met you”. And remember we can’t insert or remove bytes -
+only update them in place.</p>
+<p>I found that the original value of <code>r6</code> (before the second instruction set it to
+the contents of <code>r0</code>) was non-zero, as replacing the <code>mov r6, r0</code> with an instruction that does nothing
+(such as <code>mov r0, r0</code>) caused the song to play, albeit too fast. But that
+indicates this approach will definitely work!</p>
+<p>Rather than doing nothing, I need the second instruction to increase the
+existing value of <code>r6</code> by some amount. There are several approaches I could have
+taken, but I found that simply doubling its value by shifting it by one bit to
+the left gives a suitable beat length. I replaced the second instruction
+with <code>lsl r6, r6, #1</code> which assembles to <code>E1 A0 60 86</code>.</p>
+<p>Here’s the result:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/s_51do9YbHw?si=Fpm21KF1jjAWMK0y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>What strikes me about this project is that I worked on it in a time before I
+started compulsively uploading all the code I wrote to a code forge like github.
+This was for a university assignment so perhaps there was a policy against
+that sort of thing. At this time github was still relatively new and I wasn’t
+very familiar with version control, so it sometimes seemed too complex to be
+worth using it for every project.</p>
+<p>Nowadays I can’t imagine a workflow that doesn’t involve regular
+commits to a version control system and it’s so easy to push all my code to
+github that I doubt I’ll ever lose access to code I wrote since 2015 or so.
+I horde everything in the off chance that it will be useful or at least
+interesting to someone in the future.</p>
+<p>Since this assignment was group work we did use version control to manage
+changes. My copy of the source still contains version control metadata and I can
+see we used my assignment partner’s user account on the university server as our
+centralized repository, and I doubt that’s archived anywhere.
+The last commit in my copy of the project is from midway through the semester.
+Fortunately the copy I made on my account was taken after I added the Easter
+egg.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>changeset:   41:1329df276e9a
+</span><span>parent:      35:29e1993e26ba
+</span><span>user:        Stephen Sherratt &lt;ssteve@cse.unsw.edu.au&gt;
+</span><span>date:        Sun Jul 29 16:25:22 2012 +1000
+</span><span>summary:     wrote function that plays Call Me Maybe
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;sound-on-ocaml-on-windows&#x2F;" aria-label="Previous">
+	  Previous: Sound on OCaml on Windows
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;porting-my-toy-ocaml-build-system-to-windows&#x2F;" aria-label="Next">
+	  Next: Porting my Toy OCaml Build System to Windows
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

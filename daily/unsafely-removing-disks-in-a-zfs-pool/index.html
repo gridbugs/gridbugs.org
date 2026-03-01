@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Unsafely removing disks in a ZFS pool">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/unsafely-removing-disks-in-a-zfs-pool/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/unsafely-removing-disks-in-a-zfs-pool/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-16T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Unsafely removing disks in a ZFS pool
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;yes-www&#x2F;" aria-label="Previous">
+	  Previous: Yes WWW
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;time-to-start-using-language-managers&#x2F;" aria-label="Next">
+	  Next: Time to start using language managers?
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Unsafely removing disks in a ZFS pool</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-16T00:00:00+00:00">
+    October 16, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Here’s a little experiment I did to familiarise myself with ZFS on FreeBSD 12.1.
+Start with a mirror (“foo”) made up of 2 disks (some spare external hard drives I had lying around):</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool status foo
+</span><span>  pool: foo
+</span><span> state: ONLINE
+</span><span>  scan: resilvered 80K in 0 days 00:00:01 with 0 errors on Sat Oct 17 00:34:15 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME        STATE     READ WRITE CKSUM
+</span><span>        foo         ONLINE       0     0     0
+</span><span>          mirror-0  ONLINE       0     0     0
+</span><span>            da1     ONLINE       0     0     0
+</span><span>            da2     ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+<p>Now yank out the cable attaching <code>da1</code>!</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool status foo
+</span><span>  pool: foo
+</span><span> state: DEGRADED
+</span><span>status: One or more devices has been removed by the administrator.
+</span><span>        Sufficient replicas exist for the pool to continue functioning in a
+</span><span>        degraded state.
+</span><span>action: Online the device using &#39;zpool online&#39; or replace the device with
+</span><span>        &#39;zpool replace&#39;.
+</span><span>  scan: resilvered 80K in 0 days 00:00:01 with 0 errors on Sat Oct 17 00:34:15 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME                      STATE     READ WRITE CKSUM
+</span><span>        foo                       DEGRADED     0     0     0
+</span><span>          mirror-0                DEGRADED     0     0     0
+</span><span>            10400537847491037026  REMOVED      0     0     0  was /dev/da1
+</span><span>            da2                   ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+<p>The data on all datasets of the zpool “foo” is still accessible. You can continue using
+the pool in this state, and any changes made to its contents will be applied to the
+unplugged disk when we re-attach it.</p>
+<p>The point of unplugging the disk was to simulate a disk failure, but when we plug the
+disk back in, ZFS is smart enough to notice that it belongs in the “foo” pool. Try as
+I might, I couldn’t convince ZFS to <code>replace</code> the disk with itself. Nor could I wipe
+the disk (with <code>gpart</code>, say), because something (I presume ZFS) starts using the disk
+the second I plug it back in. That kind of messed up my experiment, but I suppose it’s
+a convenient feature.</p>
+<p>So to complete this scenario, before plugging the disk back in, run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool offline foo da1
+</span></code></pre>
+<p>This step isn’t necessary for this scenario. When we eventually plug the disk back in,
+running <code>zpool online foo da1</code> will take the disk straight from <code>REMOVED</code> to <code>ONLINE</code>.
+Leaving this step here as in a more realistic disk failure it might be necessary.</p>
+<p>Status will now be:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool status foo
+</span><span>  pool: foo
+</span><span> state: DEGRADED
+</span><span>status: One or more devices has been taken offline by the administrator.
+</span><span>        Sufficient replicas exist for the pool to continue functioning in a
+</span><span>        degraded state.
+</span><span>action: Online the device using &#39;zpool online&#39; or replace the device with
+</span><span>        &#39;zpool replace&#39;.
+</span><span>  scan: resilvered 80K in 0 days 00:00:01 with 0 errors on Sat Oct 17 00:34:15 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME                      STATE     READ WRITE CKSUM
+</span><span>        foo                       DEGRADED     0     0     0
+</span><span>          mirror-0                DEGRADED     0     0     0
+</span><span>            10400537847491037026  OFFLINE      0     0     0  was /dev/da1
+</span><span>            da2                   ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+<p>Note the <code>da1</code> line has changed <code>STATE</code> from <code>REMOVED</code> to <code>OFFLINE</code>.</p>
+<p>Plug the disk back in, and run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool online foo da1
+</span></code></pre>
+<p>And all is well:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+root@fontaine ~ # zpool status foo
+</span><span>  pool: foo
+</span><span> state: ONLINE
+</span><span>  scan: resilvered 48K in 0 days 00:00:01 with 0 errors on Sat Oct 17 00:49:16 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME        STATE     READ WRITE CKSUM
+</span><span>        foo         ONLINE       0     0     0
+</span><span>          mirror-0  ONLINE       0     0     0
+</span><span>            da1     ONLINE       0     0     0
+</span><span>            da2     ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;yes-www&#x2F;" aria-label="Previous">
+	  Previous: Yes WWW
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;time-to-start-using-language-managers&#x2F;" aria-label="Next">
+	  Next: Time to start using language managers?
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Scope Creep">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/scope-creep/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/scope-creep/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2025-05-09T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/scope-creep/screenshot1.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Scope Creep
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Scope Creep</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2025-05-09T00:00:00+00:00">
+    May 09, 2025
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/7drl" aria-label="tag">7drl</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/synthesizer" aria-label="tag">synthesizer</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/audio" aria-label="tag">audio</a>
+  
+</p>
+
+
+  
+
+<p><a href="https://gridbugs.itch.io/scope-creep">Scope Creep</a> is a short first-person
+horror game rendered with a virtual oscilloscope. In the game the player explores a
+dungeon collecting orbs to open a door and escape. Each time an orb is
+collected a new class of enemies spawn. All the graphics including text and
+enemy sprites is rendered by using a <a href="https://github.com/gridbugs/caw">synthesizer
+library</a> to generating a stereo audio signal
+which is then visualized with a virtual XY oscilloscope to produce the game’s
+graphics. The audio signal also plays out of the speakers so in theory the game
+could be rendered on a hardware XY oscilloscope.</p>
+<p>It’s my 10th (what!) 7DRL game jam entry.
+Play it in a web browser on <a href="https://gridbugs.itch.io/scope-creep">its itch.io page</a>.
+The source code is <a href="https://github.com/gridbugs/scope-creep">here</a>.
+And the devlog I wrote while developing this game begins <a href="https://gridbugs.github.io/gridbugs.org/7drl2025-day1/">here</a>.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Uc4z52vJHkA?si=-b49jlildnsSHXGd" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>I’ve been developing a software-defined modular synthesizer library for a
+couple of years. Its current incarnation is the <a href="https://github.com/gridbugs/caw">Combinatorial Audio
+Workstation (CAW)</a> - a Rust library for declaratively building synthesizers.
+I used it to generate the audio signals used in Scope Creep, as well as for procedurally-generating the
+music in real time for a previous project <a href="https://gridbugs.github.io/gridbugs.org/electric-organ/">Electric
+Organ</a>.</p>
+<p>I came across <a href="https://oscilloscopemusic.com/watch/n-spheres">Jerobeam Fenderson’s oscilloscope
+music</a> which inspired me to add
+a stereo oscillographics visualizer to CAW (<a href="https://gridbugs.github.io/bevy-caw-experiment/">here’s a
+demo!</a>) and then a friend
+suggested I use this technique to render a first-person game.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/screenshot1.png" alt="3d rendered scene with several enemies" /></p>
+<h2 id="the-renderer"><a class="zola-anchor" href="#the-renderer" aria-label="Anchor link for: the-renderer">The Renderer</a></h2>
+<p>Rendering with an oscilloscope means we have to get creative with the rendering
+algorithm. Most 3D renderers use a pixel-based “raster” algorithm, where each polygon
+is converted to a collection of pixels that end up on the screen unless some
+other polygon’s pixels occlude them. The order in which polygons are drawn
+doesn’t matter because the renderer keeps track of depth of each visible pixel
+and only draws new pixels at the same point on the screen if they represent a
+point in space closer to the eye than what’s currently drawn there. This is
+called “depth buffering”.</p>
+<p>Depth buffering wasn’t an option for this project because the only thing the
+render can draw is lines - not pixels. Only the outline of each wall is drawn.
+The black pixels making up the floor, ceiling, and wall surfaces are drawn once
+at the start of each frame when the screen is cleared, and not updated again.
+This means that we can’t draw black surfaces to occlude whatever would be
+behind them. Instead we need to avoid drawing anything that would be occluded
+in the first place.</p>
+<p>So how do we figure out which parts of which walls are visible? I’ll give a
+rough sketch of the approach taken by Scope Creep. It won’t be a complete
+explanation of the renderer - just the key idea it’s based on. For more
+details,
+<a href="https://github.com/gridbugs/scope-creep/blob/b5f6bafacb52e9ecbc1332ffbcde1a60873e55e4/src/main.rs#L1412">here</a>’s
+a link to where this algorithm is implemented (but beware that this code is
+from a game jam!).</p>
+<p>Here’s a typical 3D scene. All the walls are the same height, and the floor and
+ceiling are completely flat. It happens that all corners are right-angles but
+this is not necessary for this rendering technique to work (just a limitation
+of the terrain generation algorithm I’m using here).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.png" alt="" /></p>
+<p>A couple of observations about this scene:</p>
+<ul>
+<li>The scene is symmetrical along the horizontal axis. For simplicity, I’ll therefore only talk about the top half of the scene from now on.</li>
+<li>The scene is made up entirely of a collection of vertical lines, with each adjacent pair of vertical lines being connected by a “connecting” line.</li>
+<li>Sometimes these connecting lines attach to the very top of a vertical line, and other times they connect somewhere in the middle.</li>
+</ul>
+<p>So to render a scene all we have to do is identify the vertical lines that make
+it up, and for each vertical line, determine the height of the connecting line
+attached to its left and right side.</p>
+<p>There are three cases for how connecting lines attach to a vertical line. Either both connecting lines attach to the top:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.1.png" alt="" /></p>
+<p>…or the connecting line on the left side attaches to the top but the connecting line on the right side does not:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.2.png" alt="" /></p>
+<p>And for completeness, here’s one that’s only connected at the top on its right side:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.3.png" alt="" /></p>
+<p>Now let’s consider the scene from above.
+Here’s the rendered scene again for convenience:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.png" alt="" /></p>
+<p>…and here’s a bird’s eye view, with the open space in black and the walls in
+bright yellow (the inaccessible parts of the map are shaded dark yellow). Each
+corner visible in the 3D scene has been circled. The eye is the red circle at
+the bottom of the map, and is facing upwards.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug3.png" alt="" /></p>
+<p>Manually highlighting the visible area gives a hint as to how to determine the
+connectedness of vertical lines.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug4.png" alt="" /></p>
+<p>The 3D scene again:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug1.png" alt="" /></p>
+<p>Sometimes when a corner between two walls is visible, both of the walls the
+corner is between are visible too. Imagine shooting a ray of light from the eye
+to the corner. If both sides of the corner are visible, the ray hits a solid
+surface and stops.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug5.png" alt="" /></p>
+<p>This corresponds to a vertical line with both its connecting lines connecting directly to its top.
+The height of the vertical line is inversely proportional to how far the ray
+travelled before it stopped (ie. the distance from the eye to the corner).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug8.png" alt="" /></p>
+<p>But if only one wall attached to the corner is visible, the ray continues until
+it hits a wall somewhere behind the corner.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug6.png" alt="" /></p>
+<p>And this corresponds to a vertical line with only one of its connecting lines
+connected to the top, and the other connected part way down.
+The point on the vertical line where the second connecting line connects is at
+a distance from the centre of the vertical line inversely proportional to the
+distance the ray travelled before it stopped.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/debug7.png" alt="" /></p>
+<p>In addition to the level geometry Scope Creep also has items and enemies.
+These need to be rendered in such a way that they are
+occluded by walls. This is achieved by creating a new wall segment for each
+enemy/object, determining how much of that wall would be visible, and then
+restricting the visible area while rendering the enemy/object to that range.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/scope-creep/screenshot2.png" alt="" /></p>
+<p>That’s the rough idea behind rendering in Scope Creep. Once all the vertical
+and connecting lines have been computed, the sequence of movements in the X and
+Y axis required to draw them as if with an etch-a-sketch is determined, and
+this determines audio signal in the left and right channel respectively.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;electric-organ&#x2F;" aria-label="Previous">
+	  Previous: Electric Organ
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;alice-the-caml&#x2F;" aria-label="Next">
+	  Next: Alice the Caml
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

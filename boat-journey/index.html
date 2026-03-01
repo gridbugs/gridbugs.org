@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Boat Journey">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/boat-journey/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/boat-journey/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-03-12T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/boat-journey/cover.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Boat Journey
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Boat Journey</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-03-12T00:00:00+00:00">
+    March 12, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/7drl" aria-label="tag">7drl</a>
+  
+</p>
+
+
+  
+
+<p>Boat Journey is a turn-based game where you drive a boat through a
+procedurally-generated landscape on a voyage along a river destined for the
+ocean. Accept passengers to have them help you on your journey. Fight monsters,
+collect junk, trade the junk for fuel, use the fuel to travel to the ocean.</p>
+<p>You can play it in a web browser or download the game from <a href="https://gridbugs.itch.io/boat-journey">gridbugs.itch.io/boat-journey</a>.</p>
+<p>The source code for the game is at
+<a href="https://github.com/gridbugs/boat-journey">github.com/gridbugs/boat-journey</a>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/cover.png" alt="Text-based drawing of a boat at the end of a pier" /></p>
+<span id="continue-reading"></span>
+<p>This was my 8th 7drl. I’m relieved that the gameplay turned out to be fun
+during last-minute playtesting. I’ve had the idea of making a game about
+driving a boat to the ocean for a while and in my thought experiments before
+making this game I struggled to come up with enjoyable short and medium term
+game loops. But the loop of “collecting passengers so you can use their
+abilities to steal junk from islands without getting defeated by beasts and then
+you can use the junk to buy space for more passengers and also fuel for your
+boat” actually turned out to be quite engaging.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/inn.png" alt="Screenshot of the inn building" /></p>
+<p>This year I decided to make the art style very minimal. My last few 7drl entries
+feature multiple characters per in-game tile which made it possible to create
+very detailed graphics. Here’s an example from last year’s game Rain Forest.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/pretty.png" alt="Example of the graphics in last year’s game Rain Forest feature 3x3 character tiles per in-game tile" /></p>
+<p>While it looked beautiful it meant that every new type of object I added to the
+game required designing a 3x3 character block to represent it which turned into a
+lot of work over the course of the week. This year I’m back to using a single
+character per in-game tile which meant I spent much less time making the game
+pretty and more time on proc-gen and mechanics. That said I’m still very happy
+with how it ended up looking.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/night.png" alt="Screenshot showing how night looks in the game" /></p>
+<p>Making a proc-gen river with proc-gen towns along it and the dungeons under the
+city took 3 of the 7 days which is by far the most time I’ve spent on purely
+getting procgen working for one of these. Normally I make a single level
+generator with knobs that can be turned to change the levels as the game
+progresses, normally just by adding more or tougher enemies. Boat Journey has 4
+distinct terrain generators that all populate parts of a single large map. First
+the game generates the path of the river and creates gaps for the town, swamp,
+and city sections, and carves out the ocean. Then each of those sections is
+populated by a terrain generator made just for that section. Finally the
+dungeons under the city are generated, though I borrowed the dungeon generator
+from a half-finished tutorial series I’m working on.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/dungeon.png" alt="Screenshot of the dungeon" /></p>
+<p>Also for the first time my game includes hand-drawn character portraits which
+I’m quite happy with. I think the complement the moody, unsettling aesthetic I
+was aiming for.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/innkeeper.png" alt="Screenshot of the Innkeeper menu from the game showing the innkeeper’s character portrait" /></p>
+<p>Before the jam I made a <a href="https://github.com/gridbugs/text-paint">tool</a> to help draw images with text and I
+used that tool for all the hand-drawn art in this game.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/boat-journey/editor.png" alt="Screenshot of the text-based image editor" /></p>
+<p>You can play or download Boat Journey here: <a href="https://gridbugs.itch.io/boat-journey">gridbugs.itch.io/boat-journey</a>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;rain-forest&#x2F;" aria-label="Previous">
+	  Previous: Rain Forest
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;electric-organ&#x2F;" aria-label="Next">
+	  Next: Electric Organ
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

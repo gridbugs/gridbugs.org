@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 9 - Ranged Scrolls and Targeting">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-29T19:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 9 - Ranged Scrolls and Targeting
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-8&#x2F;" aria-label="Previous">
+	  Previous: Part 8 - Items and Inventory
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-10&#x2F;" aria-label="Next">
+	  Next: Part 10 - Saving and Loading
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 9 - Ranged Scrolls and Targeting
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-29T19:00:00+10:00">
+    July 29, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll introduce ranged scrolls and targeting.</p>
+<p>By the end of this part it will be possible to launch fireballs and confusion spells.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/launch.png" alt="launch.png" /></p>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-9/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8-end">part-8-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/#examine-command">Examine Command</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/#fireball-scroll">Fireball Scroll</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/#launching-fireballs">Launching Fireballs</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/#confusion-scroll">Confusion Scroll</a></li>
+</ul>
+<h2 id="examine-command"><a class="zola-anchor" href="#examine-command" aria-label="Anchor link for: examine-command">Examine Command</a></h2>
+<p>As a first step towards ranged abilities, add an examine command that lets th player
+use the arrow keys and mouse to move a cursor over the game area.
+We’ll add a section to the UI for showing the name of the character or item at the
+current cursor position.</p>
+<p>We’ll also allow the player to use the mouse to examine a cell during normal gameplay.</p>
+<p>Add a type enumerating all the different results of examining a cell.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ExamineCell {
+</span><span>    Npc(NpcType),
+</span><span>    NpcCorpse(NpcType),
+</span><span>    Item(ItemType),
+</span><span>    Player,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add a method to <code>World</code> for examining a cell.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{ExamineCell, LogMessage};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">examine_cell</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ExamineCell&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at</span><span>(coord)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>;
+</span><span>        layers
+</span><span>            .character
+</span><span>            .</span><span style="color:#62a35c;">or_else</span><span>(|| layers.object)
+</span><span>            .</span><span style="color:#62a35c;">and_then</span><span>(|entity| {
+</span><span>                self.components
+</span><span>                    .tile
+</span><span>                    .</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>                    .</span><span style="color:#62a35c;">and_then</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>tile| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>                        Tile::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(ExamineCell::Npc(npc_type)),
+</span><span>                        Tile::NpcCorpse(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(ExamineCell::NpcCorpse(npc_type)),
+</span><span>                        Tile::Item(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(ExamineCell::Item(item_type)),
+</span><span>                        Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(ExamineCell::Player),
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">None</span><span>,
+</span><span>                    })
+</span><span>            })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a method to <code>GameState</code> for examining a cell at a coordinate <strong>if it is currently visible to the player</strong>.
+Also add a method returning the player’s current coordinate which will come in handy soon.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Coord {
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">entity_coord</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no coord&quot;</span><span>)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">examine_cell</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ExamineCell&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self.visibility_grid.</span><span style="color:#62a35c;">cell_visibility</span><span>(coord) {
+</span><span>            CellVisibility::Currently </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.world.</span><span style="color:#62a35c;">examine_cell</span><span>(coord),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">None</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update the UI to have it render the currently-examined cell (if any).
+Also, when the cursor is controlled by the arrow keys, we’ll display a string
+to indicate what the cursor is for. Currently it will just be for examining cells,
+but later it will be for aiming spells as well.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::{ExamineCell, LogMessage};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    decorator::{AlignView, Alignment, AlignmentX, AlignmentY, BoundView},
+</span><span>    text::{wrap, RichTextPartOwned, RichTextViewSingleLine, StringView, StringViewSingleLine},
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">examine_cell_str</span><span>(examine_cell: ExamineCell) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> examine_cell {
+</span><span>        ExamineCell::Npc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ExamineCell::NpcCorpse(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> npc_type.</span><span style="color:#62a35c;">name</span><span>(),
+</span><span>        ExamineCell::Item(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> item_type.</span><span style="color:#62a35c;">name</span><span>(),
+</span><span>        ExamineCell::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;yourself&quot;</span><span>,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    ...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>name: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str</span><span>&gt;,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>examine_cell: </span><span style="color:#0086b3;">Option</span><span>&lt;ExamineCell&gt;,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>UiView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: UiData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(name) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.name {
+</span><span>            BoundView {
+</span><span>                size: Size::new(</span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>                view: AlignView {
+</span><span>                    alignment: Alignment::centre(),
+</span><span>                    view: StringViewSingleLine::new(
+</span><span>                        Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                    ),
+</span><span>                },
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(name, context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>)), frame);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(examine_cell) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.examine_cell {
+</span><span>            BoundView {
+</span><span>                size: Size::new(</span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>, </span><span style="color:#0086b3;">2</span><span>),
+</span><span>                view: AlignView {
+</span><span>                    alignment: Alignment {
+</span><span>                        x: AlignmentX::Centre,
+</span><span>                        y: AlignmentY::Bottom,
+</span><span>                    },
+</span><span>                    view: StringView::new(
+</span><span>                        Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)),
+</span><span>                        wrap::Word::new(),
+</span><span>                    ),
+</span><span>                },
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(
+</span><span>                </span><span style="color:#62a35c;">examine_cell_str</span><span>(examine_cell),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">2</span><span>)),
+</span><span>                frame,
+</span><span>            );
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a field to <code>AppState</code> containing the current cursor position if any.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    cursor: </span><span style="color:#0086b3;">Option</span><span>&lt;Coord&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            cursor: </span><span style="color:#0086b3;">None</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update <code>AppView::render_ui</code> to take the name of the current cursor mode, and have it render the cursor
+and pass the result of examining the cell under the cursor to the UI renderer.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    render::{blend_mode, ColModify, ColModifyMap, Frame, Style, View, ViewCell, ViewContext},
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">render_ui</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        name: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str</span><span>&gt;,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> examine_cell </span><span style="font-weight:bold;color:#a71d5d;">= if let </span><span style="color:#0086b3;">Some</span><span>(cursor) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.cursor {
+</span><span>            frame.</span><span style="color:#62a35c;">blend_cell_background_relative</span><span>(
+</span><span>                cursor,
+</span><span>                </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>),
+</span><span>                </span><span style="color:#0086b3;">127</span><span>,
+</span><span>                blend_mode::LinearInterpolate,
+</span><span>                context,
+</span><span>            );
+</span><span>            data.game_state.</span><span style="color:#62a35c;">examine_cell</span><span>(cursor)
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="color:#0086b3;">None
+</span><span>        };
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData {
+</span><span>                player_hit_points,
+</span><span>                messages,
+</span><span>                name,
+</span><span>                examine_cell,
+</span><span>            },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now go update all the places where <code>AppView::render_ui</code> gets called and pass <code>None</code> as its <code>name</code> argument.</p>
+<p>Update <code>AppData::handle_input</code> so that moving the mouse during normal gameplay sets the cursor position,
+and pressing a key clears the cursor. This will let the player use the mouse to examine cells, even when
+not in “examine” mode.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    input::{keys, Input, KeyboardInput, MouseButton, MouseInput},
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> key {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                self.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span>;
+</span><span>            }
+</span><span>            Input::Mouse(mouse_input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> mouse_input {
+</span><span>                MouseInput::MouseMove { coord, </span><span style="font-weight:bold;color:#a71d5d;">.. </span><span>} </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(coord),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>            },
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add <code>TargetEventRoutine</code> - an <code>EventRoutine</code> in which the cursor can be controlled using the arrow keys as well
+as the mouse. It has a string field which is the name of the target mode. This is the string that we’ll show in
+the bottom-left corner.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>TargetEventRoutine {
+</span><span>    name: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>EventRoutine </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>TargetEventRoutine {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Return </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Option</span><span>&lt;Coord&gt;;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Event </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CommonEvent;
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle</span><span>&lt;EP&gt;(
+</span><span>        self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>Data,
+</span><span>        _view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>View,
+</span><span>        event_or_peek: EP,
+</span><span>    ) -&gt; Handled&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Return, </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        EP: EventOrPeek&lt;Event = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Event&gt;,
+</span><span>    {
+</span><span>        event_routine::event_or_peek_with_handled(event_or_peek, self, |s, event| {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> event {
+</span><span>                CommonEvent::Input(input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> input {
+</span><span>                    Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> delta </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> key {
+</span><span>                            KeyboardInput::Left </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Coord::new(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            KeyboardInput::Right </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Coord::new(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            KeyboardInput::Up </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>),
+</span><span>                            KeyboardInput::Down </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>                            keys::</span><span style="color:#0086b3;">RETURN </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cursor </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.cursor;
+</span><span>                                data.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span>;
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>Handled::Return(cursor);
+</span><span>                            }
+</span><span>                            keys::</span><span style="color:#0086b3;">ESCAPE </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                data.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span>;
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>Handled::Return(</span><span style="color:#0086b3;">None</span><span>);
+</span><span>                            }
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>Coord::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                        };
+</span><span>                        data.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(
+</span><span>                            data.cursor
+</span><span>                                .</span><span style="color:#62a35c;">unwrap_or_else</span><span>(|| data.game_state.</span><span style="color:#62a35c;">player_coord</span><span>())
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> delta,
+</span><span>                        );
+</span><span>                    }
+</span><span>                    Input::Mouse(mouse_input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> mouse_input {
+</span><span>                        MouseInput::MouseMove { coord, </span><span style="font-weight:bold;color:#a71d5d;">.. </span><span>} </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> data.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(coord),
+</span><span>                        MouseInput::MousePress {
+</span><span>                            button: MouseButton::Left,
+</span><span>                            coord,
+</span><span>                        } </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                            data.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span>;
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>Handled::Return(</span><span style="color:#0086b3;">Some</span><span>(coord));
+</span><span>                        }
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>                    },
+</span><span>                },
+</span><span>                CommonEvent::Frame(_period) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>            };
+</span><span>            Handled::Continue(s)
+</span><span>        })
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>View,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        view.game_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state, context, frame);
+</span><span>        view.</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="color:#0086b3;">Some</span><span>(self.name), </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now update <code>AppData::handle_input</code> again so that when the ‘x’ key is pressed, we run the <code>TargetEventRoutine</code>
+so the player can examine cells moving the cursor with the arrow keys.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>GameReturn {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Examine,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> key {
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;x&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.cursor.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                            self.cursor </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(self.game_state.</span><span style="color:#62a35c;">player_coord</span><span>());
+</span><span>                        }
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::Examine);
+</span><span>                    }
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            GameReturn::Examine </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::E(TargetEventRoutine { name: </span><span style="color:#183691;">&quot;EXAMINE&quot; </span><span>}.</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>        })
+</span><span>    }).</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/examine.png" alt="examine.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.0">part-9.0</a></p>
+<h2 id="fireball-scroll"><a class="zola-anchor" href="#fireball-scroll" aria-label="Anchor link for: fireball-scroll">Fireball Scroll</a></h2>
+<p>The first ranged item we’ll add will be fireball scrolls. Add <code>FireballScroll</code> as a new item type.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    FireballScroll,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;fireball scroll&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                println!(</span><span style="color:#183691;">&quot;todo&quot;</span><span>);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">255</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_colour</span><span>(item_type: ItemType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Item(ItemType::FireballScroll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;♫&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>),
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update the dungeon generator to place fireball scrolls.
+Generalize the logic which places health potions to place all items.
+For now gives fireball scrolls a 100% chance of spawning to make it easier to test.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` items at random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_items</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">100</span><span>) {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">100 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemType::FireballScroll,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>ItemType::HealthPotion,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Item(item));
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">ITEMS_PER_ROOM_DISTRIBUTION</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>] </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>[</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">2</span><span>];
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room.</span><span style="color:#62a35c;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>grid) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add items to the room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>num_items </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">ITEMS_PER_ROOM_DISTRIBUTION</span><span>.</span><span style="color:#62a35c;">choose</span><span>(rng).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            room.</span><span style="color:#62a35c;">place_items</span><span>(num_items, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid, rng);
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>At this point you should be able to pick up fireball scrolls. When you use them the game will
+just print the text “todo” to stdout.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/fireball-scroll.png" alt="fireball-scroll.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.1">part-9.1</a></p>
+<h2 id="launching-fireballs"><a class="zola-anchor" href="#launching-fireballs" aria-label="Anchor link for: launching-fireballs">Launching Fireballs</a></h2>
+<p>Now let’s make it possible to shoot fireballs when a fireball scroll is read.
+Rather than just teleporting the fireball to its target, let’s animate it moving along its trajectory.</p>
+<p>In the previous section we just printed “todo” when a fireball scroll was used.
+Instead, we’d like the game to bring up the targeting AI, and when the user selects a target,
+shoot a fireball towards it. If the fireball hits a solid object along the way it should stop,
+and if the solid object is a character they should take damage.</p>
+<p>When a health potion is used it is used immediately, but when a fireball scroll is used we display a UI.
+Let’s codify the different ways in which an item can be used:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemUsage {
+</span><span>    Immediate,
+</span><span>    Aim,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update item-usage methods to return the <code>ItemUsage</code> of the item being used.
+Previously we made the assumption that when an item is used, it is immediately
+removed from the inventory, but this is only true for items whose usage is <code>Immediate</code>.
+Update <code>maybe_use_item</code> to reflect this while we’re at it.
+We’ll need to implement <code>Inventory::get</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Inventory {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">get</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;Entity, InventorySlotIsEmpty&gt; {
+</span><span>        self.slots
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(index)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">flatten</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">ok_or</span><span>(InventorySlotIsEmpty)
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .inventory
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> inventory.</span><span style="color:#62a35c;">get</span><span>(inventory_index) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(item) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> item,
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(InventorySlotIsEmpty) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NoItemInInventorySlot);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>            }
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>item_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .item
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(item)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;non-item in inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> usage </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> hit_points </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>                    .components
+</span><span>                    .hit_points
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no hit points&quot;</span><span>);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_TO_HEAL</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">5</span><span>;
+</span><span>                hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> hit_points.max.</span><span style="color:#62a35c;">min</span><span>(hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">HEALTH_TO_HEAL</span><span>);
+</span><span>                inventory.</span><span style="color:#62a35c;">remove</span><span>(inventory_index).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerHeals);
+</span><span>                ItemUsage::Immediate
+</span><span>            }
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemUsage::Aim,
+</span><span>        };
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(usage)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{
+</span><span>    HitPoints, Inventory, ItemType, ItemUsage, Location, NpcType, Populate, ProjectileType, Tile,
+</span><span>    World,
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_use_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> result </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            self.world
+</span><span>                .</span><span style="color:#62a35c;">maybe_use_item</span><span>(self.player_entity, inventory_index, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Ok</span><span>(usage) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> result {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> usage {
+</span><span>                ItemUsage::Immediate </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">ai_turn</span><span>(),
+</span><span>                ItemUsage::Aim </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>            }
+</span><span>        }
+</span><span>        result
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update the <code>use_item()</code> <code>EventRoutine</code> to invoke the target <code>EventRoutine</code> when the player uses an item
+whose usage is <code>Aim</code>. Note the not-yet-implemented <code>GameState::maybe_player_use_item_aim</code> being called here,
+which will actually launch the fireball.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    event_routine::{
+</span><span>        self,
+</span><span>        common_event::{CommonEvent, Delay},
+</span><span>        make_either, DataSelector, Decorate, EventOrPeek, EventRoutine, EventRoutineView, Handled,
+</span><span>        Loop, SideEffect, SideEffectThen, Value, ViewSelector,
+</span><span>    },
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">use_item</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B);
+</span><span>    Loop::new(|| {
+</span><span>        </span><span style="color:#62a35c;">inventory_slot_menu</span><span>(</span><span style="color:#183691;">&quot;Use Item&quot;</span><span>).</span><span style="color:#62a35c;">and_then</span><span>(|result| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> result {
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(entry) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(SideEffectThen::new_with_view(
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>                    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Ok</span><span>(usage) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">maybe_player_use_item</span><span>(entry.index) {
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> usage {
+</span><span>                            ItemUsage::Immediate </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>                            ItemUsage::Aim </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(TargetEventRoutine { name: </span><span style="color:#183691;">&quot;AIM&quot; </span><span>}.</span><span style="color:#62a35c;">and_then</span><span>(
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>maybe_coord</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>                                    SideEffect::new_with_view(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>                                        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> maybe_coord {
+</span><span>                                            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data
+</span><span>                                                .game_state
+</span><span>                                                .</span><span style="color:#62a35c;">maybe_player_use_item_aim</span><span>(entry.index, coord)
+</span><span>                                                .</span><span style="color:#62a35c;">is_ok</span><span>()
+</span><span>                                            {
+</span><span>                                                </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>                                            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                                                </span><span style="color:#0086b3;">None
+</span><span>                                            }
+</span><span>                                        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                                            </span><span style="color:#0086b3;">None
+</span><span>                                        }
+</span><span>                                    })
+</span><span>                                },
+</span><span>                            )),
+</span><span>                        }
+</span><span>                    } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                        Ei::C(Value::new(</span><span style="color:#0086b3;">None</span><span>))
+</span><span>                    }
+</span><span>                },
+</span><span>            )),
+</span><span>        })
+</span><span>    })
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Implement <code>GameState::maybe_player_use_item_aim</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        self.world.</span><span style="color:#62a35c;">maybe_use_item_aim</span><span>(
+</span><span>            self.player_entity,
+</span><span>            inventory_index,
+</span><span>            target,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log,
+</span><span>        )
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>And implement <code>World::maybe_use_item_aim</code>. This function assumes it’s called on a sensible
+item (e.g. you don’t try to aim a health potion). The game is implemented such that it should
+be impossible to call this method on an invalid item, so this function panics in this case.
+Should that panic ever execute, a bug has occurred at some point prior, and we shouldn’t try
+to continue running the game.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">coord_of</span><span>(character).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">==</span><span> target {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .inventory
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item_entity </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> inventory.</span><span style="color:#62a35c;">remove</span><span>(inventory_index).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>item_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.item.</span><span style="color:#62a35c;">get</span><span>(item_entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>panic!(</span><span style="color:#183691;">&quot;invalid item for aim&quot;</span><span>),
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(
+</span><span>                    ProjectileType::Fireball,
+</span><span>                ));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, ProjectileType::Fireball);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Two things in the above code haven’t been defined yet:</p>
+<ul>
+<li>the <code>LogMessage::PlayerLaunchesProjectile</code> variant</li>
+<li>the <code>World::spawn_projectile</code> method</li>
+</ul>
+<p>Add the log message types.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{
+</span><span>    HitPoints, Inventory, ItemType, ItemUsage, Location, NpcType, Populate, ProjectileType, Tile,
+</span><span>    World,
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    PlayerLaunchesProjectile(ProjectileType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>This depends on a new type <code>ProjectileType</code>. Add it to <code>world.rs</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ProjectileType {
+</span><span>    Fireball,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ProjectileType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Fireball </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;fireball&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Handle the new type of log message.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                PlayerLaunchesProjectile(projectile) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You launch a &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, projectile.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::projectile_colour(projectile));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>This depends on <code>colour::projectile_colour</code>. Define it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{ItemType, ItemUsage, Layer, NpcType, ProjectileType, Tile};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">projectile_colour</span><span>(projcetile_type: ProjectileType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> projcetile_type {
+</span><span>            ProjectileType::Fireball </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Jumping all over the codebase today.</p>
+<p>Back in <code>world.rs</code>, define the <code>spawn_projectile</code> method.
+Add a <code>projectile</code> component storing a <code>ProjectileType</code>, a <code>Projectile</code> tile, and a <code>projcetile</code> layer.
+Also add a <code>trajectory</code> component for storing the motion path of a projectile.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>line_2d::CardinalStepIter;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Projectile(ProjectileType),
+</span><span>}
+</span><span>
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        trajectory: CardinalStepIter,
+</span><span>        projectile: ProjectileType,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>spatial_table::declare_layers_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    layers {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        projectile: Projectile,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_projectile</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, from: Coord, to: Coord, projectile_type: ProjectileType) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord: from,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Projectile),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components
+</span><span>            .tile
+</span><span>            .</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Projectile(projectile_type));
+</span><span>        self.components.projectile.</span><span style="color:#62a35c;">insert</span><span>(entity, projectile_type);
+</span><span>        self.components
+</span><span>            .trajectory
+</span><span>            .</span><span style="color:#62a35c;">insert</span><span>(entity, CardinalStepIter::new(to </span><span style="font-weight:bold;color:#a71d5d;">-</span><span> from));
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Note the <code>CardinalStepIter</code> type. This is an iterator over the coordinates along
+a line segment between 2 points, only taking steps in cardinal directions.
+We’ll use it to compute the path followed by a projectile.</p>
+<p>Handle the new tile type and new layer in <code>app.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        game_state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Projectile) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">4</span><span>,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Projectile(ProjectileType::Fireball) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;*&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>),
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add a method to <code>World</code> for moving all projectiles one step along their motion path.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">move_projectiles</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> entities_to_remove </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> fireball_hit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, trajectory) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.components.trajectory.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(direction) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> trajectory.</span><span style="color:#62a35c;">next</span><span>() {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> current_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">coord_of</span><span>(entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> current_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_coord);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                    entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else if let </span><span style="color:#0086b3;">Some</span><span>(character) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                    entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>projectile_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.projectile.</span><span style="color:#62a35c;">get</span><span>(entity) {
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> projectile_type {
+</span><span>                            ProjectileType::Fireball </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                fireball_hit.</span><span style="color:#62a35c;">push</span><span>(character);
+</span><span>                            }
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>
+</span><span>                </span><span style="font-style:italic;color:#969896;">// ignore collisiosns of projectiles
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let _ = </span><span>self.spatial_table.</span><span style="color:#62a35c;">update_coord</span><span>(entity, new_coord);
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> entities_to_remove {
+</span><span>            self.</span><span style="color:#62a35c;">remove_entity</span><span>(entity);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> fireball_hit {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> maybe_npc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(VictimDies) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">character_damage</span><span>(entity, </span><span style="color:#0086b3;">2</span><span>) {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(npc) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> maybe_npc {
+</span><span>                    message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcDies(npc));
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>This requires some generalizations of our combat logic,
+in particular adding a <code>character_damage</code> method, extracting this logic from <code>character_bump_attack</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_bump_attack</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, victim: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;VictimDies&gt; {
+</span><span>        self.</span><span style="color:#62a35c;">character_damage</span><span>(victim, </span><span style="color:#0086b3;">1</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_damage</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, victim: Entity, damage: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;VictimDies&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(hit_points) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.hit_points.</span><span style="color:#62a35c;">get_mut</span><span>(victim) {
+</span><span>            hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> hit_points.current.</span><span style="color:#62a35c;">saturating_sub</span><span>(damage);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>                self.</span><span style="color:#62a35c;">character_die</span><span>(victim);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(VictimDies);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>If an NPC is killed by a fireball, a new log message <code>NpcDies</code> is generated.
+Add it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    NpcDies(NpcType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>And handle it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                NpcDies(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;The &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; dies.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span></code></pre>
+<p>Add a method to <code>World</code> for testing whether there are any projectiles.
+We’re about to add a simple realtime animation system, and we want an easy way to check
+whether any animations are in progress so controls can be ignored while animations are playing.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">has_projectiles</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">!</span><span>self.components.trajectory.</span><span style="color:#62a35c;">is_empty</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add animation methods to <code>GameState</code>, and prevent the player from acting while animations are in progress.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">tick_animations</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.world.</span><span style="color:#62a35c;">move_projectiles</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log)
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">has_animations</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.world.</span><span style="color:#62a35c;">has_projectiles</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">wait_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.</span><span style="color:#62a35c;">has_animations</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.</span><span style="color:#62a35c;">has_animations</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_get_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.</span><span style="color:#62a35c;">has_animations</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_use_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.</span><span style="color:#62a35c;">has_animations</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Now we need to periodically tick animations by calling <code>GameState::tick_animations</code>.
+Let’s only progress animations during normal gameplay, at a rate of 30 FPS (regardless of the game’s actual framerate).
+Since the game is likely running at a higher framerate, we need to keep track of the passage of time, and only progress
+animations very 33ms. Game ticks are sent to <code>EventRoutine</code>s in the form of <code>CommonEvent::Frame(period)</code> events,
+where <code>period</code> is a <code>std::time::Duration</code> containing the amount of time that has passed since the previous frame.
+Ticks are generally synchronized to the display’s framerate, but this is not a necessity and you shouldn’t rely on it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">BETWEEN_ANIMATION_TICKS</span><span>: Duration </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Duration::from_millis(</span><span style="color:#0086b3;">33</span><span>);
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    until_next_animation_tick: Duration,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            until_next_animation_tick: Duration::from_millis(</span><span style="color:#0086b3;">0</span><span>),
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>EventRoutine </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameEventRoutine {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Return </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> GameReturn;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Event </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CommonEvent;
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle</span><span>&lt;EP&gt;(
+</span><span>        self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>Data,
+</span><span>        _view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>View,
+</span><span>        event_or_peek: EP,
+</span><span>    ) -&gt; Handled&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Return, </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        EP: EventOrPeek&lt;Event = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Event&gt;,
+</span><span>    {
+</span><span>        event_routine::event_or_peek_with_handled(event_or_peek, self, |s, event| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> event {
+</span><span>            CommonEvent::Input(input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            CommonEvent::Frame(period) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(until_next_animation_tick) </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                    data.until_next_animation_tick.</span><span style="color:#62a35c;">checked_sub</span><span>(period)
+</span><span>                {
+</span><span>                    data.until_next_animation_tick </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> until_next_animation_tick;
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                    data.until_next_animation_tick </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">BETWEEN_ANIMATION_TICKS</span><span>;
+</span><span>                    data.game_state.</span><span style="color:#62a35c;">tick_animations</span><span>();
+</span><span>                }
+</span><span>                Handled::Continue(s)
+</span><span>            }
+</span><span>        })
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>And that should do it.
+Try picking up a fireball scroll and using it via the inventory menu.
+You’ll be presented with an “AIM” target ui.
+Target an NPC and hit the enter key or press the left mouse button.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/aim.png" alt="aim.png" /></p>
+<p>A fireball will appear, and in <em>realtime</em> move towards the NPC.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/launch.png" alt="launch.png" /></p>
+<p>When it hits them, they’ll take damage and possibly die.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/hit.png" alt="hit.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.2">part-9.2</a></p>
+<h2 id="confusion-scroll"><a class="zola-anchor" href="#confusion-scroll" aria-label="Anchor link for: confusion-scroll">Confusion Scroll</a></h2>
+<p>Add a <code>ConfusionScroll</code> item, and <code>Confusion</code> projectile.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ProjectileType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Confusion,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ProjectileType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::Confusion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;confusion spell&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    ConfusionScroll,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;confusion scroll&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add rendering logic for the new item and projectile.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">CONFUSION_SCROLL</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">255</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_colour</span><span>(item_type: ItemType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">CONFUSION_SCROLL</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">projectile_colour</span><span>(projcetile_type: ProjectileType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> projcetile_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ProjectileType::Confusion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">CONFUSION_SCROLL</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Item(ItemType::ConfusionScroll) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;♫&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">CONFUSION_SCROLL</span><span>),
+</span><span>        Tile::Projectile(ProjectileType::Fireball) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;*&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">FIREBALL_SCROLL</span><span>),
+</span><span>        Tile::Projectile(ProjectileType::Confusion) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;*&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">CONFUSION_SCROLL</span><span>),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Place confusion scrolls during dungeon generation. Also rebalance the probabilities of items
+such that health potions may appear again.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` items at random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_items</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">100</span><span>) {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">29 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemType::FireballScroll,
+</span><span>                </span><span style="color:#0086b3;">30</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">49 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemType::ConfusionScroll,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>ItemType::HealthPotion,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Item(item));
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>When a character becomes confused, they will move randomly for 5 turns. To keep track of the number of turns
+until a confused character recovers, add a <code>confusion_countdown</code> component. Entities which have this component
+will be considered to be confused, and it will also track the time until recovery.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        confusion_countdown: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">..
+</span></code></pre>
+<p>Set the <code>UsageType</code> for confusion scrolls, spawn a projectile when a confusion scroll is used, and set what happens
+when a confusion spell hits an NPC.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;ItemUsage, ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> usage </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::FireballScroll </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ItemUsage::Aim,
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item_aim</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        target: Coord,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            ItemType::ConfusionScroll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerLaunchesProjectile(
+</span><span>                    ProjectileType::Confusion,
+</span><span>                ));
+</span><span>                self.</span><span style="color:#62a35c;">spawn_projectile</span><span>(character_coord, target, ProjectileType::Confusion);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">move_projectiles</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> confusion_hit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, trajectory) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.components.trajectory.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(direction) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> trajectory.</span><span style="color:#62a35c;">next</span><span>() {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else if let </span><span style="color:#0086b3;">Some</span><span>(character) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                    entities_to_remove.</span><span style="color:#62a35c;">push</span><span>(entity);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>projectile_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.projectile.</span><span style="color:#62a35c;">get</span><span>(entity) {
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> projectile_type {
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                            ProjectileType::Confusion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                                confusion_hit.</span><span style="color:#62a35c;">push</span><span>(character);
+</span><span>                            }
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> confusion_hit {
+</span><span>            self.components.confusion_countdown.</span><span style="color:#62a35c;">insert</span><span>(entity, </span><span style="color:#0086b3;">5</span><span>);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>npc_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(entity) {
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcBecomesConfused(npc_type));
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add and handle log messages for becoming confused and recovering.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    NpcBecomesConfused(NpcType),
+</span><span>    NpcIsNoLongerConfused(NpcType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                NpcBecomesConfused(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;The &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; is confused.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NpcIsNoLongerConfused(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;The &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;&#39;s confusion passes.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now let’s update movement logic such that confused characters move in random directions.
+To use the <code>Rng</code> trait to select a random direction, we need to enable the optional <code>rand</code>
+feature of the <code>direction</code> crate.</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span>[dependencies]
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span style="color:#63a35c;">direction </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.18&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;rand&quot;</span><span>] }
+</span></code></pre>
+<p>In <code>game.rs</code>, start passing a rng to <code>World::maybe_move_character</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.world.</span><span style="color:#62a35c;">maybe_move_character</span><span>(
+</span><span>            self.player_entity,
+</span><span>            direction,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.rng,
+</span><span>        );
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, agent) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> npc_action {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                NpcAction::Move(direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.world.</span><span style="color:#62a35c;">maybe_move_character</span><span>(
+</span><span>                    entity,
+</span><span>                    direction,
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log,
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.rng,
+</span><span>                ),
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>And update <code>World::maybe_move_character</code> to take an rng as an argument and use it
+to move characters randomly when they are confused, also decreasing, and eventually removing,
+their <code>confusion_countdown</code> component.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_character</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character_entity: Entity,
+</span><span>        direction: CardinalDirection,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> direction </span><span style="font-weight:bold;color:#a71d5d;">= if let </span><span style="color:#0086b3;">Some</span><span>(confusion_countdown) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .confusion_countdown
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(character_entity)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if *</span><span>confusion_countdown </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>                self.components.confusion_countdown.</span><span style="color:#62a35c;">remove</span><span>(character_entity);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>npc_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(character_entity) {
+</span><span>                    message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcIsNoLongerConfused(npc_type));
+</span><span>                }
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>confusion_countdown </span><span style="font-weight:bold;color:#a71d5d;">-= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>            }
+</span><span>            rng.</span><span style="color:#62a35c;">gen</span><span>()
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            direction
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_character_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>It’s now possible to launch confusion spells in the same way as you launch fireballs.
+NPCs hit with confusion spells move randomly for their next 5 turns.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/confusion.png" alt="confusion.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9.3">part-9.3</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-8&#x2F;" aria-label="Previous">
+	  Previous: Part 8 - Items and Inventory
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-10&#x2F;" aria-label="Next">
+	  Next: Part 10 - Saving and Loading
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Printing over serial on x86">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/printing-over-serial-on-x86/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/printing-over-serial-on-x86/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-17T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Printing over serial on x86
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;trekking-is-good-because-it-s-a-problem-you-can-solve&#x2F;" aria-label="Previous">
+	  Previous: Trekking is good because it&#x27;s a problem you can solve
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;homogeneous-coordinates&#x2F;" aria-label="Next">
+	  Next: Homogeneous Coordinates
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Printing over serial on x86</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-17T00:00:00+00:00">
+    August 17, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I set myself the task of printing some text over a serial port in a tiny
+kernel mode program that boots with the <a href="https://wiki.osdev.org/BOOTBOOT">BOOTBOOT</a>
+bootloader. I didn’t start from scratch, but from some
+<a href="https://gitlab.com/bztsrc/bootboot/-/tree/master/mykernel">example code</a>
+in the BOOTBOOT reference implementation.</p>
+<p>The only reason it wasn’t trivial is that I’m targeting a UEFI machine,
+and between the <a href="https://gitlab.com/bztsrc/bootboot/raw/master/bootboot_spec_1st_ed.pdf">BOOTBOOT spec</a>
+and the <a href="https://wiki.osdev.org/Serial_Ports">osdev wiki page about serial ports</a>
+or <a href="https://wiki.osdev.org/UEFI">UEFI</a>, it’s not clear whether the “old fashioned” way
+of interacting with serial ports is supported on UEFI. All the information I could find about
+how to print via serial console on UEFI systems implied that I should use a library which
+abstracts access to hardware via UEFI.</p>
+<p>Instead I elected to try doing it the “old fashioned” way, based on the
+<a href="https://github.com/seL4/seL4/blob/master/src/plat/pc99/machine/io.c#L30">debug printing code from the seL4 microkernel</a>.
+Here’s how it looks.</p>
+<p>I added a small assembly file defining a <code>com1_putc</code> function that sends its argument to I/O port <code>0x3F8</code>,
+which conventionally addresses the <code>COM1</code> serial port.</p>
+<pre data-lang="nasm" style="background-color:#ffffff;color:#323232;" class="language-nasm "><code class="language-nasm" data-lang="nasm"><span style="font-style:italic;color:#969896;">; ioports.asm
+</span><span>
+</span><span style="color:#62a35c;">global </span><span style="font-weight:bold;color:#795da3;">com1_putc
+</span><span>
+</span><span style="color:#62a35c;">%define </span><span style="font-weight:bold;color:#795da3;">COM1 </span><span style="color:#0086b3;">0x3F8
+</span><span>
+</span><span style="color:#62a35c;">section </span><span style="font-weight:bold;color:#795da3;">.text
+</span><span style="color:#62a35c;">bits 64
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">com1_putc:
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span>rax, rdi
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span>dx, </span><span style="font-weight:bold;color:#795da3;">COM1
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">out </span><span>dx, al
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">ret
+</span></code></pre>
+<p>Assemble the new file:</p>
+<pre data-lang="make" style="background-color:#ffffff;color:#323232;" class="language-make "><code class="language-make" data-lang="make"><span style="font-style:italic;color:#969896;"># Makefile
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">mykernel.x86_64.elf</span><span style="font-weight:bold;color:#a71d5d;">: </span><span style="color:#183691;">kernel.c
+</span><span>	nasm -f elf64 ioports.asm -o ioports.o
+</span><span>	... (add ioports.o to the linker arguments)
+</span></code></pre>
+<p>And call the new function from <code>_start</code>:</p>
+<pre data-lang="c" style="background-color:#ffffff;color:#323232;" class="language-c "><code class="language-c" data-lang="c"><span style="font-style:italic;color:#969896;">// kernel.c
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">com1_putc</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">char </span><span>c);
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">com1_puts</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">char* </span><span>s);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">_start</span><span>()
+</span><span>{
+</span><span>    com1_puts(</span><span style="color:#183691;">&quot;Hello, COM1</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span>);
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">com1_puts</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">char* </span><span>s) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">do </span><span>{
+</span><span>        com1_putc(</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>(s</span><span style="font-weight:bold;color:#a71d5d;">++</span><span>));
+</span><span>    } </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>s);
+</span><span>}
+</span></code></pre>
+<p>Despite its simplicity, I’m not convinced that this code is correct in all cases.
+I rushed this because I just wanted to get something working, and now that it works
+for me, I’ll slow down and understand this code as deeply as I can before moving on.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;trekking-is-good-because-it-s-a-problem-you-can-solve&#x2F;" aria-label="Previous">
+	  Previous: Trekking is good because it&#x27;s a problem you can solve
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;homogeneous-coordinates&#x2F;" aria-label="Next">
+	  Next: Homogeneous Coordinates
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

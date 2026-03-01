@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="BOOTBOOT">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/bootboot/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/bootboot/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-13T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+BOOTBOOT
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;sticking-with-freebsd-for-now&#x2F;" aria-label="Previous">
+	  Previous: Sticking with FreeBSD for now
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;problems-not-solutions&#x2F;" aria-label="Next">
+	  Next: Problems, not Solutions
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">BOOTBOOT</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-13T00:00:00+00:00">
+    August 13, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>A month or so ago I started following <a href="https://os.phil-opp.com/first-edition/">the first edition of writing an OS in rust</a>
+which is a tutorial for writing an OS in rust.
+I tried to get it working on my FreeBSD laptop and ran into what I’ll call “yet another teething problem
+for me as a new FreeBSD user”. I’d been using a tool called <code>grub-mkrescue</code> to build a bootable cdrom image
+containing the grub bootloader and an image of the kernel we build in the tutorial.
+Grub is not available on FreeBSD (though hunting for help on this issue indicates that it <em>used</em> to be).</p>
+<p>There is a pure rust bootloader in a crate called <a href="https://crates.io/crates/bootloader">bootloader</a>.
+The <em>second</em> edition of the tutorial I’m following uses it (in fact it was written just for the tutorial).
+I’ve avoided it thus far as I want a more general - not rust-specific - understanding of the boot process.</p>
+<p>An alternative that I just discovered is <a href="https://wiki.osdev.org/BOOTBOOT">BOOTBOOT</a> which is a
+bootloader protocol and reference implementation. It does a little more setup than grub.
+Kernels begin executing in long mode, and the bootloader initializes a framebuffer and serial console.
+I’d honestly rather it didn’t, preferring to work out that myself, but it seems I’m out of options.
+Initial setup isn’t the most interesting part of OS dev.
+I’ve gone through the <a href="https://github.com/gridbugs/writing-an-os-in-rust/blob/master/src/boot.asm">ritualistic process</a>
+of transitioning from protected mode to long mode on x86. I’m glad to have done that once, and once is probably enough.</p>
+<p>Grub is large and complicated and does far more than I need it to do. BOOTBOOT comes with a tool <code>mkbootimg</code>
+which performs a similar function to <code>grub-mkrescue</code> - making a bootable disk image containing a bootloader
+and a kernel. What I love about this tool is that’s <em>all</em> it does.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;sticking-with-freebsd-for-now&#x2F;" aria-label="Previous">
+	  Previous: Sticking with FreeBSD for now
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;problems-not-solutions&#x2F;" aria-label="Next">
+	  Next: Problems, not Solutions
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2023: UI, Night, Loss, Menus">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-03-10T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/night.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2023: UI, Night, Loss, Menus
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Even More Procedural Generation!
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: Passengers, Art
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2023: UI, Night, Loss, Menus</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-03-10T00:00:00+00:00">
+    March 10, 2023
+  </time>
+  
+</p>
+
+
+  
+
+<p>I added stats like health, fuel, and daylight and display them in the game’s UI.
+There’s a hinting system that displays hints based on what tiles are currently
+on the screen.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/screenshot.png" alt="Screenshot showing the game’s UI" /></p>
+<span id="continue-reading"></span>
+<p>If the day meter gets to 0 it becomes night time. A ghost spawns every 20 turns.
+Ghost are invincible and unlike the player, they can move diagonally. This is so
+that if the player is driving the boat away from a ghost and they move
+diagonally the ghost can keep up with them. Night is imbalanced on purpose. If
+you get caught on the river at night you’re almost certainly going to lose the
+game, but if players almost make it to the inn in time I want them to have a
+small chance of surviving the few turns of desperately trying to outrun the
+ghosts and get inside.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/night.png" alt="Screenshot showing night time in the game" /></p>
+<p>It’s currently possible to lose the game by running out of fuel and getting
+killed by ghosts. I plan on adding a very simple combat system tomorrow to add
+some tension to exploring islands and gathering junk to trade for fuel, so that
+will be a third way you can lose the game.</p>
+<p>Finally I added a menu system. Currently I’m just using it to show flavour text
+when you interact with the locals in the starting town, but this will be the
+basis of interacting with potential passengers and also the shop where you buy
+fuel and upgrades.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day5/menu.png" alt="Screenshot of a menu" /></p>
+<p>To create the graphics I used a tool I’ve been working on called
+<a href="https://github.com/gridbugs/text-paint">text-paint</a>. It lets you paint with
+text. I hacked it to allow exporting
+<a href="https://crates.io/crates/bincode">bincode</a>-encoded grids of character data
+which I can deserialize in the game as backgrounds for the menu. If I get time
+I’ll make backgrounds for the main menu and also for the text that gets
+displayed when you win and lose the game.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Even More Procedural Generation!
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2023: Passengers, Art
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

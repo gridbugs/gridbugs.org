@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2021: Procedural Generation, Rendering, Pretty Menus, End Text">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2021-03-06T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2021: Procedural Generation, Rendering, Pretty Menus, End Text
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-prep&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Preparation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day2&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: NPCs, Pathfinding, First Level, Final Level, Projectiles, Destructible Terrain
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2021: Procedural Generation, Rendering, Pretty Menus, End Text</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2021-03-06T00:00:00+00:00">
+    March 06, 2021
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/procgen" aria-label="tag">procgen</a>
+  
+</p>
+
+
+  
+
+<style>
+.orbital-decay {
+    color: #D08C15;
+    background-color: #00003B;
+}
+</style>
+<h2 id="orbital-decay"><a class="zola-anchor" href="#orbital-decay" aria-label="Anchor link for: orbital-decay"><span class="orbital-decay">Orbital Decay</span></a></h2>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/screenshot.png" alt="screenshot.png" /></p>
+<p class="orbital-decay">
+You tape over the flashing warning light.
+An overheating engine is the least of your worries.
+Gotta focus.
+</p>
+<p class="orbital-decay">
+The space station looms ahead.
+It's out of fuel, and about to come crashing down to Earth.
+Unless you get to it first.
+Special delivery: 1 hydrogen fuel cell with enough juice to kick the station out of this pesky atmosphere and back into space where it belongs.
+</p>
+<span id="continue-reading"></span><p class="orbital-decay">
+Back home your buddies are placing bets on whether you'll make it back alive.
+Last you heard, odds were 5 to 1 against.
+</p>
+<p class="orbital-decay">
+"Docking complete," sounds a lifeless mechanical voice. No word yet from the station crew. Comms must be down. Figures.
+Shouldering your pack containing the fuel cell, you trudge into the airlock.
+Gotta lug this thing down the five flights of stairs to the fuel bay. Who designed this place?
+</p>
+<p class="orbital-decay">
+A dim light flickers on in the airlock revealing words smeared in blood on the opposite door:
+"<span style="font-weight:bold">DON'T OPEN! DEAD INSIDE!</span>".
+</p>
+<p class="orbital-decay">
+Better make those odds 6 to 1...
+</p>
+<h2 id="procedural-generation"><a class="zola-anchor" href="#procedural-generation" aria-label="Anchor link for: procedural-generation">Procedural Generation</a></h2>
+<h3 id="hull"><a class="zola-anchor" href="#hull" aria-label="Anchor link for: hull">Hull</a></h3>
+<p>Maps will be generated from the outside in and that means starting with the hull.
+I’m use the <a href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/">Wave Function Collapse</a> algorithm to make the outline of the outside of the station.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span> 0:    #####            
+</span><span> 1:    #...#            
+</span><span> 2:    #...#            
+</span><span> 3:    #...#  ######### 
+</span><span> 4: ####...#  #.......##
+</span><span> 5: #......#  #........#
+</span><span> 6: #......#  #........#
+</span><span> 7: #......####........#
+</span><span> 8: #..................#
+</span><span> 9: #..................#
+</span><span>10: #..................#
+</span><span>11: ####...####.......##
+</span><span>12:    #...#  ######### 
+</span><span>13:    #####            
+</span></code></pre>
+<h3 id="internal-walls"><a class="zola-anchor" href="#internal-walls" aria-label="Anchor link for: internal-walls">Internal Walls</a></h3>
+<p>The entire station being one giant room wouldn’t be very interesting.
+The next step is to fill the hull with internal walls by repeatedly splitting
+large regions of empty space - a process known as Binary Space Partitioning.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span> 0:    #################
+</span><span> 1:    #.....#....#....#
+</span><span> 2:   ##.....#....#....#
+</span><span> 3:   ########....#....#
+</span><span> 4:   #......#....######
+</span><span> 5:   #......######....#
+</span><span> 6:   #......#....#....#
+</span><span> 7:   #......#....######
+</span><span> 8:   ##############...#
+</span><span> 9:   #.....##     #...#
+</span><span>10:   #.....#      #####
+</span><span>11:   ##....##     #...#
+</span><span>12:    #.....#     #...#
+</span><span>13:    #######     #####
+</span></code></pre>
+<h3 id="doors"><a class="zola-anchor" href="#doors" aria-label="Anchor link for: doors">Doors</a></h3>
+<p>Next add the doors by generating a graph with a node for each room,
+and an edge between two nodes if the corresponding rooms share at
+least one cell of wall that could potentially be replaced by a door.
+Then choose a random minimum spanning tree of this graph, and place
+a door for each edge in the tree. This guarantees that the entire
+level is connected.
+Finally add a handful of extra doors
+on room boundaries not in the tree so the level ends up with loops.
+Doors are represented below with a ‘+’.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span> 0: #############  #####
+</span><span> 1: #......+....####...#
+</span><span> 2: #......#......+....#
+</span><span> 3: #+######......#+####
+</span><span> 4: #......+......#....#
+</span><span> 5: #......#......+....#
+</span><span> 6: #####+##############
+</span><span> 7:     #......#        
+</span><span> 8:     #......#        
+</span><span> 9: ######+######       
+</span><span>10: #....#......#       
+</span><span>11: #....#......#       
+</span><span>12: #....+......#       
+</span><span>13: #############       
+</span></code></pre>
+<h3 id="windows"><a class="zola-anchor" href="#windows" aria-label="Anchor link for: windows">Windows</a></h3>
+<p>Much the same as doors, execpt they can also appear on the hull
+and there’s no requirement that all areas be connected by them.
+The ‘%’ below are windows.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span> 0: ######%%#  #########
+</span><span> 1: #...#...#  #...#...#
+</span><span> 2: #...#...#  #...+...%
+</span><span> 3: %...+...#  #...%...%
+</span><span> 4: #+#######  ##%%##+%#
+</span><span> 5: #.#            #...#
+</span><span> 6: %.%            %...%
+</span><span> 7: #+#%#####%######...#
+</span><span> 8: %...+......+...##+##
+</span><span> 9: #...#......#...+...#
+</span><span>10: ##+%#......#####...#
+</span><span>11: %...#...##%#...+...#
+</span><span>12: #...+...#  %...#...%
+</span><span>13: #%#%#%###  ######%##
+</span></code></pre>
+<h3 id="entrance-and-exit"><a class="zola-anchor" href="#entrance-and-exit" aria-label="Anchor link for: entrance-and-exit">Entrance and Exit</a></h3>
+<p>Choose a room with plenty of space and put the stairs (‘&gt;’) to the next
+level at a position surrounded by empty space, for purely aesthetic reasons.
+Find a similarly open area in a different room from the stairs and start the
+player (‘@’) there.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span> 0: #####%###  ##%######
+</span><span> 1: #...#...%  %...+...%
+</span><span> 2: #...#...%  #...#...#
+</span><span> 3: ###+#%+##  ##+##+###
+</span><span> 4: #......##%###......#
+</span><span> 5: #...@..+....#......#
+</span><span> 6: #......%....#......#
+</span><span> 7: %......#....#......#
+</span><span> 8: ##%#...#....+...####
+</span><span> 9:    ##+#######+###   
+</span><span>10:     %..#    #...%   
+</span><span>11:    ##..%    %.&gt;.#   
+</span><span>12:    %...#    #...%   
+</span><span>13:    ##%%#    #####   
+</span></code></pre>
+<h2 id="wire-terrain-generation-up-to-the-engine"><a class="zola-anchor" href="#wire-terrain-generation-up-to-the-engine" aria-label="Anchor link for: wire-terrain-generation-up-to-the-engine">Wire terrain generation up to the engine</a></h2>
+<p>I started with the code for <a href="https://gridbugs.github.io/gridbugs.org/slime99/">slime99</a> and pulled all the content out, then plugged in the new terrain generator.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/slime99-engine.png" alt="slime99-engine.png" /></p>
+<p>Basic things like collision detection, visibility, and stairs continue to work.</p>
+<h2 id="rendering-3x3-tiles"><a class="zola-anchor" href="#rendering-3x3-tiles" aria-label="Anchor link for: rendering-3x3-tiles">Rendering 3x3 tiles</a></h2>
+<p>Dynamic lighting was enabled for the previous screenshot, but the lighting configuration in slime99 was eccentric so in the absence
+of glowing green pools of sludge the lighting system wasn’t doing anything (or more correctly it was but was doing it so hard there
+was nothing visible that wasn’t fully lit by the player’s light).</p>
+<p>For Orbital Decay, I’ve dialed the lighting back to a more realistic setting, with diminishing lighting around the edge of vision and
+no light source but the player (at least for now). The starfield in the background isn’t affected by the lighting system at all; as
+long as you can see space, it is fully and consistently lit.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/od-graphics.png" alt="od-graphics.png" /></p>
+<p>I changed a bunch if 2s to 3s in the code to switch from 2x2 tiles to 3x3 tiles!</p>
+<h2 id="pretty-menus"><a class="zola-anchor" href="#pretty-menus" aria-label="Anchor link for: pretty-menus">Pretty Menus</a></h2>
+<p>This doesn’t enhance gameplay at all but it does look really cool and after all isn’t that what the 7DRL is all about!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/menu.png" alt="menu.png" /></p>
+<p>While working on this I cought and fixed a bug in <a href="https://crates.io/crates/chargrid_menu">chargrid_menu</a> that prevented bold text in some menus.</p>
+<p>As in my last few games, once a game is in progress the menu appears in a box over the dimmed game.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/in-game-menu.png" alt="in-game-menu.png" /></p>
+<h2 id="end-text"><a class="zola-anchor" href="#end-text" aria-label="Anchor link for: end-text">End Text</a></h2>
+<p>I wrote some end text. The game isn’t winable yet but when it is this will be displayed.
+Unless it’s not obvious, I’m super excited about the procedurally-generated space station in all the menus and text screens!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day1/ansi-end-text.png" alt="ansi-end-text.png" /></p>
+<p>Also showing off the ansi terminal version of the game!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-prep&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Preparation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day2&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: NPCs, Pathfinding, First Level, Final Level, Projectiles, Destructible Terrain
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="I was briefly wrong about list&#x27;s behaviour as an applicative">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/i-was-briefly-wrong-about-list-s-behaviour-as-an-applicative/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/i-was-briefly-wrong-about-list-s-behaviour-as-an-applicative/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-11T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+I was briefly wrong about list&#x27;s behaviour as an applicative
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;low-level-and-high-level-command-line-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Low-Level and High-Level Command-Line Argument Parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-my-first-command-line-arguments&#x2F;" aria-label="Next">
+	  Next: Parsing my first command-line arguments
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">I was briefly wrong about list&#x27;s behaviour as an applicative</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-11T00:00:00+00:00">
+    September 11, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>For today’s post I originally set out writing an explanation of the concept of <em>Applicative Functors</em>.
+Partway through writing it, I was making an example involving lists, and it occurred to me that
+contrary to my intuition up until that point, you cannot use <code>apply</code> to effectively <code>map</code> a function
+of two arguments over a pair of lists, as one would typically do with <code>zipWith</code>.
+If you try, your code will typecheck, but you’ll end up calling the function on all combinations of
+values from the two lists, rather than just corresponding pairs. What’s weird is that for as long
+as I’ve known that “lists are monads” I’ve internalised the fact that <code>bind</code>-ing on lists
+enumerates all combinations of values, and it would be weird for <code>apply</code> and <code>bind</code> to behave differently.
+And in hindsight it’s painfully obvious that an operation
+as abstract as <code>apply</code> doesn’t care about such paltry details as the <em>length</em> of lists, as <code>zipWith</code>
+does.</p>
+<p>What gave it away was that I realised I expected <code>(pure (1+)) &lt;*&gt; [1, 2, 3]</code> to add 1 to each number in the RHS
+(which it does) but I also expected <code>(pure (+)) &lt;*&gt; [1, 2, 3] &lt;*&gt; [4, 5, 6]</code> to be <code>[5, 7, 9]</code>.
+I wrote down as much, and this set off all sorts of internal consistency checks in my head because
+these two things can’t be true at the same time. That’s the whole point of doing these daily posts.
+It seems like it’s easier to be wrong in your head than on paper.</p>
+<p>And if anyone is reading this and wondering about the results of the expressions above:</p>
+<pre data-lang="haskell" style="background-color:#ffffff;color:#323232;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#0086b3;">Prelude</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> (pure (</span><span style="color:#0086b3;">1</span><span style="font-weight:bold;color:#a71d5d;">+</span><span>)) </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span>*</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> [</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">3</span><span>]
+</span><span>[</span><span style="color:#0086b3;">2</span><span>,</span><span style="color:#0086b3;">3</span><span>,</span><span style="color:#0086b3;">4</span><span>]
+</span><span style="color:#0086b3;">Prelude</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> (pure </span><span style="font-weight:bold;color:#795da3;">(+)</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span>*</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> [</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">3</span><span>] </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span>*</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span> [</span><span style="color:#0086b3;">4</span><span>, </span><span style="color:#0086b3;">5</span><span>, </span><span style="color:#0086b3;">6</span><span>]
+</span><span>[</span><span style="color:#0086b3;">5</span><span>,</span><span style="color:#0086b3;">6</span><span>,</span><span style="color:#0086b3;">7</span><span>,</span><span style="color:#0086b3;">6</span><span>,</span><span style="color:#0086b3;">7</span><span>,</span><span style="color:#0086b3;">8</span><span>,</span><span style="color:#0086b3;">7</span><span>,</span><span style="color:#0086b3;">8</span><span>,</span><span style="color:#0086b3;">9</span><span>]
+</span></code></pre>
+<p>Now go read <a href="http://learnyouahaskell.com/functors-applicative-functors-and-monoids#applicative-functors">learnyouahaskell</a>!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;low-level-and-high-level-command-line-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Low-Level and High-Level Command-Line Argument Parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-my-first-command-line-arguments&#x2F;" aria-label="Next">
+	  Next: Parsing my first command-line arguments
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

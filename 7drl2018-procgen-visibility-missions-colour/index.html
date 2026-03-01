@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2018-procgen-visibility-missions-colour/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2018-procgen-visibility-missions-colour/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-03-04T22:16:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Day 1
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-items-glossary-combat-railgun&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Items, Glossary, Combat, Railgun
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-03-04T22:16:00+10:00">
+    March 04, 2018
+  </time>
+  
+</p>
+
+
+  
+
+<p>Lots of progress today! It’s starting to look like a game.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-procgen-visibility-missions-colour/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>The procedural generation is based on Conway’s Game of Life. I wrote
+<a href="https://gridbugs.github.io/gridbugs.org/cellular-automata-cave-generation/">a post</a>
+about this technique a few years ago. It creates natural-lookin caverns. I then
+place some rooms randomly, and dig tunnels so all the doors are connected to
+the main area.</p>
+<p>For visible area detection, I’m using a library:
+<a href="https://crates.io/crates/shadowcast">shadowcast</a>.
+I implemented recursive shadowcast for an
+<a href="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/">old project</a>,
+and extracted it into a library for easy inclusion in other projects.
+While adding shadowcast I found a bug in
+<a href="https://github.com/gridbugs/prototty">prototty</a> - my terminal rendering
+library - where foreground-only updates to a cell prevent future background
+updates of a lower depth, which manifested as the floor occasionally
+disappearing from underneath the player. I released a new version of prototty
+which fixed the bug.</p>
+<p>I added a mission system. Missions can produce meters (the “Boss” meter on the
+right in the screenshot), and check whether they are completed. Currently the
+only mission is to kill a tough enemy, but I’ll implement more missions now
+that the framework is in place.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Day 1
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-items-glossary-combat-railgun&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Items, Glossary, Combat, Railgun
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

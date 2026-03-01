@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2022: Atmosphere">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2022-day2/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2022-day2/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2022-03-06T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2022: Atmosphere
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2022: Bootstrapping
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day3&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2022: Content
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2022: Atmosphere</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2022-03-06T00:00:00+00:00">
+    March 06, 2022
+  </time>
+  
+</p>
+
+
+  
+
+<p>The aspect I care most about this year is setting the mood of being inside
+(or outside) on a rainy day in the woods. I spent most of today building
+the rain and mist systems.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2022-day2/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>I also made a very simple procgen system that randomly places trees with
+density determined with perlin noise. There is also ground topography which
+will become relevant soon when I implement flooding. The cabin is placed
+at a high location according to the topography and the player starts just
+outside the cabin on the side with the door.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2022-day2/screenshot2.png" alt="screenshot2.png" /></p>
+<p>The cabin is supposed to feel inviting, and it gives off a warm glow
+so the player can spot it in the rain at the start of the game.</p>
+<p>I also have a more solid plan for the rest of the jam. The game will take place over the
+course of several days. This will replace the multiple levels in a typical
+dungeon crawler. Each day, the map will flood a little more. I generate
+a topographic map using perlin noise, which I’ll use to implement flooding by flooding
+the lowest areas first.</p>
+<p>In order for the flooding to be mechanically interesting, the player needs a reason
+to go outside. The loss condition of the game will be the protagonist runs out of
+motivation to stay in the woods. There will be certain tasks that can be done once
+per day that refill motivation:</p>
+<ul>
+<li>picking tea and returning to the cabin to brew it, and drink it</li>
+<li>finding a rare flower and taking it to a shrine</li>
+<li>harvesting the sap of a giant maple tree</li>
+<li>standing on the shore of the lake and contemplating their existence</li>
+<li>watching heavy rain from inside the cabin</li>
+</ul>
+<p>The idea is that the player will form a daily routine which they can optimize and
+defend from the rising water.</p>
+<p>Motivation can be depleted by:</p>
+<ul>
+<li>getting rained on without an umbrella</li>
+<li>wading through water without gumboots</li>
+</ul>
+<p>It will also gradually deplete over time at a rate that necessitates doing about half
+of the motivation-building tasks each day.</p>
+<p>The player can stand under a tree to reduce the effect of being rained on, and they
+can move rocks to make stepping stones across flooded areas.</p>
+<p>As time progresses, the rain gets heavier, and the flood waters rise. To mitigate the
+effects of this, there are some items that the player can unlock by doing quests.</p>
+<ul>
+<li>gumboots reduce the motivation lost by wading through water</li>
+<li>the umbrella reduces the motivation lost by getting rained on</li>
+<li>the newspaper gives advance warning of the next change in the weather</li>
+<li>the shovel lets you dig drains that will fill up before flooding progresses</li>
+<li>the map reveals the topography of the area and landmarks</li>
+</ul>
+<p>Each day the player will have several quests available to them which grant one of these items.
+They’ll all require the player to go to a location and perform some action. The quest description
+will be in terms of landmarks, e.g.</p>
+<ul>
+<li>A blight has infected the trees to the west of the temple ruins. Take this serum and
+use it on the trees, and you’ll receive a shovel in return.</li>
+</ul>
+<p>This means the map will need landmarks:</p>
+<ul>
+<li>giant tree</li>
+<li>temple ruins</li>
+<li>lake (on one edge of the map)</li>
+<li>the cabin itself</li>
+</ul>
+<p>I also added ruins to the terrain generator that just load the pre-fabricated section
+of the map from a text file and rotate it a random amount.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2022-day2/ruins.png" alt="ruins.png" /></p>
+<p>I resisted the urge to make the markings on the alter glow purple because this isn’t
+that sort of game…</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day1&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2022: Bootstrapping
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day3&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2022: Content
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

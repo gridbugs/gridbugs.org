@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Why you need a .bashrc and .profile">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/why-you-need-a-bashrc-and-profile/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/why-you-need-a-bashrc-and-profile/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-11-02T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Why you need a .bashrc and .profile
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;updating-library-dependencies&#x2F;" aria-label="Previous">
+	  Previous: Updating Library Dependencies
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;winit-makes-windows-the-wrong-size-in-some-cases-i-think&#x2F;" aria-label="Next">
+	  Next: Winit makes windows the wrong size in some cases I think
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Why you need a .bashrc and .profile</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-11-02T00:00:00+00:00">
+    November 02, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I’ve been doing this wrong my whole life.</p>
+<p>For as long as I can remember I’ve included some version of the following line in my .bashrc:</p>
+<pre data-lang="bash" style="background-color:#ffffff;color:#323232;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="font-weight:bold;color:#a71d5d;">export </span><span>PATH</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;$</span><span>HOME</span><span style="color:#183691;">/bin:$</span><span>HOME</span><span style="color:#183691;">/.bin:$</span><span>HOME</span><span style="color:#183691;">/.local/bin:$</span><span>HOME</span><span style="color:#183691;">/.local/sbin:$</span><span>PATH</span><span style="color:#183691;">&quot;
+</span></code></pre>
+<p>This line defines a few directories inside my home directory where I can place executable
+files which can be run without their full path. The problem this causes is when starting
+a terminal from an existing terminal session (launching <code>tmux</code>, or launching a graphical
+terminal from an X11 session started with <code>startx</code>), I end up with an unfortunate-looking <code>PATH</code>:</p>
+<p>/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:/home/steve/.local/bin:/home/steve/.bin:/home/steve/bin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin</p>
+<p>That was from a tmux session that had been launched from a graphical terminal emulator launched by dmenu running
+in an X11 session that I started by running <code>startx</code> from a tty. Each time bash started, it would prepend <code>$HOME/bin/:...</code>
+to the <code>PATH</code> variable, causing it to build up to the monstrosity above.</p>
+<p>The solution: login shells and .profile.</p>
+<p>Shells like bash can be run as “login shells”, which causes them to behave a little differently to usual.
+Of note, the .bashrc file is not sourced when bash is run as a login shell (other shells behave similarly with their respective rc files).
+In lieu of .bashrc, the shell will source .profile (or .bash_profile).</p>
+<p>The first shell you encounter when beginning a session will typically be a login shell.
+When logging in to a tty, or ssh-ing into a machine, you’ll find yourself in a login shell.
+Subsequently started shells will generally not be login shells unless this is explicitly specified.
+Thus the .profile file is the place for all per-session configuration, such as setting <code>PATH</code> and other environment variables.
+All the per <em>shell</em> configurations, such as aliases, functions, or the prompt, belong in .bashrc.
+This is because unlike environment variables, these objects aren’t inherited by nested shells; they must be defined again
+in each new shell.</p>
+<p>Since login shells are still shells, they should behave the same way as a regular shell from the user’s point of
+view. This means all the settings from .bashrc should still be applied. This it is typical to place the following the
+start of .profile:</p>
+<pre data-lang="bash" style="background-color:#ffffff;color:#323232;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#62a35c;">[ </span><span>-n </span><span style="color:#183691;">&quot;$</span><span>BASH_VERSION</span><span style="color:#183691;">&quot; </span><span style="color:#62a35c;">]</span><span style="font-weight:bold;color:#a71d5d;">; then
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#62a35c;">[ </span><span>-f </span><span style="color:#183691;">&quot;$</span><span>HOME</span><span style="color:#183691;">/.bashrc&quot; </span><span style="color:#62a35c;">]</span><span style="font-weight:bold;color:#a71d5d;">; then
+</span><span>        </span><span style="color:#62a35c;">. </span><span>~/.bashrc
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fi
+</span><span style="font-weight:bold;color:#a71d5d;">fi
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;updating-library-dependencies&#x2F;" aria-label="Previous">
+	  Previous: Updating Library Dependencies
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;winit-makes-windows-the-wrong-size-in-some-cases-i-think&#x2F;" aria-label="Next">
+	  Next: Winit makes windows the wrong size in some cases I think
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2023: Mechanics, Content, Playtesting">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-03-12T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/screenshot3.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2023: Mechanics, Content, Playtesting
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Passengers, Art
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Procgen, Graphics
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2023: Mechanics, Content, Playtesting</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-03-12T00:00:00+00:00">
+    March 12, 2023
+  </time>
+  
+</p>
+
+
+  
+
+<p>The sun is peeking beneath my curtains and another 7DRL draws to a
+close. Today I implemented the passenger mechanic, the trading mechanic,
+collectable junk (the game’s currency), the combat system via abilities gained
+from passengers, and added 7 different passengers you can pick up, each granting
+you a unique ability.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/screenshot3.png" alt="Screenshot of the finished game" /></p>
+<p>The game is playable and downloadable on itch.io at
+<a href="https://gridbugs.itch.io/boat-journey">gridbugs.itch.io/boat-journey</a>.</p>
+<p>During playtesting I found some interesting emergent mechanics.</p>
+<span id="continue-reading"></span>
+<p>There’s an ability called “Phase” which you get if you pick up the ghost
+passenger that lets you walk through walls. I intended this as a way of avoiding
+combat in the dungeon levels, but it’s also useful as a way of quickly entering
+buildings. I got into a situation where I ran out of time during an in-game day
+and had to quickly go to the inn while being pursued by ghosts, and I found I
+could drive my boat up to the wall of the inn and phase through it rather than
+walking all the around and going in through the door.</p>
+<p>Similarly, there’s a “Blink” ability which teleports you short distances which I
+intended as an evasive maneuver but you can use it to teleport from the boat to
+an island and back which makes it easier to take junk from the island without
+needing to fight enemies.</p>
+<p>It was probably a mistake to leave most of the complex mechanics to the final
+day and I was nervous that playtesting would reveal that the game is not fun but
+I was relieved to find that I enjoyed playing the game during playtesting.</p>
+<p>Something I did differently this year is drawing character art. When you
+interact with potential passengers and at certain other times a hand-drawn image
+is shown behind the menu.</p>
+<p>Part of my preparation for this year’s 7DRL was to make a text-based drawing
+tool. Here’s a screenshot of the tool editing the ghost character portrait.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/editor.png" alt="Screenshot of text-based paint tool" /></p>
+<p>I found that as I played the game I started to associate the character portraits
+with the general feeling I got using that character’s ability. I would see the
+image and automatically feel a sense of whether that character would be useful
+to my current situation in the game. This is something I’ve never experienced
+before in a game that I’ve made myself.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2023-day7/screenshot1.png" alt="Screenshot of the finished game" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2023-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2023: Passengers, Art
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Procgen, Graphics
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="I accidentally let some of my TLS certs expire">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/i-accidentally-let-some-of-my-tls-certs-expire/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/i-accidentally-let-some-of-my-tls-certs-expire/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-03T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+I accidentally let some of my TLS certs expire
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;kid-per-24336&#x2F;" aria-label="Previous">
+	  Previous: KID___PER? (2,4,3,3,6)
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;getting-back-into-bouldering&#x2F;" aria-label="Next">
+	  Next: Getting back into bouldering
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">I accidentally let some of my TLS certs expire</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-03T00:00:00+00:00">
+    October 03, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>A few months ago I switched this site’s web hosting from AWS to nearlyfreespeech.
+I set up new TLS certificates for gridbugs.org and www.gridbugs.org, which the site
+now uses instead of the AWS certificates it used to use. So when I received warnings
+from Amazon informing me that my TLS certificates were about to expire, I promptly
+ignored them. I forgot that some additional domains - games.gridbugs.org and
+files.gridbugs.org - are still hosted on AWS and still use the (now expired)
+AWS certificates. Oops!</p>
+<p>I use those domains to host games I’ve made, both downloadable and playable in-browser.
+Rather than migrating all the games to nearlyfreespeech, I’ll set up redirects to
+my <a href="https://gridbugs.itch.io/">itch.io</a> page for all the games which I’ve released on
+itch. The games which I never released, but which can only be played in a browser (mostly simple demos),
+I’ll migrate to nearlyfreespeech. Small game demos that run natively, I’ll migrate as well.
+All the new game projects I work on, I’ll make available exclusively through itch.
+This is mostly because as I add music to newer games I make, their size can be large, and I don’t
+want to use a ton of bandwidth should any of my games become wildly successful.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;kid-per-24336&#x2F;" aria-label="Previous">
+	  Previous: KID___PER? (2,4,3,3,6)
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;getting-back-into-bouldering&#x2F;" aria-label="Next">
+	  Next: Getting back into bouldering
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

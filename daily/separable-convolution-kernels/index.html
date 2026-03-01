@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Separable Convolution Kernels">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/separable-convolution-kernels/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/separable-convolution-kernels/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-21T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Separable Convolution Kernels
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;move-semantics-and-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Move semantics and argument parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;checking-backup-regions-in-gpt-fat-disk-image-tools&#x2F;" aria-label="Next">
+	  Next: Checking backup regions in gpt fat disk image tools
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Separable Convolution Kernels</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-21T00:00:00+00:00">
+    September 21, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>In the field of image processing, <em>convolution</em> refers to an operation which takes an image (a 2d array of pixels)
+and computes a new image of the same dimensions by considering each pixel of the input image, and a relatively
+small number of nearby pixels, and computing a weighted sum of their values, independently for each channel.
+The pixel channel values in the resulting image are these weight sums.
+Some typical applications of convolution are blurring and edge sharpening.</p>
+<p>The choices of which nearby pixels to consider, and what weights to use in the weighted sum, are dictated by
+a <em>convolution kernel</em>, which takes the form of a 2d array of real numbers.
+To compute the result of a convolution of a single pixel channel value, centre the kernel on that pixel,
+with the “cells” of the kernel aligned to the pixels of the image,
+and for each cell of the kernel, multiply the value in the cell with the value in the pixel underneath.
+Add up the results.
+Convolving an entire image now looks like sliding the kernel over every pixel in the image and computing
+all weighted sums. If the kernel is partially off the edge, it’s common to imagine the final row/column
+of the image continuing forever in all directions (there are alternatives, but they’re out of scope here).</p>
+<p>A <em>separable convolution kernel</em> can be expressed as a 1d array. The convolution process now looks a little
+different. Rather than sliding a rectangular kernel (a 2d array) around an image, instead, slide a
+horizontal strip (a 1d array), and calculate all weighted sums as before. This gives you an intermediate
+image of the same size as the input image. Now repeat the process taking the intermediate image as input,
+only this time treat the 1d kernel as a <em>vertical</em> strip.</p>
+<p>Gaussian blurring is an example of a separable kernel. There is a NxN 2d array that can be convolved with
+an image to apply a Gaussian blur effect, however there is also a N-length 1d array that can be convolved
+twice as above. The benefit of using the 1d array is that the convolution can be done in <code>2*N*K*C</code> multiplications
+for an image with <code>K</code> pixels and <code>C</code> channels, instead of <code>N*N*K*C</code> multiplications as would be required for
+the 2d convolution.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;move-semantics-and-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Move semantics and argument parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;checking-backup-regions-in-gpt-fat-disk-image-tools&#x2F;" aria-label="Next">
+	  Next: Checking backup regions in gpt fat disk image tools
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

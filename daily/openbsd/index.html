@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="OpenBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/openbsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/openbsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-07T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+OpenBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;stevebob-net&#x2F;" aria-label="Previous">
+	  Previous: stevebob.net
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;roguelike-tutorial-levelling-up-the-player-character&#x2F;" aria-label="Next">
+	  Next: Roguelike Tutorial - Levelling up the player character
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">OpenBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-07T00:00:00+00:00">
+    August 07, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I’ve been toying around with OpenBSD in a virtual machine to see whether I could
+switch to it as a daily driver. I’m attracted to the project because of its
+emphasis on minimalism and security. There’s a few things I need to figure out
+before I can be as productive in OpenBSD as I am in Linux (which I use in most places)
+or FreeBSD (which I recently switched to on my personal laptop).</p>
+<ul>
+<li>the rust compiler tools aren’t available from the rust project (via <a href="https://rustup.rs/">rustup</a>)
+compiled for OpenBSD (but rustc and cargo are in the package repository, just several versions out of date)</li>
+<li>the popular rust audio library <a href="https://crates.io/crates/cpal">cpal</a> doesn’t appear to support OpenBSD.
+Currently it depends on alsa on unixes, which works on Linux, and FreeBSD (which emulates alsa) but
+OpenBSD has no interest in Linux compatibility (which is fair enough!).</li>
+<li>nodejs doesn’t compile in its default configuration as it depends on libdl which doesn’t exist in OpenBSD.
+The only reason it exists in FreeBSD for (again) compatibility with Linux.
+I use <a href="https://github.com/nvm-sh/nvm">nvm</a>
+to manage multiple versions of nodejs, and it builds nodejs from source when no binary distribution is
+available. You can pass configuration flags to nvm which it passes on to
+nodejs’s build system. Just got to work out the right ones to get it to build on OpenBSD.</li>
+</ul>
+<p>I can live without rustup. It also wouldn’t surprise me if it got support for OpenBSD at some point.
+I’ll probably have to add OpenBSD support to cpal as alsa isn’t (and shouldn’t) be available on OpenBSD.
+There’s got to be a way to configure nodejs to build on OpenBSD. Need to do some more reading.
+These aren’t problems on FreeBSD because FreeBSD tries to be compatible with Linux.
+The lack of this on OpenBSD is a selling point, but it does come at a cost of convenience.
+There’s a few things I still need to learn before I can live with this inconvenience.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;stevebob-net&#x2F;" aria-label="Previous">
+	  Previous: stevebob.net
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;roguelike-tutorial-levelling-up-the-player-character&#x2F;" aria-label="Next">
+	  Next: Roguelike Tutorial - Levelling up the player character
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2018: Success">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2018-success/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2018-success/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-03-10T00:37:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2018: Success
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-meters-objectives&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Meters, Objectives
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-plan&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: Planning and Preparation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2018: Success</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-03-10T00:37:00+10:00">
+    March 10, 2018
+  </time>
+  
+</p>
+
+
+  
+
+<p>The game is done! I’ll make another post in a day or so with links to download
+and play the game, but if you can’t wait, <a href="https://github.com/gridbugs/meters-below-the-ground">get the source code from github</a> or
+<a href="https://gridbugs.itch.io/meters-below-the-ground">play or download the game from its itch.io page</a>.</p>
+<span id="continue-reading"></span>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-success/screenshot.png" alt="screenshot.png" /></p>
+<p>Tonight I added two more meters: “blink” which teleports the player 2 cells
+in a given direction, and “push” which pushes away nearby enemies. I also did
+some minor UI tweaks and game balancing. The rest of the night I spent play-testing
+and adjusting balance.</p>
+<p>I’m happy with how the game turned out. While play-testing I was initially quite bad
+at the game, but eventually learnt some strategies that increased my odds of progressing.
+Most importantly, I actually enjoyed myself when playing the almost-finished game. I
+think this is the first time I’ve been faced with interesting tactical and strategic decisions
+while playing a game I’ve made.</p>
+<p>My favourite mechanic is the interplay of the railgun, quadgun and blink abilities.
+To use the weapons effectively, you must position yourself favourably. When using
+the railgun, you want a line of enemies on the X or Y axis of the player so you can hit them
+all at once. The quadgun is most efficient when there’s an enemy to your north, south, east and west,
+since you can hit 4 enemies with a single shot. The blink ability gives you more power
+over your positioning, and the guns motivate the use of this power.</p>
+<p>As always, the 7drl was a trial-by-fire of my game engine. I adapted the game engine from an
+ongoing game project (<a href="https://github.com/gridbugs/punchcards">punchcards</a>), which I’ve been
+developing for several months. I found bugs in my terminal rendering library (<a href="https://github.com/gridbugs/prototty">prototty</a>)
+and missing functionality in my game data store code-generation library (<a href="https://github.com/gridbugs/entity-store">entity-store</a>).
+Some of these problems I fixed during the week. I’ll be exploring the more complex problems
+in the coming weeks. The one feature I sorely missed from the engine is a turn schedule.
+I want the ability to have events happen a certain number of turns in the future, and ended
+up implementing a hasty workaround.</p>
+<p>I’m planning to continue working on this game after the 7drl. I’m going to use it to test the new
+engine features I implement, and use it as a case study for coming up with better abstractions
+for encoding rules and mechanics in my engine.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-meters-objectives&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Meters, Objectives
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-plan&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: Planning and Preparation
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

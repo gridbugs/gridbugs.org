@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Cellular Automata Cave Generation">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/cellular-automata-cave-generation/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/cellular-automata-cave-generation/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2015-09-26T12:30:01+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Cellular Automata Cave Generation
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Cellular Automata Cave Generation</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2015-09-26T12:30:01+10:00">
+    September 26, 2015
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/procgen" aria-label="tag">procgen</a>
+  
+</p>
+
+
+  
+
+<p>A cellular automata is a collection of cells whose states change over time
+based on the states of adjacent cells.
+They can be used to produce natural-looking patterns, such as the cave
+in the picture below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/cellular-automata-cave-generation/caverns.png" alt="caverns.png" /></p>
+<span id="continue-reading"></span>
+<p>Perhaps the most well-known instance of a cellular automata is <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway’s Game of Life</a>,
+shown below (click to start). Each cell is considered to be either alive or dead.
+In this example, the initial states of each cell is random.
+At each step, the neighbours of each cell are examined to determine if that
+cell will be alive or dead in the next step. This proceeds according to the following rules:</p>
+<ul>
+<li>if a cell is <strong>alive</strong> and has <strong>less than 2</strong> living neighbours, the cell dies (as if of underpopulation)</li>
+<li>if a cell is <strong>alive</strong> and has <strong>more than 3</strong> living neighbours, the cell dies (as if of overpopulation)</li>
+<li>if a cell is <strong>alive</strong> and has <strong>2 or 3</strong> living neighbours, the cell remains alive</li>
+<li>if a cell is <strong>dead</strong> and has <strong>exactly 3</strong> living neighbours, the cell becomes alive (as if by reproduction)</li>
+</ul>
+<div style="width:600px" class="centre">
+<canvas id="conway" height="400" width="600"></canvas>
+<p class="label">Conway's game of life. Click to toggle animation.</p>
+</div>
+<p>Here’s pseudocode for the function applied at each step of the simulation.
+In short, it takes a 2D array of cells and updates the state of each cell
+based on the states of its neighbours.</p>
+<pre data-lang="lua" style="background-color:#ffffff;color:#323232;" class="language-lua "><code class="language-lua" data-lang="lua"><span>SURVIVE_MIN </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2
+</span><span>SURVIVE_MAX </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3
+</span><span>RESURRECT_MIN </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3
+</span><span>RESURRECT_MAX </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3
+</span><span>
+</span><span>step(cells[HEIGHT][WIDTH]) {
+</span><span>  f</span><span style="font-weight:bold;color:#a71d5d;">or </span><span>i in </span><span style="color:#0086b3;">0.</span><span>.HEIGHT</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1 </span><span>{
+</span><span>    f</span><span style="font-weight:bold;color:#a71d5d;">or </span><span>j in </span><span style="color:#0086b3;">0.</span><span>.WIDTH</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1 </span><span>{
+</span><span>      </span><span style="color:#183691;">count </span><span>= </span><span style="color:#0086b3;">0
+</span><span>      f</span><span style="font-weight:bold;color:#a71d5d;">or </span><span>each neighbour of cells[i][j] {
+</span><span>        if neighbour is alive {
+</span><span>          count</span><span style="font-weight:bold;color:#a71d5d;">++
+</span><span>        }
+</span><span>      }
+</span><span>
+</span><span>      if cells[i][j].alive {
+</span><span>        if count </span><span style="font-weight:bold;color:#a71d5d;">&gt;= </span><span>SURVIVE_MIN </span><span style="font-weight:bold;color:#a71d5d;">and </span><span>count </span><span style="font-weight:bold;color:#a71d5d;">&lt;= </span><span>SURVIVE_MAX {
+</span><span>          cells[i][j].alive_next_step </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true
+</span><span>        } else {
+</span><span>          cells[i][j].alive_next_step </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false
+</span><span>        }
+</span><span>      } else {
+</span><span>        if count </span><span style="font-weight:bold;color:#a71d5d;">&gt;= </span><span>RESURRECT_MIN </span><span style="font-weight:bold;color:#a71d5d;">and </span><span>count </span><span style="font-weight:bold;color:#a71d5d;">&lt;= </span><span>RESURRECT_MAX {
+</span><span>          cells[i][j].alive_next_step </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true
+</span><span>        } else {
+</span><span>          cells[i][j].alive_next_step </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false
+</span><span>        }
+</span><span>      }
+</span><span>    }
+</span><span>  }
+</span><span>
+</span><span>  f</span><span style="font-weight:bold;color:#a71d5d;">or </span><span>i in </span><span style="color:#0086b3;">0.</span><span>.HEIGHT</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1 </span><span>{
+</span><span>    f</span><span style="font-weight:bold;color:#a71d5d;">or </span><span>j in </span><span style="color:#0086b3;">0.</span><span>.WIDTH</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1 </span><span>{
+</span><span>      cells[i][j].alive </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>cells[i][j].alive_next_step
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>Notice the four constants
+at the start of the code. These encode the rules for Conway’s game of
+life, described above. These values can be changed to obtain different
+behaviour of the cellular automata.</p>
+<ul>
+<li>if a cell is <strong>alive</strong> and has <strong>less than 4</strong> living neighbours, the cell dies</li>
+<li>if a cell is <strong>alive</strong> and has <strong>4 or more</strong> living neighbours, the cell remains alive</li>
+<li>if a cell is <strong>dead</strong> and has <strong>exactly 5</strong> living neighbours, the cell becomes alive (as if by reproduction)</li>
+</ul>
+<p>The constants that encode these rules are:</p>
+<pre data-lang="lua" style="background-color:#ffffff;color:#323232;" class="language-lua "><code class="language-lua" data-lang="lua"><span>SURVIVE_MIN </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">4
+</span><span>SURVIVE_MAX </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">8
+</span><span>RESURRECT_MIN </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">5
+</span><span>RESURRECT_MAX </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">5
+</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>.
+</span></code></pre>
+<div style="width:600px" class="centre">
+<canvas id="conway-variant-1" height="400" width="600"></canvas>
+<p class="label">Variant of Conway's game of life used for cave generation.</p>
+</div>
+<p>These set of rules creates large clumps of living cells which can be used as the walls of a cave.
+When generating terrain for a game level of finite size, players shouldn’t be able to walk off the
+edge of the map. A simple way to enforce this is to place walls around the edge of the map. A solution
+that places natural-looking walls around the outside of the map is to ensure the border of the area
+is always made up of living cells. Enforcing this at each step of the simulation means that these cells
+cause other nearby cells to become (and stay) alive. The walls grow inwards and interact with interior
+walls to give the appearance of natural cavern walls.</p>
+<div style="width:600px" class="centre">
+<canvas id="conway-variant-2" height="400" width="600"></canvas>
+<p class="label">Cells around border are always alive.</p>
+</div>
+<p>Within the first few steps, natural-looking caverns are generated.
+In the subsequent steps, the walls recede and the caverns become very vast.
+Limiting the number of steps to 4 seems to produce interesting-looking caves.
+Rough edges and single dead cells can be smoothed/removed by killing any cells
+with less than 2 living neighbours, and resurrecting cells with more than 5 living neighbours.
+Finally, to ensure that there are no closed-off sections of the generated cave,
+all but the largest contiguous groups of dead cells are are resurrected, filling in closed-off open spaces.</p>
+<div style="width:600px" class="centre">
+<canvas id="conway-variant-3" height="400" width="600"></canvas>
+<p class="label">Running for 4 steps, then cleaning.</p>
+</div>
+<script src="jquery.js"></script>
+<script src="index.js"></script>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;2d-phong-illumination-in-webgl&#x2F;" aria-label="Previous">
+	  Previous: 2D Phong Illumination in WebGL
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;visible-area-detection-recursive-shadowcast&#x2F;" aria-label="Next">
+	  Next: Visible Area Detection with Recursive Shadowcast
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

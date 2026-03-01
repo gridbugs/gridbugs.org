@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="dmenu_histogram">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-11-29T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+dmenu_histogram
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;stopping-daily-posts&#x2F;" aria-label="Previous">
+	  Previous: Stopping daily posts
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;ntfs-on-freebsd&#x2F;" aria-label="Next">
+	  Next: NTFS on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">dmenu_histogram</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-11-29T00:00:00+00:00">
+    November 29, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>One of the programs I’ve made that most directly benefited my life is
+<a href="https://github.com/gridbugs/dotfiles/blob/master/bin/dmenu_histogram">this little bash script in my dotfiles repo</a>
+which runs the application launcher <a href="https://tools.suckless.org/dmenu/">dmenu</a> showing the most-frequently-used
+programs first.</p>
+<p>The typical way to run dmenu is to pipe the output of <code>dmenu_path</code> into <code>dmenu</code>.
+Both commands come in the <code>dmenu</code> package. The former simply prints a list of all programs
+in the user’s path:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ dmenu_path
+</span><span>[
+</span><span>2to3-2.7
+</span><span>2to3-3.7
+</span><span>aafire
+</span><span>aainfo
+</span><span>aalib-config
+</span><span>aasavefont
+</span><span>aatest
+</span><span>ac
+</span><span>accton
+</span><span>...
+</span></code></pre>
+<p>The <code>dmenu</code> program reads a list of strings from its standard input and presents a graphical list.
+The user selects a single item from the list, and dmenu prints the selection to its standard output.</p>
+<p>For example:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ echo -e &#39;hello\nworld&#39;
+</span><span>hello
+</span><span>world
+</span><span>$ echo -e &#39;hello\nworld&#39; | dmenu
+</span></code></pre>
+<p>The second command displays this GUI at the top of the screen:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/dmenu-hello-world.png" alt="dmenu-hello-world.png" /></p>
+<p>Use the arrow keys to change the selection or start typing a name to narrow down the list:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/dmenu-world.png" alt="dmenu-world.png" /></p>
+<p>Hit enter and dmenu exits after printing <code>world</code> to its standard output.</p>
+<p>To use it as a program launcher, the dmenu package comes with a third program - a shell script
+<code>dmenu_run</code> which combines the above two programs. Here’s its source:</p>
+<pre data-lang="sh" style="background-color:#ffffff;color:#323232;" class="language-sh "><code class="language-sh" data-lang="sh"><span style="font-style:italic;color:#969896;">#!/bin/sh
+</span><span>dmenu_path </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>dmenu </span><span style="color:#183691;">&quot;$</span><span>@</span><span style="color:#183691;">&quot; </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>${SHELL</span><span style="font-weight:bold;color:#a71d5d;">:-</span><span style="color:#183691;">&quot;/bin/sh&quot;</span><span>} </span><span style="font-weight:bold;color:#a71d5d;">&amp;
+</span></code></pre>
+<p>As an aside, dmenu is a perfect example of a tool which does one thing well, and adds value
+to an existing set of tools by being easily composable.</p>
+<p>Here’s the list I see when I run it:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/dmenu.png" alt="dmenu.png" /></p>
+<p>And after pressing “t”:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/dmenu-t.png" alt="dmenu-t.png" /></p>
+<p>Menu items are shown in the order they appeared on <code>dmenu</code>’s stdin, and <code>dmenu_path</code> prints
+all program’s in the user’s <code>$PATH</code> in alphabetical order. The problem with this is there
+are only a tiny handful of graphical programs that I ever want to launch with dmenu, and
+it’s unlikely that they will appear early in the alphabetically-listed program names.
+<code>dmenu_histogram</code> addresses this by maintaining a histogram of launched programs and placing
+these programs in order of frequency on <code>dmenu</code>’s stdin before the output of <code>dmenu_path</code>.</p>
+<p>Running the <code>dmenu_histogram</code> script:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/hist.png" alt="hist.png" /></p>
+<p>…shows a list of programs I commonly use. If I press “t”…</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/daily/dmenu-histogram/hist-t.png" alt="hist-t.png" /></p>
+<p>…the list narrows to just the programs starting with “t”, and still shows the most
+frequent programs first.</p>
+<p>To be perfectly clear, I did not develop dmenu. I wrote myself a bash script that invokes
+<code>dmenu</code> on the output of <code>dmenu_path</code> augmented with a list of common programs ordered by
+frequency of use, and <em>updates</em> a histogram counting the number of times each program is
+launched to build a more accurate list for the next invocation.</p>
+<p>The histogram it maintains looks like this on my system at the time of writing:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>8 xterm
+</span><span>1 xfontsel
+</span><span>2 uxterm
+</span><span>6 st
+</span><span>1 vimdot
+</span><span>7 gimp
+</span><span>15 wifimgr
+</span><span>11 thunderbird
+</span><span>4 pavucontrol
+</span><span>1 mtpaint
+</span><span>2 surf
+</span><span>195 xlock
+</span><span>2 xeyes
+</span><span>5 virtualbox
+</span><span>1 dmenu
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;stopping-daily-posts&#x2F;" aria-label="Previous">
+	  Previous: Stopping daily posts
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;ntfs-on-freebsd&#x2F;" aria-label="Next">
+	  Next: NTFS on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2021: Enemies, Message Log, Space Gradient">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2021-03-11T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2021: Enemies, Message Log, Space Gradient
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day5&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Weapons
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day7&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: Gamepad Support, Audio, Maps, Help Screen, Play Testing
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2021: Enemies, Message Log, Space Gradient</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2021-03-11T00:00:00+00:00">
+    March 11, 2021
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I added a range of enemies, a message log, and made the space background a gradient.
+The game is now feature-complete! I also added placeholder sound effects so when I get my hands on
+real sound effects I can just slot them in.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/screenshot.png" alt="screenshot.png" /></p>
+<p>Tomorrow I’ll be adding music and sound effects, play-testing, polishing, and fixing bugs.</p>
+<span id="continue-reading"></span><h2 id="types-of-enemy"><a class="zola-anchor" href="#types-of-enemy" aria-label="Anchor link for: types-of-enemy">Types of Enemy</a></h2>
+<p>The game will have 4 enemies.</p>
+<h3 id="zombie"><a class="zola-anchor" href="#zombie" aria-label="Anchor link for: zombie">Zombie</a></h3>
+<p>Basic fodder. Easy to kill but there will be many of them.
+Late game they will act like a resource because of the guns that heal and restore oxygen each time they kill things.</p>
+<h3 id="skeleton"><a class="zola-anchor" href="#skeleton" aria-label="Anchor link for: skeleton">Skeleton</a></h3>
+<p>Resurrects 10 turns after death. Since it costs resources to kill them and they don’t die permanently, skeletons fill
+the role normally taken by a “food clock” - an incentive for players to make forward progress and not hang out grinding.</p>
+<h3 id="boomer"><a class="zola-anchor" href="#boomer" aria-label="Anchor link for: boomer">Boomer</a></h3>
+<p>Low armour and health, and explodes on death. The explosion will be relatively small, but still dangerous on a space station.
+The player will probably want to avoid killing these enemies unless they’ve built a character that is comfortable being in space,
+which should be a legitimate strategy if I’ve designed the game correctly!</p>
+<h3 id="tank"><a class="zola-anchor" href="#tank" aria-label="Anchor link for: tank">Tank</a></h3>
+<p>High health and armour. Deals double damage but knocks the player back two spaces so they have time to breath (unless there’s no atmosphere!).
+Only the chainsaw, railgun, and gaus cannon can get through its armour.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/enemies.png" alt="enemies.png" /></p>
+<h2 id="lots-of-boomers"><a class="zola-anchor" href="#lots-of-boomers" aria-label="Anchor link for: lots-of-boomers">Lots of Boomers!</a></h2>
+<p>When one has an enemy that explodes upon death, and explosions can kill other enemies, one is compelled to try the following experiment:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/boomers.png" alt="boomers.png" /></p>
+<p>This lucky screenshot captures the frame during which the damage from the chain reaction of explosions has been dealt, but dead enemies haven’t
+been removed from the map. The room is illuminated from the resulting blast(s).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/boom.png" alt="boom.png" /></p>
+<p>Some walls have been removed by the explosion, but luckily the hull remains intact.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/aftermath.png" alt="aftermath.png" /></p>
+<p>And a single boomer survived!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/surviver.png" alt="surviver.png" /></p>
+<h2 id="space-gradient"><a class="zola-anchor" href="#space-gradient" aria-label="Anchor link for: space-gradient">Space Gradient</a></h2>
+<p>Space is now rendered with a gradient!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day6/gradient.png" alt="gradient.png" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day5&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Weapons
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day7&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: Gamepad Support, Audio, Maps, Help Screen, Play Testing
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

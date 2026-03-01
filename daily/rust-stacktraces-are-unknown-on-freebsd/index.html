@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Rust stacktraces are &lt;unknown&gt; on FreeBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/rust-stacktraces-are-unknown-on-freebsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/rust-stacktraces-are-unknown-on-freebsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-21T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Rust stacktraces are &lt;unknown&gt; on FreeBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;train-game&#x2F;" aria-label="Previous">
+	  Previous: Train Game
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;raidz-setup&#x2F;" aria-label="Next">
+	  Next: Raidz setup
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Rust stacktraces are &lt;unknown&gt; on FreeBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-21T00:00:00+00:00">
+    October 21, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I ran into an issue where when a rust program panics on my FreeBSD
+laptop, the stacktrace doesn’t contain code locations, and instead shows
+<code>&lt;unknown&gt;</code> on every line:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ RUST_BACKTRACE=full cargo run --bin gpt-fat-disk-image-create -- -l README.md -d /foo/bar/baz.md -o /tmp/a
+</span><span>    Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+</span><span>     Running `target/debug/gpt-fat-disk-image-create -l README.md -d /foo/bar/baz.md -o /tmp/a`
+</span><span>thread &#39;main&#39; panicked at &#39;source slice length (92) does not match destination slice length (512)&#39;, /rustc/31530e5d132ebcc3654baf2e5460599681520af0/library/core/src/slice/mod.rs:2673:13
+</span><span>stack backtrace:
+</span><span>   0:          0x11298b1 - &lt;unknown&gt;
+</span><span>   1:          0x1141d60 - &lt;unknown&gt;
+</span><span>   2:          0x11277df - &lt;unknown&gt;
+</span><span>   3:          0x112b59d - &lt;unknown&gt;
+</span><span>   4:          0x112b24c - &lt;unknown&gt;
+</span><span>   5:          0x112bc45 - &lt;unknown&gt;
+</span><span>   6:          0x112b80d - &lt;unknown&gt;
+</span><span>   7:          0x1129d70 - &lt;unknown&gt;
+</span><span>   8:          0x112b7cc - &lt;unknown&gt;
+</span><span>   9:          0x1141040 - &lt;unknown&gt;
+</span><span>  10:          0x11437f7 - &lt;unknown&gt;
+</span><span>  11:          0x10a0864 - &lt;unknown&gt;
+</span><span>  12:          0x1096c59 - &lt;unknown&gt;
+</span><span>  13:          0x1096095 - &lt;unknown&gt;
+</span><span>  14:          0x108351d - &lt;unknown&gt;
+</span><span>  15:          0x1073e66 - &lt;unknown&gt;
+</span><span>  16:          0x108af2e - &lt;unknown&gt;
+</span><span>  17:          0x107bad1 - &lt;unknown&gt;
+</span><span>  18:          0x106a3c4 - &lt;unknown&gt;
+</span><span>  19:          0x112c0ae - &lt;unknown&gt;
+</span><span>  20:          0x106a3a2 - &lt;unknown&gt;
+</span><span>  21:          0x1073f0b - &lt;unknown&gt;
+</span><span>  22:          0x106a10b - &lt;unknown&gt;
+</span></code></pre>
+<p>Sounds at least related to a
+<a href="https://github.com/rust-lang/rust/issues/54434">known issue</a>, but that issue is already
+closed and not necessarily the same problem so I raised a new one.
+It’s not clear whether the problem lies with rust or FreeBSD (or elsewhere).</p>
+<p>But this is a major hindrance to my productivity!
+Rust development is the main thing I use this computer for.
+There are a couple of Linux distros I’ve been meaning to check out, namely <a href="https://voidlinux.org/">void</a>
+and <a href="https://crux.nu">crux</a>, and I can always go crawling back to archlinux if they don’t work out.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;train-game&#x2F;" aria-label="Previous">
+	  Previous: Train Game
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;raidz-setup&#x2F;" aria-label="Next">
+	  Next: Raidz setup
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

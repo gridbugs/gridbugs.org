@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Bootstrapping Nightly Rust on OpenBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/bootstrapping-nightly-rust-on-openbsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/bootstrapping-nightly-rust-on-openbsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-11T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Bootstrapping Nightly Rust on OpenBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-on-openbsd&#x2F;" aria-label="Previous">
+	  Previous: Rust on OpenBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;sticking-with-freebsd-for-now&#x2F;" aria-label="Next">
+	  Next: Sticking with FreeBSD for now
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Bootstrapping Nightly Rust on OpenBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-11T00:00:00+00:00">
+    August 11, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I underestimated my requirements of a rust compiler:</p>
+<ul>
+<li>I occasionally need to use the nightly compiler rather than the stable compiler to enable experimental features</li>
+<li>I need to be able to install the web assembly target for rust so I can compile my games to web assembly</li>
+</ul>
+<p>These two tasks are both handled by <a href="https://rustup.rs/">rustup</a>.
+Frustratingly, when researching how to live without this rustup, <a href="https://www.reddit.com/r/rust/comments/9skiyi/wasm_without_rustup/">the response is often to just use rustup</a>.
+This is a massive pet peeve of mine.</p>
+<p><a href="https://github.com/rust-lang/rustup/issues/2168">But there is hope!</a>
+Using rustup to add targets (such as web assembly) seems like it’s still possible on OpenBSD,
+even if rustup can’t be used to install the compiler itself.</p>
+<p>One of the maintainers of the OpenBSD rust port has made
+<a href="https://github.com/semarie/build-rust">this script</a> for bootstrapping the nightly toolchain
+from OpenBSD’s rust package (via the beta toolchain).
+A caveat is that you must be running OpenBSD -current, as <a href="https://gridbugs.github.io/gridbugs.org/daily/rust-on-openbsd/">as I discovered yesterday</a>,
+the rust package on -stable is too out-of-date to build the rust compiler.
+I’ve re-purposed my old gaming PC as a build server, and I’m compiling rust from source now!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-on-openbsd&#x2F;" aria-label="Previous">
+	  Previous: Rust on OpenBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;sticking-with-freebsd-for-now&#x2F;" aria-label="Next">
+	  Next: Sticking with FreeBSD for now
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

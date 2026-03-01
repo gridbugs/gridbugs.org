@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2024: Items">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2024-day5/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2024-day5/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2024-03-07T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2024-day5/apply-item.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2024: Items
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2024: Ranged Combat, Sound Effects, Message Log
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Applying Items, Equipment
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2024: Items</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2024-03-07T00:00:00+00:00">
+    March 07, 2024
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I added items. This includes the logic for picking up and dropping
+objects, the UI control flow for displaying menus allowing the playing to drop
+or use an item, and the item descriptions.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2024-day5/apply-item.png" alt="Apply item menu" /></p>
+<p>The most complicated part is dealing with what happens when a user drops an item
+while standing in a cell that already contains an item. The game engine does not
+allow multiple items to exist at the same location, so when a collision would
+occur the game searches for the nearest cell that doesn’t contain an item
+(without traversing wall, etc) and puts the item there.</p>
+<span id="continue-reading"></span>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2024-day5/screenshot.png" alt="Room with several items on the floor" /></p>
+<p>Part of the game will involve harvesting organs from corpses. In preparation for
+that I made it so that when enemies die they leave a corpse. I changed the
+zombie enemy so that its corpse resurrects after some number of turns unless its
+corpse is destroyed.</p>
+<p>I also added a new enemy type - the “snatcher” - which
+picks up items from the ground and drops them all when it dies. I ran into an
+interesting bug where snatcher corpses were immediately disappearing. The
+problem was that the game treats corpses as items, and the snatcher’s corpse was
+picking itself up as soon as it died.</p>
+<p>There are two days left in the jam. The main focus for tomorrow will be allowing
+items to be applied, and implementing all the interactions with the world that
+affect the player’s stats. I also need to add some shops where you can buy items
+and have organs installed.</p>
+<p>This leaves the final day for implementing the win condition which I think will
+be getting to the bottom of the dungeon and kill a boss, then escape.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2024: Ranged Combat, Sound Effects, Message Log
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Applying Items, Equipment
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>
