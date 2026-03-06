@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 3 - Generating a Dungeon">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-06-19T20:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 3 - Generating a Dungeon
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-2&#x2F;" aria-label="Previous">
+	  Previous: Part 2 - Entities, Rendering, Map
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-4&#x2F;" aria-label="Next">
+	  Next: Part 4 - Field of View
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 3 - Generating a Dungeon
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-06-19T20:00:00+10:00">
+    June 19, 2020
+  </time>
+  
+</p>
+
+
+<p>The definition of “roguelike” is <a href="http://www.gamesofgrey.com/blog/?p=403">hotly debated</a>
+but one aspect we can all agree on is that levels must be procedurally generated.
+That is, rather than fixed, hand-crafted levels, players will explore levels generated
+according to an algorithm; each playthrough will be unique, and it’s <em>highly</em> unlikely that
+any other player will ever see the same levels as you.</p>
+<p>In this part we’ll implement an algorithm for procedurally generating a dungeon!</p>
+<p>By the end of this part, the game will look like this:
+<img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-3/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-2-end">part-2-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/#framework">Framework</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/#random-number-generator">Random Number Generator</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/#rooms">Rooms</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/#corridors">Corridors</a></li>
+</ul>
+<h2 id="framework"><a class="zola-anchor" href="#framework" aria-label="Anchor link for: framework">Framework</a></h2>
+<p>Rather than generating the dungeon directly into the <code>GameState</code>, it will be more convenient to first populate
+a 2D array of tiles, and then use the result to initialize the <code>GameState</code>. Grab a crate to help work with
+2D arrays using the <code>Coord</code> and <code>Size</code> types we’ve seen in previous parts:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="color:#63a35c;">grid_2d </span><span>= </span><span style="color:#183691;">&quot;0.15&quot;
+</span></code></pre>
+<p>Start by generating a single room and placing the player inside.
+This starts with a <code>Grid&lt;Option&lt;TerrainTile&gt;&gt;</code>, and sets some of the cells to be <code>Some(...)</code>
+to add walls, floors, and the player spawn point.
+As the algorithm may not visit every cell of the grid, the final line of <code>generate_dungeon</code> (<code>grid.map(...)</code>)
+creates a new grid by unwrapping every cell of the original grid,
+replacing every <code>None</code>  with <code>TerrainTile::Wall</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>grid_2d::{Coord, Grid, Size};
+</span><span>
+</span><span>#[derive(Clone, Copy, PartialEq, Eq)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>TerrainTile {
+</span><span>    Player,
+</span><span>    Floor,
+</span><span>    Wall,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>(size: Size) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid::new_copy(size, </span><span style="color:#0086b3;">None</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>Size::new(</span><span style="color:#0086b3;">5</span><span>, </span><span style="color:#0086b3;">5</span><span>).</span><span style="color:#62a35c;">coord_iter_row_major</span><span>() {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>Coord::new(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>)) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Floor);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(Coord::new(</span><span style="color:#0086b3;">3</span><span>, </span><span style="color:#0086b3;">3</span><span>)) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Player);
+</span><span>    grid.</span><span style="color:#62a35c;">map</span><span>(|t| t.</span><span style="color:#62a35c;">unwrap_or</span><span>(TerrainTile::Wall))
+</span><span>}
+</span></code></pre>
+<p>Update <code>GameState::populate</code> to spawn entities based on the contents of the a <code>Grid&lt;TerrainTile&gt;</code> returned
+by <code>terrain::generate_dungeon</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::terrain::{self, TerrainTile};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> terrain </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>terrain::generate_dungeon(self.screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                TerrainTile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_player</span><span>(coord);
+</span><span>                }
+</span><span>                TerrainTile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord),
+</span><span>                TerrainTile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_wall</span><span>(coord);
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add the <code>terrain</code> module to <code>main.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// main.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">mod </span><span>terrain;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Run the game and it will generate this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/screenshot-start.png" alt="screenshot-start.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.0">part-3.0</a></p>
+<h2 id="random-number-generator"><a class="zola-anchor" href="#random-number-generator" aria-label="Anchor link for: random-number-generator">Random Number Generator</a></h2>
+<p>Before proceeding with terrain generation, we need a source of randomness in the terrain generator.
+Add dependencies on <code>rand</code> and <code>rand_isaac</code>:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="color:#63a35c;">rand </span><span>= </span><span style="color:#183691;">&quot;0.8&quot;        </span><span style="font-style:italic;color:#969896;"># basic functionality for random number generators
+</span><span style="color:#63a35c;">rand_isaac </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;  </span><span style="font-style:italic;color:#969896;"># a specific random number generator implementation
+</span></code></pre>
+<p>Initialize a random number generator and store it in a field of <code>GameState</code>.
+Pass a reference to the RNG into <code>generate_dungeon</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand::{Rng, SeedableRng};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand_isaac::Isaac64Rng;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> terrain </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>terrain::generate_dungeon(self.screen_size, rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> rng </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Isaac64Rng::from_entropy();
+</span><span>        game_state.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> rng);
+</span><span>        game_state
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add the corresponding argument to <code>generate_dungeon</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand::Rng;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    println!(</span><span style="color:#183691;">&quot;random int: </span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, rng.</span><span style="color:#62a35c;">next_u32</span><span>());
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Run this and it will print out a random number:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>random int: 387460914
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.1">part-3.1</a></p>
+<h2 id="rooms"><a class="zola-anchor" href="#rooms" aria-label="Anchor link for: rooms">Rooms</a></h2>
+<p>Add rooms in random locations by repeatedly creating rooms with random sizes and positions, but only adding them
+to the map if they don’t overlap any existing rooms. Here’s the code:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// A rectangular area of the map
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Room {
+</span><span>    top_left: Coord,
+</span><span>    size: Size,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns a randomly sized room at a random position within `bounds`
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose</span><span>&lt;R: Rng&gt;(bounds: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> width </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">5</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">11</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> height </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">5</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">9</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> size </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Size::new(width, height);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> top_left_bounds </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> bounds </span><span style="font-weight:bold;color:#a71d5d;">-</span><span> size;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> left </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>top_left_bounds.</span><span style="color:#62a35c;">width</span><span>());
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> top </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>top_left_bounds.</span><span style="color:#62a35c;">height</span><span>());
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> top_left </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Coord::new(left </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>, top </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ top_left, size }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns a coord at the centre of the room, rounding down
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">centre</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Coord {
+</span><span>        self.top_left </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>self.size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns an iterator over all the coordinates in the room in row major order
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">coords</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>self) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a + </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = Coord&gt; {
+</span><span>        self.size
+</span><span>            .</span><span style="color:#62a35c;">coord_iter_row_major</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>coord</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>self.top_left </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> coord)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns true if and only if each cell of `grid` overlapping this room is `None`
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">bool </span><span>{
+</span><span>        self.</span><span style="color:#62a35c;">coords</span><span>().</span><span style="color:#62a35c;">all</span><span>(|coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">is_none</span><span>())
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Updates `grid`, setting each cell overlapping this room to `Some(TerrainTile::Floor)`.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// The top and left sides of the room are set to `Some(TerrainTile::Wall)` instead.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// This prevents a pair of rooms being placed immediately adjacent to one another.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">carve_out</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.</span><span style="color:#62a35c;">coords</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> coord.x </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>self.top_left.x </span><span style="font-weight:bold;color:#a71d5d;">||</span><span> coord.y </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>self.top_left.y {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Wall);
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Floor);
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid::new_copy(size, </span><span style="color:#0086b3;">None</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> player_placed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Attempt to add a room a constant number of times
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_ATTEMPTS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">100</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Make a random room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Room::choose(size, rng);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Carve out the room unless it overlaps with an existing room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room.</span><span style="color:#62a35c;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>grid) {
+</span><span>            room.</span><span style="color:#62a35c;">carve_out</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid);
+</span><span>
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room_centre </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> room.</span><span style="color:#62a35c;">centre</span><span>();
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add the player to the centre of the room if it&#39;s the first room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>player_placed {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(room_centre) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Player);
+</span><span>                player_placed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    grid.</span><span style="color:#62a35c;">map</span><span>(|t| t.</span><span style="color:#62a35c;">unwrap_or</span><span>(TerrainTile::Wall))
+</span><span>}
+</span></code></pre>
+<p>Here’s an example map produced by this algorithm:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/screenshot-rooms.png" alt="screenshot-rooms.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.2">part-3.2</a></p>
+<h2 id="corridors"><a class="zola-anchor" href="#corridors" aria-label="Anchor link for: corridors">Corridors</a></h2>
+<p>To add corridors between rooms, keep track of the centre of every room that gets placed,
+and then after all the rooms are placed, carve out corridors connecting every adjacent pair
+of room centres.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Carve out an L-shaped corridor between a pair of coordinates
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">carve_corridor</span><span>(start: Coord, end: Coord, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> start.x.</span><span style="color:#62a35c;">min</span><span>(end.x)</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span>start.x.</span><span style="color:#62a35c;">max</span><span>(end.x) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(Coord { x: i, </span><span style="font-weight:bold;color:#a71d5d;">..</span><span>start });
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if *</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">|| *</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Wall) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Floor);
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> start.y.</span><span style="color:#62a35c;">min</span><span>(end.y)</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>start.y.</span><span style="color:#62a35c;">max</span><span>(end.y) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(Coord { y: i, </span><span style="font-weight:bold;color:#a71d5d;">..</span><span>end });
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if *</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">|| *</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Wall) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Floor);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid::new_copy(size, </span><span style="color:#0086b3;">None</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> room_centres </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new();
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Attempt to add a room a constant number of times
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_ATTEMPTS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">100</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Make a random room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Room::choose(size, rng);
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Carve out the room unless it overlaps with an existing room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room.</span><span style="color:#62a35c;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>grid) {
+</span><span>            room.</span><span style="color:#62a35c;">carve_out</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid);
+</span><span>
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> room_centre </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> room.</span><span style="color:#62a35c;">centre</span><span>();
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add the player to the centre of the room if it&#39;s the first room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room_centres.</span><span style="color:#62a35c;">is_empty</span><span>() {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(room_centre) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Player);
+</span><span>            }
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Build up a list of all room centres for use in constructing corridors
+</span><span>            room_centres.</span><span style="color:#62a35c;">push</span><span>(room_centre);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Add corridors connecting every adjacent pair of room centres
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> window </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> room_centres.</span><span style="color:#62a35c;">windows</span><span>(</span><span style="color:#0086b3;">2</span><span>) {
+</span><span>        </span><span style="color:#62a35c;">carve_corridor</span><span>(window[</span><span style="color:#0086b3;">0</span><span>], window[</span><span style="color:#0086b3;">1</span><span>], </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid);
+</span><span>    }
+</span><span>
+</span><span>    grid.</span><span style="color:#62a35c;">map</span><span>(|t| t.</span><span style="color:#62a35c;">unwrap_or</span><span>(TerrainTile::Wall))
+</span><span>}
+</span></code></pre>
+<p>After this change, the dungeon generator will produce fully-connected dungeons made up of
+rooms and corridors.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-3/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3.3">part-3.3</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-2&#x2F;" aria-label="Previous">
+	  Previous: Part 2 - Entities, Rendering, Map
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-4&#x2F;" aria-label="Next">
+	  Next: Part 4 - Field of View
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

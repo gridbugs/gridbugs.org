@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2018: Day 1">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2018-day1/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2018-day1/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-03-04T00:47:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2018: Day 1
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-success&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Success
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-procgen-visibility-missions-colour&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2018: Day 1</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-03-04T00:47:00+10:00">
+    March 04, 2018
+  </time>
+  
+</p>
+
+
+  
+
+<p>This year I’m making a traditional roguelike where all of your stats, abilities
+and goals are expressed via progress meters. The name of the game will be
+“Meters Below the Ground”. Here’s an early screenshot:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-day1/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span><h2 id="meters"><a class="zola-anchor" href="#meters" aria-label="Anchor link for: meters">Meters</a></h2>
+<p>I implemented a framework for progress meters. There are 2 types of progress
+meter, which I call “active” and “passive”, the key distinction being that
+active meters can be activated, and passive ones cannot. The active meters are
+the ones with the numbers next to them in the screenshot, indicating the key you
+would press to activate them.</p>
+<p>There’s a special overall progress meter at the bottom of the screen, indicating
+how far you are from completing the game.</p>
+<p>I plan on implementing goals for each level, such as defeating a tough enemy or
+reaching certain objectives within a time limit. These goals will also be
+represented by meters.</p>
+<p>Currently I have 4 meters.  More will come.</p>
+<h2 id="level-switching"><a class="zola-anchor" href="#level-switching" aria-label="Anchor link for: level-switching">Level Switching</a></h2>
+<p>Before today my engine didn’t support level switching, so I implemented a simple
+single-direction level switching system.</p>
+<h2 id="continuous-deployment"><a class="zola-anchor" href="#continuous-deployment" aria-label="Anchor link for: continuous-deployment">Continuous Deployment</a></h2>
+<p>I set up travis-ci and appveyor to continuously deploy the project. The most
+frustrating problem I had today was travis-ci generating keys for the incorrect
+project, which manifested as travis-ci being unable to upload build artifacts to
+S3. The solution was to explicitly specify (via the <code>travis</code> cli) which repo to
+associate with the project. The command was:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>travis encrypt --add deploy.secret_access_key --repo gridbugs/meters-below-the-ground
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2017-success&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2017: Success
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-procgen-visibility-missions-colour&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Procgen, Visibility, Missions, Colour
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

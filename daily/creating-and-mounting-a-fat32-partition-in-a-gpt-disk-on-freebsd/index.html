@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Creating and mounting a FAT32 partition in a GPT disk on FreeBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/creating-and-mounting-a-fat32-partition-in-a-gpt-disk-on-freebsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/creating-and-mounting-a-fat32-partition-in-a-gpt-disk-on-freebsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-31T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Creating and mounting a FAT32 partition in a GPT disk on FreeBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;image-creation-tool-first-steps&#x2F;" aria-label="Previous">
+	  Previous: Image Creation Tool - First Steps
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;disk-image-tool-progress&#x2F;" aria-label="Next">
+	  Next: Disk image tool progress
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Creating and mounting a FAT32 partition in a GPT disk on FreeBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-31T00:00:00+00:00">
+    August 31, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>To test my disk image tool, I set up a spare USB stick with a GPT partition
+table and FAT32 partition. Doing this on FreeBSD meant learning about a couple of
+new tools. All the necessary tools are part of the base system, so no installation
+is necessary. This was written based on FreeBSD 12.1.</p>
+<p>Plug in a USB hard drive, and watch the output of <code>dmesg</code> to determine its name.
+In my case the drive was named <code>/dev/da1</code>. The following commands will destroy anything
+previously on that drive. Double check that the file passed to these commands is
+corresponds to the disk you plugged in!</p>
+<p>These commands require root.</p>
+<p>Clear any existing partition table.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart destroy -F /dev/da1
+</span></code></pre>
+<p>Make a new GPT partition table.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>gpart create -s GPT /dev/da1
+</span></code></pre>
+<p>Make a new 200mb partition of type “efi”.
+The new partition will have a device node <code>/dev/da1p1</code>.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart add -s 200M -t efi /dev/da1
+</span></code></pre>
+<p>Format the new partition with the FAT32 filesystem.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># newfs_msdos -F 32 -c 1 /dev/da1p1
+</span></code></pre>
+<p>Mount the partition, at <code>/mnt</code> allowing user 1001 (me) access.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># mount_msdosfs -u 1001 /dev/da1p1 /mnt/
+</span></code></pre>
+<p>And then as myself (uid 1001), create a file on the disk.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ echo &quot;Hello, World!&quot; &gt; /mnt/hello.txt
+</span></code></pre>
+<p>Finally, to make a disk image for the purpose of testing the tool, run (as root):</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># dd if=/dev/da1 of=/tmp/test.img bs=1m
+</span></code></pre>
+<p>Beware that the resulting file (<code>/tmp/test.img</code>) will be the size of the hard drive!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;image-creation-tool-first-steps&#x2F;" aria-label="Previous">
+	  Previous: Image Creation Tool - First Steps
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;disk-image-tool-progress&#x2F;" aria-label="Next">
+	  Next: Disk image tool progress
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

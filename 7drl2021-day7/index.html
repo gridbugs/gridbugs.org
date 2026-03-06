@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2021: Gamepad Support, Audio, Maps, Help Screen, Play Testing">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2021-03-12T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot5.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2021: Gamepad Support, Audio, Maps, Help Screen, Play Testing
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Enemies, Message Log, Space Gradient
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2022: Bootstrapping
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2021: Gamepad Support, Audio, Maps, Help Screen, Play Testing</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2021-03-12T00:00:00+00:00">
+    March 12, 2021
+  </time>
+  
+</p>
+
+
+  
+
+<p>Firstly, here’s a screenshot of my first organic encounter with the final level of Orbital Decay:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot5.png" alt="screenshot5.png" /></p>
+<span id="continue-reading"></span><h2 id="gamepad-support-and-help-screen"><a class="zola-anchor" href="#gamepad-support-and-help-screen" aria-label="Anchor link for: gamepad-support-and-help-screen">Gamepad Support and Help Screen</a></h2>
+<p>Last year I added gamepad input to chargrid, and used slime99 as a test bed, so basic controller support
+was incidentally already present. I just needed to add additional inputs for the actions specific to this game
+and update the help screen to include the new controls.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/help.png" alt="help.png" /></p>
+<p>I also fleshed out the help screen to include some instructions on how to play the game.
+Hopefully there is a “Wall of Text” metric when judging this year’s submissions.</p>
+<h2 id="audio"><a class="zola-anchor" href="#audio" aria-label="Anchor link for: audio">Audio</a></h2>
+<p>This year I employed the help of a musically-talented friend to compose the soundtrack and make sound effects
+in exchange for inclusion in the game’s credits.</p>
+<p><em>Credits you say? Sounds like another chance to show off the menu I’m so obsessed with…</em></p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/credits-and-another-chance-to-show-off-the-menu-I&#x27;m-so-obsessed-with.png" alt="credits-and-another-chance-to-show-off-the-menu-I’m-so-obsessed-with.png" /></p>
+<p>There are 6 tracks in total: Ambient music for the menu, 3 tracks that play during gameplay, and two
+end text songs (“Why two?” you ask - you’ll have to beat the game to find out!).</p>
+<p>Also there are over 10 different sound effects for weapons and other events in the game.
+This is the first game I’ve made with sound effects, and they make it <em>feel</em> more fun.
+Which is <em>terrifying</em>! We think we enjoy games for the challenging strategic and tactical decisions,
+but it turns out we’re actually just children who get amused when we press a button and a thing lights up and makes a sound!</p>
+<p>So this game has lots of things that light up and make sounds <em>as well as</em> what I hope are challenging strategic and tactical decisions!</p>
+<h2 id="maps"><a class="zola-anchor" href="#maps" aria-label="Anchor link for: maps">Maps</a></h2>
+<p>One last feature before I start focussing on play-testing and balance. I promise!</p>
+<p>This is a map terminal. It is currently locked.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/map1.png" alt="map1.png" /></p>
+<p>Bumping into it, you are prompted to pay to unlock it.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/map2.png" alt="map2.png" /></p>
+<p>Should you agree, the terminal is unlocked. The <code>***</code> is removed and you can now enter the cell.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/map3.png" alt="map3.png" /></p>
+<p>The layout of the ship, as well as the location of items and enemies is revealed to you!
+Behind the scenes this is repurposing the “omniscience” debugging mode in the vision system.</p>
+<p><em>Bask in the glory of the space-gradient once again!</em></p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/map4.png" alt="map4.png" /></p>
+<p>When you leave the cell, your omniscience stops, but you remember the layout.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/map5.png" alt="map5.png" /></p>
+<p>You can always go back to the cell to check the map again - it’s now unlocked forever.</p>
+<h2 id="play-testing"><a class="zola-anchor" href="#play-testing" aria-label="Anchor link for: play-testing">Play Testing</a></h2>
+<p>I spent some time playing the game (with an XBox One controller!) and made the following changes as a result:</p>
+<ul>
+<li>Generally tweaking stats on weapons and enemies to make the game more “fun” according to my sleep-deprived subjective opinion.</li>
+<li>Fixed a bug where the chainsaw never spawned at all. Oops!</li>
+<li>Weapons with the “Push Back” ability push enemies back further. Three spaces rather than two. Pushing things back is really useful,
+especially when dealing with the boomer enemy whom you really don’t want to kill. This provides a strong reason for the player to <em>not</em>
+equip the chainsaw, which balances well with how awesome the chainsaw is as a weapon. Taking the chainsaw should be a strategic decision,
+not something that the player always does. Another benefit of three space knock back is that the player can keep walking towards an enemy
+and push them along without taking any hits. Of course this only works if there is space which there often isn’t, and it gets messed up
+if there are multiple enemies in a row which there often are. That’s the whole point though! One-on-one combat with no constraints on
+positioning is <em>boring</em>, and here’s a way to let the player mostly skip it!</li>
+<li>Reduce the chance of the railgun causing a hull breach from 100% to 60% because I found that I would never use it.</li>
+<li>Since the shotgun has the “Push Back” ability, and this ability is getting buffed, the shotgun is now on-par with the “late game” weapons
+in terms of how useful it is. Thus the only non-awesome weapon is the rifle. Poor rifle. Make it so the player always starts with the
+rifle, and rifles don’t spawn on any floors.</li>
+<li>When skeletons are killed they turn into a skeleton spawner countdown, which the game treats as an item rather than a character.
+There can only be one item on a cell. Fixed a bug where the game would crash if a skeleton is killed while standing on an item.
+The game now looks at surrounding cells to find one without an item in this case. If it can’t find one it gives up. The player
+deserves to permanently kill a skeleton if they can figure this out!</li>
+<li>I reduced the amount of ammo each gun can hold by about half. The only way to get more ammo is by going to the next level or picking
+up a different gun from the floor. Choose between making progress or experimenting with new game content. Both are things I want
+the player to do!</li>
+</ul>
+<p>I’m really happy with the “skeletons are food” idea. Many traditional roguelikes had a concept known as the “food clock” to incentivise
+the player to make progress. Each floor of the dungeon would have a finite supply of food, and the player would get hungry over time.
+Spend too long on one floor, and you’ll exhaust the food supply and need to move on. Grinding on the same floor for ages is boring
+but players tend to do this anyway if it’s mechanically-beneficial, and the food clock helped break this cycle. In Orbital Decay,
+skeletons play this role instead! They are immortal unless you cause them to get sucked into space, and you’ll run out of ammo or
+health if you kill and re-kill them too many times. So <em>maybe</em> it’s more correct to say that “ammo is food” but it doesn’t have the same
+“what is he even talking about” ring to it as “skeletons are food” so I’m going to keep saying that.</p>
+<h2 id="screenshots-from-my-complete-playthrough"><a class="zola-anchor" href="#screenshots-from-my-complete-playthrough" aria-label="Anchor link for: screenshots-from-my-complete-playthrough">Screenshots from my complete playthrough</a></h2>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot1.png" alt="screenshot1.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot2.png" alt="screenshot2.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot3.png" alt="screenshot3.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot4.png" alt="screenshot4.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot5.png" alt="screenshot5.png" /></p>
+<p>That trusty rifle saw me all the way to the end. Perhaps I was too hasty to remove it from the weapon spawn pool.
+I’ll also add the shotgun back to the list of possible starter guns.</p>
+<h2 id="more-screenshots"><a class="zola-anchor" href="#more-screenshots" aria-label="Anchor link for: more-screenshots">More Screenshots!</a></h2>
+<p>In preparation for uploading to itch.io, I’m recording screenshots during all my play-tests.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-intro.png" alt="screenshot-intro.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-death.png" alt="screenshot-death.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-trouble.png" alt="screenshot-trouble.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-map.png" alt="screenshot-map.png" /></p>
+<p>At first I used the map on this floor to test that I didn’t break the map mechanic with a last-minute 11th hour change (I didn’t),
+but I spotted a nice bit of <em>accidental synergy</em> between the map mechanic and boomer enemy. It is <em>bad</em> to kill boomers when they are
+near the hull because they explode and destroy the hull. It’s much safer to kill them somewhere where the only walls that they destroy
+are internal.</p>
+<p>And for only $2 credit you can reveal the layout of the level and carefully plan out your approach.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-synergy.png" alt="screenshot-synergy.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-void.png" alt="screenshot-void.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/screenshot-map-vacuum.png" alt="screenshot-map-vacuum.png" /></p>
+<h2 id="collision-bug"><a class="zola-anchor" href="#collision-bug" aria-label="Anchor link for: collision-bug">Collision Bug?</a></h2>
+<p>Through a rare confluence of the “Push Back” mechanic and skeletons turning into skeleton spawners upon death, it’s possible to
+end up with the spawner stuck in a wall. Eventually a skeleton appears, also stuck in the wall, and there they remain.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day7/bug-or-feature.png" alt="bug-or-feature.png" /></p>
+<p>I’m gonna let this one slide! Nothing to do with the looming deadline or the fact that it’s 3:30am as I write this.
+If players can use this bu…ahem…mechanic to their favour, more power to them!</p>
+<h2 id="on-the-final-night-of-7drl"><a class="zola-anchor" href="#on-the-final-night-of-7drl" aria-label="Anchor link for: on-the-final-night-of-7drl">On the final night of 7DRL</a></h2>
+<p>This is one of the few nights of the year when I permit myself coffee at night.
+The interest rate on technical debt becomes negative and I write some of the worst, most pragmatic code I’ve ever written.
+The paint on the copy and paste keys of my keyboard becomes worn.</p>
+<p>It’s typical to wait until the end of the week to playtest. Otherwise you wouldn’t have a game <em>to</em> playtest.
+But this means that by the time that you’re turning the knobs to make the game challenging but beatable, you’re
+so sleep deprived and exhausted that your ability to face the challenges is diminished somewhat.
+Does this mean that all 7DRLs are imbalanced in favour of the player? Or do developers account for this by making
+their games too hard to beat in their end-of-7DRL state, knowing that the game will become winnable once their faculties return.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Enemies, Message Log, Space Gradient
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2022-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2022: Bootstrapping
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

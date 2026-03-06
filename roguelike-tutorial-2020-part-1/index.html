@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 1 - Drawing and Moving the Player">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-06-12T20:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 1 - Drawing and Moving the Player
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-0&#x2F;" aria-label="Previous">
+	  Previous: Part 0 - Setting Up
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-2&#x2F;" aria-label="Next">
+	  Next: Part 2 - Entities, Rendering, Map
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 1 - Drawing and Moving the Player
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-06-12T20:00:00+10:00">
+    June 12, 2020
+  </time>
+  
+</p>
+
+
+<p>For getting set up for this tutorial, see <a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/">Part 0</a>.</p>
+<p>This part will take you from printing “Hello, World!” to opening a window, drawing a ‘@’ symbol
+(representing the player character) and moving the player around with the arrow keys.</p>
+<p>By the end of this part, the game will look like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-1/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-0-end">part-0-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/#open-a-window">Open a Window</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/#draw-the-player">Draw the Player</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/#move-the-player">Move the Player</a></li>
+</ul>
+<h2 id="open-a-window"><a class="zola-anchor" href="#open-a-window" aria-label="Anchor link for: open-a-window">Open a Window</a></h2>
+<p>Start by adding dependencies on <code>chargrid</code> and <code>chargrid_graphical</code>:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">chargrid_graphical </span><span>= </span><span style="color:#183691;">&quot;0.7&quot;  </span><span style="font-style:italic;color:#969896;"># graphical frontend for chargrid applications
+</span><span style="color:#63a35c;">chargrid </span><span>= </span><span style="color:#183691;">&quot;0.4&quot;            </span><span style="font-style:italic;color:#969896;"># library for implementing chargrid applications
+</span></code></pre>
+<p>Now update your main function:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// src/main.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid_graphical::{Config, Context, Dimensions, FontBytes};
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CELL_SIZE_PX</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">f64 = </span><span style="color:#0086b3;">24.</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> context </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Context::new(Config {
+</span><span>        font_bytes: FontBytes {
+</span><span>            normal: include_bytes!(</span><span style="color:#183691;">&quot;./fonts/PxPlus_IBM_CGAthin.ttf&quot;</span><span>).</span><span style="color:#62a35c;">to_vec</span><span>(),
+</span><span>            bold: include_bytes!(</span><span style="color:#183691;">&quot;./fonts/PxPlus_IBM_CGA.ttf&quot;</span><span>).</span><span style="color:#62a35c;">to_vec</span><span>(),
+</span><span>        },
+</span><span>        title: </span><span style="color:#183691;">&quot;Chargrid Tutorial&quot;</span><span>.</span><span style="color:#62a35c;">to_string</span><span>(),
+</span><span>        window_dimensions_px: Dimensions {
+</span><span>            width: </span><span style="color:#0086b3;">960.</span><span>,
+</span><span>            height: </span><span style="color:#0086b3;">720.</span><span>,
+</span><span>        },
+</span><span>        cell_dimensions_px: Dimensions {
+</span><span>            width: </span><span style="color:#0086b3;">CELL_SIZE_PX</span><span>,
+</span><span>            height: </span><span style="color:#0086b3;">CELL_SIZE_PX</span><span>,
+</span><span>        },
+</span><span>        font_scale: Dimensions {
+</span><span>            width: </span><span style="color:#0086b3;">CELL_SIZE_PX</span><span>,
+</span><span>            height: </span><span style="color:#0086b3;">CELL_SIZE_PX</span><span>,
+</span><span>        },
+</span><span>        underline_width_cell_ratio: </span><span style="color:#0086b3;">0.1</span><span>,
+</span><span>        underline_top_offset_cell_ratio: </span><span style="color:#0086b3;">0.8</span><span>,
+</span><span>        resizable: </span><span style="color:#0086b3;">false</span><span>,
+</span><span>    });
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>App::new();
+</span><span>    context.</span><span style="color:#62a35c;">run_app</span><span>(app);
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>This creates a new graphical context for running chargrid applications.
+Chargrid is designed with the aim of being able to define an application which can run
+in a window (as we are doing now), a unix terminal, or a web browser. For each of these “frontends”,
+there is a <code>Context</code> type which knows all the frontend-specific details, and knows how to take
+an implementation of the <code>chargrid::app::App</code> trait (see below) and run it by feeding it input
+from the keyboard and mouse, and allowing it to render its output to the screen.</p>
+<p>The graphical context is configured using a <code>ContextDescriptor</code> which specifies the following details
+about how to render a grid of characters in a window:</p>
+<ul>
+<li><code>font_bytes</code>: which font to use to render characters</li>
+<li><code>title</code>: title of the window</li>
+<li><code>window_dimensions</code>: size of the window in pixels</li>
+<li><code>cell_dimensions</code>: size of each cell of the grid in pixels</li>
+<li><code>font_dimensions</code>: size to render each character in pixels (usually the same as <code>cell_dimensions</code>)</li>
+<li><code>font_source_dimensions</code>: size of each character in the source font in pixels (usually the same as <code>font_dimensions</code>)</li>
+<li><code>underline_width</code>: how much of the height of each cell should be taken up by the underline as a proportion of cell height</li>
+<li><code>underline_top_offset</code>: how far from the top of each cell should the underline begin as a proportion of cell height</li>
+</ul>
+<p>Once the context has been created with <code>Context::new</code>, the remaining two lines in <code>main</code> at this stage are:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>App::new();
+</span><span>context.</span><span style="color:#62a35c;">run_app</span><span>(app);
+</span></code></pre>
+<p>This creates an <code>App</code> (defined below) which will contain all the state and
+logic of the application - a roguelike game in this case. As hinted above, our <code>App</code> type will implement
+the trait <code>chargrid::app::App</code> which will tell chargrid how to run the application. Finally, <code>context.run_app(app)</code>
+takes the application and, well, runs it, in a graphical context, sending it keyboard and mouse events received by the window,
+and drawing the grid of characters to the window.</p>
+<p>The <code>App</code> type:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>App {}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{}
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Currently the application has no state or logic, so this is just an empty struct for now.</p>
+<p>Implement the <code>chargrid::app::App</code> trait:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>chargrid::app::App </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>App {
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">on_input</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        input: chargrid::app::Input,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;chargrid::app::ControlFlow&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::input::{keys, Input};
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(keys::</span><span style="color:#0086b3;">ETX</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>Input::Keyboard(keys::</span><span style="color:#0086b3;">ESCAPE</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(chargrid::app::ControlFlow::Exit)
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">None</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">on_frame</span><span>&lt;F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        _since_last_frame: chargrid::app::Duration,
+</span><span>        _view_context: chargrid::app::ViewContext&lt;C&gt;,
+</span><span>        _frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;chargrid::app::ControlFlow&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        F: chargrid::app::Frame,
+</span><span>        C: chargrid::app::ColModify,
+</span><span>    {
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Every chargrid application must implement 2 methods:</p>
+<ul>
+<li><code>on_input</code> is called each time a keyboard or mouse event occurs, and is passed a normalized representation of the event</li>
+<li><code>on_frame</code> is called periodically, right before the context updates the contents of the window</li>
+</ul>
+<p>Both methods return an <code>Option&lt;chargrid::app::ControlFlow&gt;</code>. A <code>chargrid::app::ControlFlow</code> is an <code>enum</code> of control flow actions
+the application can take. At the time of writing, it can only be used to specify that the application should be terminated.</p>
+<p>The application doesn’t render anything yet, so <code>on_frame</code> does nothing.</p>
+<p>Since it’s annoying to have a program which opens a window that can’t be closed, <code>on_input</code> terminates the application
+by returning <code>Some(chargrid::app::ControlFlow::Exit)</code> when certain keys are pressed. <code>keys::ESCAPE</code> corresponds to the
+escape key. <code>keys::ETX</code> actually corresponds to the user closing the window (e.g. by pressing the ‘X’ button in its corner).
+The name “ETX”, and the fact that this event pretends to be a keyboard event, is a remnant from the days when chargrid
+applications could only run in unix terminals. When the user presses CTRL-C in a terminal, this manifests as a character
+on standard input named “ETX” or “end of text”.</p>
+<p>This is now a complete chargrid application! Run it with <code>cargo run</code> and it will open an empty window:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/screenshot-blank.png" alt="screenshot-blank.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.0">part-1.0</a></p>
+<h2 id="draw-the-player"><a class="zola-anchor" href="#draw-the-player" aria-label="Anchor link for: draw-the-player">Draw the Player</a></h2>
+<p>Let’s place the player character in the centre of the game area, then render the player.</p>
+<p>Start by adding some more dependencies to help represent locations and colours.</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.tom
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span style="color:#63a35c;">coord_2d </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;        </span><span style="font-style:italic;color:#969896;"># representation of 2D integer coordinates and sizes
+</span><span style="color:#63a35c;">rgb24 </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;           </span><span style="font-style:italic;color:#969896;"># representation of 24-bit colour
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// src/main.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rgb24::Rgb24;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now we need to add the player’s coordinate to the <code>App</code> type. We could introduce a new field directly to <code>App</code>
+containing the coordinate, but we’ll do something a little different. Chargrid applications typically define two
+top-level types - one for storing the application’s <em>data</em>, and another representing a <em>view</em> of the application’s data.
+The data itself doesn’t know anything about how it will be rendered to the screen. The view knows how to render the
+application’s data, and tends to have very little (if any) state of its own. In practice, applications tend to be
+made up of several discrete visual elements, each representing some abstract data. It’s typical for the data and
+view types in a chargrid app to be composed of simpler data and view types representing discrete application components.</p>
+<p>The player’s location is part of the application’s data:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    player_coord: Coord,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            player_coord: screen_size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note that <code>AppData::new</code> takes the screen size, so it can initialize the player’s location to the middle of the game area.</p>
+<p>As is common, the app’s view has no state, and is just an empty struct:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{}
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>App</code> type now just combines the data and view:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>App {
+</span><span>    data: AppData,
+</span><span>    view: AppView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            data: AppData::new(screen_size),
+</span><span>            view: AppView::new(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>We added an argument to <code>App::new</code>, so update the call site in <code>main</code> to pass the screen size:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> screen_size </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Size::new(</span><span style="color:#0086b3;">40</span><span>, </span><span style="color:#0086b3;">30</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>App::new(screen_size);
+</span><span>    context.</span><span style="color:#62a35c;">run_app</span><span>(app);
+</span><span>}
+</span></code></pre>
+<p>As mentioned above, the app’s view needs to know how to render the app’s data. In concrete terms, the type <code>AppView</code>
+must implement the trait <code>chargrid::render::View&lt;&amp;AppData&gt;</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; chargrid::render::View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: chargrid::app::Frame, C: chargrid::app::ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: chargrid::app::ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>chargrid::render::ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>));
+</span><span>        frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(data.player_coord, </span><span style="color:#0086b3;">0</span><span>, view_cell, context);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<style>
+.small-images img {
+    padding-left: 20px;
+    width: 240px;
+}
+</style>
+<p>Lots of new things here:</p>
+<ul>
+<li><code>chargrid::app::Frame</code> represents the visible output of the application. Calling <code>set_cell_relative</code> on it draws a character at a position in the window.</li>
+<li><code>chargrid::app::ColModify</code> represents the current colour modifier. In chargrid, views are often hierarchical, and a view may want to indicate that when a child
+view says “give that cell a bright-green background”, it actually means “give that cell a medium-green background”.
+This is mainly used to dim the game area while a menu is visible.</li>
+</ul>
+<div class="small-images">
+![slime99-bright.png](slime99-bright.png) ![slime99-bright.png](slime99-bright.png)
+</div>
+- `chargrid::app::ViewContext` allows a view to tell child views to render at an offset, or with constraints on their size.
+It's also the mechanism by which colour modifiers are passed to child views (note the `C: chargrid::app::ColModify` type argument).
+- `chargrid::render::ViewCell` is a character with a foreground and background colour, which is possibly bold or underlined. Here
+it describes a white '@' sign, which will represent the player in our game.
+<p>Now that the view is defined, invoke it in the <code>on_frame</code> method to render the game:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>chargrid::app::App </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">on_frame</span><span>&lt;F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        _since_last_frame: chargrid::app::Duration,
+</span><span>        view_context: chargrid::app::ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;chargrid::app::ControlFlow&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        F: chargrid::app::Frame,
+</span><span>        C: chargrid::app::ColModify,
+</span><span>    {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::render::View;
+</span><span>        self.view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.data, view_context, frame);
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>An ‘@’ sign will now be rendered in the centre of the screen:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/screenshot.png" alt="screenshot.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.1">part-1.1</a></p>
+<h2 id="move-the-player"><a class="zola-anchor" href="#move-the-player" aria-label="Anchor link for: move-the-player">Move the Player</a></h2>
+<p>To add the most basic of gameplay, begin by adding one more dependency to let us talk about directions:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.tom
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span style="color:#63a35c;">direction </span><span>= </span><span style="color:#183691;">&quot;0.18&quot;           </span><span style="font-style:italic;color:#969896;"># representation of directions
+</span></code></pre>
+<p>This game will only allow movement in cardinal directions (north, south, east, west). Import the corresponding type:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// src/main.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>direction::CardinalDirection;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add the screen size to the <code>AppData</code> type so we can prevent the player from walking off the screen:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    screen_size: Size,
+</span><span>    player_coord: Coord,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            screen_size,
+</span><span>            player_coord: screen_size.</span><span style="color:#62a35c;">to_coord</span><span>().</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add a helper method to <code>AppData</code> for moving the player in a direction:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.player_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_player_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.screen_size) {
+</span><span>            self.player_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> new_player_coord;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>…and a method for handling input events which calls <code>maybe_move_player</code> with the
+directions corresponding to each arrow key:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: chargrid::input::Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::input::{Input, KeyboardInput};
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                KeyboardInput::Left </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::West),
+</span><span>                KeyboardInput::Right </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::East),
+</span><span>                KeyboardInput::Up </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::North),
+</span><span>                KeyboardInput::Down </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::South),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>            },
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Finally, call <code>handle_input</code> from the <code>on_input</code> method of <code>App</code>’s implementation of <code>chargrid::app::App</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>chargrid::app::App </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">on_input</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        input: chargrid::app::Input,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;chargrid::app::ControlFlow&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::input::{keys, Input};
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(keys::</span><span style="color:#0086b3;">ETX</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">| </span><span>Input::Keyboard(keys::</span><span style="color:#0086b3;">ESCAPE</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(chargrid::app::ControlFlow::Exit)
+</span><span>            }
+</span><span>            other </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                self.data.</span><span style="color:#62a35c;">handle_input</span><span>(other);
+</span><span>                </span><span style="color:#0086b3;">None
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>That’s it! Run the game, press the arrow keys, and the player will move around.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-1.2">part-1.2</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-2/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-0&#x2F;" aria-label="Previous">
+	  Previous: Part 0 - Setting Up
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-2&#x2F;" aria-label="Next">
+	  Next: Part 2 - Entities, Rendering, Map
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

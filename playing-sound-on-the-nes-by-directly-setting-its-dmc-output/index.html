@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Playing sound on the NES by directly setting its DMC output">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-01-21T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/audacity-NES.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Playing sound on the NES by directly setting its DMC output
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Playing sound on the NES by directly setting its DMC output</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-01-21T00:00:00+00:00">
+    January 21, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/nes" aria-label="tag">nes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/audio" aria-label="tag">audio</a>
+  
+</p>
+
+
+  
+
+<p>Games on the Nintendo Entertainment System play audio using a handful of
+tools within the device’s Audio Processing Unit (APU). The Delta Modulation
+Channel (DMC) is the most expressive such tool as it can play arbitrary audio
+data. Any sound you’ve heard come out of a NES other than variations on
+square and triangle waves, and noise, was played using the DMC.</p>
+<p>As its name suggests, the DMC can play <a href="https://en.wikipedia.org/wiki/Delta_modulation">delta
+modulated</a>
+audio data, where a signal is represented by a sequence of relative changes
+rather than a sequence of samples. The DMC also exposes a register that allows
+audio samples to be written directly to its output, and that’s what this post
+will be about.</p>
+<p>This post is aimed at people looking to write programs to play
+audio on the NES, or write an emulator for the NES’s APU. I found <a href="https://www.nesdev.org/wiki/APU_DMC">the DMC
+documentation on the NesDev wiki</a> great for
+low-level technical details but after reading it I felt I had little
+intuition for what to expect when actually using the DMC, so I did some experiments which
+I will share.</p>
+<span id="continue-reading"></span><h2 id="mental-model-for-working-with-audio"><a class="zola-anchor" href="#mental-model-for-working-with-audio" aria-label="Anchor link for: mental-model-for-working-with-audio">Mental model for working with audio</a></h2>
+<p>This is my working model for the basics of digital audio.</p>
+<p>Part of a speaker called the “diaphragm” gets pushed outwards when a positive
+voltage is applied to the speaker, and pulled inwards when a negative voltage is
+applied.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/speaker-voltages.png" alt="Diagram with three images of a speaker arranged from left to right. The left-most speaker shows the diaphragm in a neutral position with the subtitle ‘No Voltage’. The middle speaker shows the diaphragm pushed out with the subtitle ‘Positive Voltage’. The right-most speaker shows the diaphragm pulled inwards with the subtitle ‘Negative Voltage’." /></p>
+<p>By varying the voltage applied to the speaker over time, the rapid pushing and
+pulling causes the diaphragm to
+vibrate, creating sound. Note that the variations in voltage over time
+correspond to proportionate variations in the displacement of the speaker
+diaphragm over time.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/speaker-voltage-over-time.png" alt="Diagram showing a graph of voltage over time displaying a sine wave. Various points on the wave are annotated with the corresponding speaker position, showing a large displacement for positive voltages and a small displacement for negative voltages." /></p>
+<p>In digital audio, a signal is represented by a series of discrete values, each
+corresponding to a diaphragm displacement at a specific point in time. These
+values are called “samples”, and are often represented by 16 or 32 bit integers,
+or floating points. Samples are recorded at fixed time intervals, and
+the rate at which they are recorded is the “sample rate”, measured in
+hertz. A common sample rate is 44.1kHz.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/discretize-signal.png" alt="Diagram showing a graph of voltage over time displaying a sine wave. An overlay shows the discretization of the signal in the graph." /></p>
+<p>Representing a signal digitally results in loss of quality. Two reasons for
+this:</p>
+<ul>
+<li>There are effectively an infinite number of different displacements the
+speaker diaphragm can take, but the data type used to represent samples will
+have a finite number of possible values.</li>
+<li>The value of the signal is only sampled periodically, but the signal itself
+may be constantly varying. The effect of this is that <a href="https://en.wikipedia.org/wiki/Nyquist_frequency">frequencies in the
+signal which are  above half the sample rate can’t be represented in the
+digital signal</a>.
+Fortunately humans can’t hear frequencies above around
+20kHz so as long as the sample rate is above 40kHz humans won’t be able to
+tell that any information has been lost.</li>
+</ul>
+<p>Converting from a digital sample to a voltage to apply to a speaker is done
+using a device called a Digital-to-Analog Converter (DAC). In the diagram below,
+8-bit samples are converted to analog voltages to apply to a speaker. Here,
+assume that a sample of 255 is converted to the largest voltage the speaker can
+accept, 127 is converted to a voltage of zero, and 0 is converted to the
+smallest negative voltage the speaker can accept, with voltages linearly
+interpolated in between.</p>
+<p>(In practice this would be more complicated. For example in the NES, the DMC’s digital
+output is combined with the output of other audio channels by a mixer which
+contains a DAC. The analog signal from the mixer is sent to the TV attached to the NES which
+probably contains an amplifier which adjusts the analog signal to a voltage
+range appropriate for the TV’s speakers.)</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/dac.png" alt="Diagram showing digital values passing through a DAC leading to a speaker showing a correlation between the digital value and the speaker’s diaphragm displacement." /></p>
+<p>Earlier we saw that varying the voltage applied to the speaker causes its
+diaphragm to vibrate and produce sound. In a digital system we can similarly vary the
+value of the sample sent to the DAC to produce sound in much the same way.
+The remainder of this post will describe some experiments I did to better
+understand how to play sound on the NES by directly writing the digital value
+sent from the DMC to the mixer (which includes a DAC).</p>
+<h2 id="play-a-sine-wave"><a class="zola-anchor" href="#play-a-sine-wave" aria-label="Anchor link for: play-a-sine-wave">Play a Sine Wave</a></h2>
+<p>Let’s get the NES to play a sine wave at 440Hz which is the frequency of the
+note A above middle C. This program will work by repeatedly setting the DMC’s “direct
+load” register which is mapped to the memory address 0x4011.
+There’s no easy way to get the NES itself to generate a sine wave, so instead
+I’ll programatically generate the instructions to set the direct load register
+to a sequence of values approximating a sine wave. The generated NES program
+will repeatedly execute the following pair of instructions:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>LDA(Immediate) XXX    // load the accumulator register with the literal value XXX
+</span><span>STA(Absolute) 0x4011  // store the value in the accumulator to the DMC direct load register
+</span></code></pre>
+<p>These two instructions will be repeated with the placeholder XXX replaced with
+successive values sampled from a sine wave. The DMC load register is 8 bits
+wide but the most significant bit is ignored so we’ll be discretizing the sine
+wave to integer samples between 0 and 127.</p>
+<p>Before we can generate the sequence of samples we need to work out the sample
+rate. This is the rate at which we will be setting the DMC direct load register.
+The processor in the NTSC version of the NES runs at 1.79MHz (ie. 1,790,000
+cycles per second). The
+<code>LDA(Immediate)</code> instruction takes 2 cycles and the <code>STA(Absolute)</code> instruction
+takes 4 cycles so the repeated pair of instructions will take 6 cycles.
+This gives us a sampling rate of 1,790,000 / 6 ≈ 298,333.33 samples per second.
+This is a far higher sampling rate than is necessary to accurately produce a
+440Hz sine wave. As the sampling rate goes up, so too does the number of samples
+over a fixed period. We have to store all the samples in ROM, which could cause
+us problems as memory is limited in the NES.</p>
+<p>To play a continuous sine wave we can get away with playing a single oscillation
+of the signal in a loop.
+Therefore we need to store enough samples to cover one oscillation of the 440Hz sine
+wave.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/sine-440hz.png" alt="Diagram showing a single oscillation of a 440Hz wave, with periodic vertical lines indicating that it has been discretized." /></p>
+<p>The sine wave repeats 440 times per second and we’re sampling it
+298,333.33 times per second so a single oscillation of the sine wave will be
+broken down into 298,333.33 / 440 ≈ 678 samples. This means the pair of
+instructions will be repeated 678 times. It takes 5 bytes to store both
+instructions (2 for the first one, 3 for the second). 5 x 678 = 3390 bytes will
+comfortably fit inside the 32kb ROM, so we’re safe to keep our comically high
+sample rate.</p>
+<p>I’ve written <a href="https://gridbugs.github.io/gridbugs.org/conways-game-of-life-on-the-nes-in-rust/#rust">before</a>
+about using Rust as a macro language for NES assembly programming.
+Here is some Rust code that generates the sequence of instructions that plays a
+440Hz sine wave by setting the DMC’s load register:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_SAMPLES</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">678</span><span>;
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;sine-440Hz-start&quot;</span><span>);
+</span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_SAMPLES </span><span>{
+</span><span>    </span><span style="font-style:italic;color:#969896;">// get the position within a single oscillation of the signal
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> offset </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">as f64 * </span><span>::std::f64::consts::</span><span style="color:#0086b3;">PI </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2_</span><span style="font-weight:bold;color:#a71d5d;">f64</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">678_</span><span style="font-weight:bold;color:#a71d5d;">f64</span><span>;
+</span><span>    </span><span style="font-style:italic;color:#969896;">// sample the sine wave at the offset
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> sample </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> offset.</span><span style="color:#62a35c;">sin</span><span>();
+</span><span>    </span><span style="font-style:italic;color:#969896;">// quantize the sample to a 127 bit integer
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> sample_quantized </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(((sample </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1_</span><span style="font-weight:bold;color:#a71d5d;">f64</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">2_</span><span style="font-weight:bold;color:#a71d5d;">f64</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">127_</span><span style="font-weight:bold;color:#a71d5d;">f64</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u8</span><span>;
+</span><span>    </span><span style="font-style:italic;color:#969896;">// emit the instructions to set the DMC load register
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), sample_quantized);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x4011</span><span>));
+</span><span>}
+</span><span style="font-style:italic;color:#969896;">// begin the next oscilation
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jmp(Absolute), </span><span style="color:#183691;">&quot;sine-440Hz-start&quot;</span><span>);
+</span></code></pre>
+<p>If you’re attempting to reproduce this result, be sure to enable the DMC channel
+via the APU’s status register (0x4015):</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#0086b3;">4</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x4015</span><span>));
+</span></code></pre>
+<p>Looking at the generated instructions:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>LDA(Immediate) 63
+</span><span>STA(Absolute) 0x4011
+</span><span>LDA(Immediate) 64
+</span><span>STA(Absolute) 0x4011
+</span><span>LDA(Immediate) 64
+</span><span>STA(Absolute) 0x4011
+</span><span>LDA(Immediate) 65
+</span><span>STA(Absolute) 0x4011
+</span><span>LDA(Immediate) 65
+</span><span>STA(Absolute) 0x4011
+</span><span>...
+</span></code></pre>
+<p>We can see that it starts with a value of 63 which is right in the middle of 0
+and 127 (the max 7-bit value), which corresponds to a signed value of 0
+quantized into a 7-bit unsigned integer.</p>
+<p>I ran the generated program in an emulator, recorded my desktop audio with OBS
+and opened the result in Audacity:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/audacity-440hz.png" alt="Screenshot from Audacity showing a time domain representation of the audio produced by running a NES program that plays a 440Hz sine wave." /></p>
+<p>Clearly it is playing a sine wave. Switching to Audacity’s spectrogram view we
+can check the frequency of the wave:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/audacity-440hz-spectrogram.png" alt="Screenshot from Audacity showing a spectrogram of the audio produced by running a NES program that plays a 440Hz sine wave." /></p>
+<p>There’s clearly a strong signal at around 440Hz. The weaker lines at every
+multiple of 440Hz is due to the signal not being a perfect sine wave.
+Taking another look at the first screenshot the waveform is clearly slightly
+misshaped (e.g. the top is asymmetrical).</p>
+<h2 id="playing-the-song-from-rainbow-road-on-the-n64"><a class="zola-anchor" href="#playing-the-song-from-rainbow-road-on-the-n64" aria-label="Anchor link for: playing-the-song-from-rainbow-road-on-the-n64">Playing the song from Rainbow Road on the N64</a></h2>
+<p>Now instead of generating samples programmatically let’s take an existing song
+and play a short segment of it on a NES by repeatedly setting the DMC load
+register. We’ll use the song from the Rainbow Road stage of Mario Kart 64.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/rainbow-road.png" alt="The Rainbow Road stage of Mario Kart 64" /></p>
+<p>Playing this file in <code>mplayer</code>, one of its log messages is:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>AO: [alsa] 48000Hz 2ch floatle (4 bytes per sample)
+</span></code></pre>
+<p>This tells us that the song is sampled at 48kHz, and each sample is a 4 byte
+float (this will be a single-precision floating point). Additionally the song
+has two channels (a left and right channel). Audio on the NES only has a single
+channel, so we’ll need to combine the left and right channel by taking the mean
+of each corresponding pair of samples. Recall that samples on the NES are 7-bit integers,
+and for convenience we’ll use a single byte to store each sample. After
+combining the left and right channels, a single second of audio at a sample rate
+of 48kHz will take up 48,000 bytes.</p>
+<p>The program which plays a sine wave combined the code for loading samples with
+the sample values themselves. This simplified the program but required us to
+store 5 bytes for each sample. This time around we will save memory by storing
+the entire sample as contiguous bytes in ROM, and writing a small program which
+reads each byte in order and writes it to the DMC load register.</p>
+<p>Simple NES cartridges (NROM) have 32kb of
+ROM for storage of code and static data, and an additional 8kb of ROM for
+storage of tile data. We don’t care about graphics so we can use the tile ROM
+for storing additional audio samples. This memory is accessed
+through the PPU (Picture
+Processing Unit) but it’s still convenient and fast to read so the fact
+that it’s not directly addressable won’t be an issue.
+The program that plays audio samples will be negligibly small, so we’re left
+with about 40kb of ROM for storing audio data. With a sample rate of 48kHz we
+can only fit about (48 * 1024) / 40,000 ≈ 0.85 seconds of the song in memory.</p>
+<p>We’ll need to resample the song at a lower sampling rate in order to fit more it
+in ROM at the expense of reducing the quality. In particular reducing the sample
+rate will lower the maximum frequency which can be represented. So in effect,
+the longer the section of song we store, the lower the maximum frequency which
+can be stored.</p>
+<p>After some trial and error I found a ~13.33 second phrase
+which sounds ok when downsampled to 3kHz. Here it is at its original sample
+rate of 48kHz:</p>
+<audio controls>
+  <source src="rainbow-road-1-48kHz.ogg" type="audio&#x2F;ogg">
+  Your browser does not support the audio element.
+</audio>
+<p>And here is how it sounds resampled at 3kHz:</p>
+<audio controls>
+  <source src="rainbow-road-1-3kHz.ogg" type="audio&#x2F;ogg">
+  Your browser does not support the audio element.
+</audio>
+<p>Obviously it doesn’t sound as good, but the melody can still be heard.
+Compare this the same downsampling applied to a different section of the song
+with a higher melody. Here’s a section at the original sample rate:</p>
+<audio controls>
+  <source src="rainbow-road-2-48kHz.ogg" type="audio&#x2F;ogg">
+  Your browser does not support the audio element.
+</audio>
+<p>And the same section at 3kHz:</p>
+<audio controls>
+  <source src="rainbow-road-2-3kHz.ogg" type="audio&#x2F;ogg">
+  Your browser does not support the audio element.
+</audio>
+<p>Some of the high notes are no longer audible at all. This is because
+downsampling audio has the effect of lowering the maximum frequency which can be
+represented, and in this case, it’s lowered below the frequency of these notes
+so they are simply removed.</p>
+<p>So now to assemble a ROM which plays the selected ~13 seconds from the song. I
+ended up encoding the downsampled section of song as a wav file and using the
+Rust library <a href="https://crates.io/crates/hound">hound</a> to decode the samples. Then
+I quantized each sample into the range 0..=127 to make them suitable for use
+with the NES’s DMC. This code isn’t particularly interesting so I won’t show it
+here.</p>
+<p>The first 8192 samples are then copied into “CHR ROM”, or tile memory, which
+will get packed into the ROM directly (really just an .ines file - I can’t make real NES
+cartridges and I don’t even own a NES). The “PRG ROM” - the memory used to store
+code and static data - requires some more work to get right. Here is some Rust
+code which sets up PRG ROM with a program that plays audio data, followed by the
+audio data itself.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// Write the PRG ROM section of a ROM with code to play audio samples, and the audio samples
+</span><span style="font-style:italic;color:#969896;">// themselves, skipping over the first ines::CHR_ROM_BLOCK_BYTES bytes with the expectation that
+</span><span style="font-style:italic;color:#969896;">// they are stored in CHR ROM instead.
+</span><span style="font-style:italic;color:#969896;">//
+</span><span style="font-style:italic;color:#969896;">// b is a mos6502 assembler which we can use to emit code and add data to the ROM
+</span><span style="font-style:italic;color:#969896;">// audio_data is an array of samples quantized into 7-bit integers
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">program</span><span>(b: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> Block, audio_data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>]) {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>mos6502_model::addressing_mode::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>mos6502_model::assembler_instruction::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Add the interrupt vector at the end of the ROM
+</span><span>    b.</span><span style="color:#62a35c;">set_offset</span><span>(</span><span style="color:#0086b3;">INTERRUPT_VECTOR_START_PC_OFFSET</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">label_offset_le</span><span>(</span><span style="color:#183691;">&quot;reset&quot;</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">set_offset</span><span>(</span><span style="color:#0086b3;">INTERRUPT_VECTOR_NMI_OFFSET</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">label_offset_le</span><span>(</span><span style="color:#183691;">&quot;nmi&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Start adding instructions to PRG ROM at the beginning of memory
+</span><span>    b.</span><span style="color:#62a35c;">set_offset</span><span>(</span><span style="color:#0086b3;">0</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Simple interrupt handler for non-maskable interrupts
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;nmi&quot;</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Rti, ());
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Execution will start at the &quot;reset&quot; label. This is our program&#39;s entry point.
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;reset&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Enable the DMC
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#0086b3;">4</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x4015</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// We&#39;ll start by playing the audio samples stored in tile memory. Tile memory is read through
+</span><span>    </span><span style="font-style:italic;color:#969896;">// the registers of the PPU. PPU addresses are 16 bytes wide, and the current address is set by
+</span><span>    </span><span style="font-style:italic;color:#969896;">// writing the high byte, then the low byte, to the PPUADDR register mapped into memory at
+</span><span>    </span><span style="font-style:italic;color:#969896;">// address 0x2006. We&#39;ll start reading samples from PPU address 0, so write a 0 to both the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// high and low bytes of the PPU address.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">0</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x2006</span><span>));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x2006</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// We&#39;ll need a 16 bit counter to keep track of our current position within tile memory so that
+</span><span>    </span><span style="font-style:italic;color:#969896;">// we know when to stop reading. We&#39;ll use a little-endian 16-bit integer at address 2. Start
+</span><span>    </span><span style="font-style:italic;color:#969896;">// by setting the counter to 0. Note that the accumulator still has a 0 in it from setting the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// PPU address to 0 above.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> counter_addr </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2</span><span>;
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// We&#39;re going to be reading audio samples out of PPU memory. After setting the PPU address,
+</span><span>    </span><span style="font-style:italic;color:#969896;">// the first read will return garbage, and subsequent reads will start from the address written
+</span><span>    </span><span style="font-style:italic;color:#969896;">// to the PPU address. Read the single garbage value from the PPU and discard it.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Absolute), Addr(</span><span style="color:#0086b3;">0x2007</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// label indicating the start of the loop which plays samples from PPU memory
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;ppu-loop-start&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Call a function &quot;delay&quot; which spins for a fixed number of cycles. This is needed so that the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// rate at which we send samples to the DMC load register is 3000 times per second. Without
+</span><span>    </span><span style="font-style:italic;color:#969896;">// this pause, the song would play in fast-forward. Note that we do this before sending each
+</span><span>    </span><span style="font-style:italic;color:#969896;">// sample to the DMC.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;delay&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Read a sample value from PPU memory into the accumulator. Reading from PPU memory has the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// effect of incrementing the current PPU address, so the next read will be from the next
+</span><span>    </span><span style="font-style:italic;color:#969896;">// location in PPU memory.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Absolute), Addr(</span><span style="color:#0086b3;">0x2007</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Write the value we just read from PPU memory into the DMC&#39;s load register.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x4011</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Call a function which increments the 16 bit counter at address 2.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;incr-counter&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Check that the counter is less than 0x2000 (8k). As soon as it reaches 0x2000, we&#39;ve
+</span><span>    </span><span style="font-style:italic;color:#969896;">// consumed all the audio samples stored in PPU memory, so we exit this loop.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> num_ppu_samples </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0x2000</span><span>;
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::hi(num_ppu_samples));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;ppu-loop-start&quot;</span><span>));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::lo(num_ppu_samples));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;ppu-loop-start&quot;</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Now we need to play the rest of the sample from regular ROM (PRG ROM to be precise). The ROM
+</span><span>    </span><span style="font-style:italic;color:#969896;">// is mapped into memory from 0x8000 up to 0xFFFF. Set asside 0x70 (112) bytes of memory to
+</span><span>    </span><span style="font-style:italic;color:#969896;">// store this program before the audio data begins. The final 6 bytes of ROM are used for the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// interrupt table, so we can&#39;t store audio data there. This leaves us with memory from 0x8070
+</span><span>    </span><span style="font-style:italic;color:#969896;">// to (but not including) 0xFFFA to store audio data.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> audio_start </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0x8070</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> audio_max </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0xFFFA</span><span>;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// We&#39;ll reuse the 16 bit integer at address 2 to keep track of our current position within the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// audio data. Start by setting its value to 0x8070.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::lo(audio_start));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::hi(audio_start));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Label indicating the start of the loop over data stored in PRG ROM.
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;loop-start&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Pause so that the playback rate matches the sample rate of 3kHz.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;delay&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Read the next sample from ROM. The 6502 processor has an addressing mode which reads an
+</span><span>    </span><span style="font-style:italic;color:#969896;">// address from a 16 bit little-endian address in the first 256 bytes of RAM (called the &quot;zero
+</span><span>    </span><span style="font-style:italic;color:#969896;">// page&quot;). This lets us use the 16 bit counter as the address of the current sample. The index
+</span><span>    </span><span style="font-style:italic;color:#969896;">// register X is added to final address before it&#39;s accessed. This line assumes that X is 0.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// The &quot;delay&quot; function we just called ensures that X is 0 when it returns (internally it uses
+</span><span>    </span><span style="font-style:italic;color:#969896;">// X as a counter and counts down to 0).
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(XIndexedIndirect), counter_addr);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Write the sample to the DMC load register.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(Absolute), Addr(</span><span style="color:#0086b3;">0x4011</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Increment the counter at address 2.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;incr-counter&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Exit the loop when the counter reaches the end of the sample buffer.
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::hi(audio_max));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;loop-start&quot;</span><span>));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), mos6502_model::address::lo(audio_max));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;loop-start&quot;</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Loop forever.
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;end&quot;</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Jmp(Absolute), </span><span style="color:#183691;">&quot;end&quot;</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// A function which adds 1 to the 16 bit little-endian counter at address 2
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;incr-counter&quot;</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(Immediate), </span><span style="color:#0086b3;">1</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(Immediate), </span><span style="color:#0086b3;">0</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), counter_addr </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// A function which returns after some time has passed, and ensures that the X index register
+</span><span>    </span><span style="font-style:italic;color:#969896;">// is 0.
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;delay&quot;</span><span>);
+</span><span>    </span><span style="font-style:italic;color:#969896;">// This function works by loading this value into the X index register and then repeatedly
+</span><span>    </span><span style="font-style:italic;color:#969896;">// decrementing it until it reaches 0. The optimal starting value could be computed by counting
+</span><span>    </span><span style="font-style:italic;color:#969896;">// the number of cycles in the loops which send successive audio samples to the DMC, but it was
+</span><span>    </span><span style="font-style:italic;color:#969896;">// easier to just tune this by hand. The number of cycles each loop spends updating the value
+</span><span>    </span><span style="font-style:italic;color:#969896;">// in the DMC load register is similar enough that the same delay function can be used for
+</span><span>    </span><span style="font-style:italic;color:#969896;">// both.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> delay </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">107</span><span>;
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Ldx(Immediate), delay);
+</span><span>    b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;delay-loop&quot;</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Dex, ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;delay-loop&quot;</span><span>));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Make sure that the code ends before the declared start of the audio buffer (otherwise we
+</span><span>    </span><span style="font-style:italic;color:#969896;">// could overwrite code with audio data).
+</span><span>    assert!(b.</span><span style="color:#62a35c;">offset</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span> audio_start);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// The assembler keeps track of a current address which is incremented as intsructions are
+</span><span>    </span><span style="font-style:italic;color:#969896;">// issued. Explicitly set the current address to the start of the audio buffer. The assembler
+</span><span>    </span><span style="font-style:italic;color:#969896;">// doesn&#39;t know that the ROM will be mapped into memory starting at address 0x8000, so we
+</span><span>    </span><span style="font-style:italic;color:#969896;">// subtract it so the audio buffer starts relative to address 0 instead.
+</span><span>    b.</span><span style="color:#62a35c;">set_offset</span><span>(audio_start </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">0x8000</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Loop over all the samples, adding them to the ROM. The offset of ines::CHR_ROM_BLOCK_BYTES
+</span><span>    </span><span style="font-style:italic;color:#969896;">// is because the CHR_ROM (ie. tile memory) contains the beginning of the audio data. Samples
+</span><span>    </span><span style="font-style:italic;color:#969896;">// have already been quantized into 7 bit integers.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> num_samples </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> audio_max </span><span style="font-weight:bold;color:#a71d5d;">as usize -</span><span> audio_start </span><span style="font-weight:bold;color:#a71d5d;">as usize</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for &amp;</span><span>sample </span><span style="font-weight:bold;color:#a71d5d;">in &amp;</span><span>audio_data[ines::</span><span style="color:#0086b3;">CHR_ROM_BLOCK_BYTES</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>(ines::</span><span style="color:#0086b3;">CHR_ROM_BLOCK_BYTES </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> num_samples)]
+</span><span>    {
+</span><span>        b.</span><span style="color:#62a35c;">literal_byte</span><span>(sample);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Make sure we left enough room for the interrupt table.
+</span><span>    assert!(b.</span><span style="color:#62a35c;">offset</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">&lt;=</span><span> audio_max </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">PRG_START</span><span>);
+</span><span>}
+</span></code></pre>
+<p>The code is on
+<a href="https://github.com/gridbugs/mos6502/blob/rainbow-road/nes-apu-experiment/src/main.rs">github</a>.
+It requires you to downsample its input first, and the offset into the song of
+the section to place in the ROM is hard-coded.</p>
+<p>Here’s how one might use it. Clone the repo and checkout the <code>rainbow-road</code>
+branch. Then run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># This assumes the song is in a file named &quot;Randow Road.mp3&quot;.
+</span><span>$ ffmpeg -i &quot;Rainbow Road.mp3&quot; -ar 3000 rr3kHz.wav
+</span><span>$ cargo run --manifest-path nes-apu-experiment/Cargo.toml -- rr3kHz.wav &gt; rr.nes
+</span><span>$ fceux rr.nes   # swap fceux with your favourite NES emulator
+</span></code></pre>
+<p>Here’s how it sounds:</p>
+<audio controls>
+  <source src="rainbow-road-1-NES.ogg" type="audio&#x2F;ogg">
+  Your browser does not support the audio element.
+</audio>
+<p>That sounds even worse than the original 3kHz version, but the melody is still
+clearly audible. One explanation for this
+is the fact that each sample has been quantized into 7-bit integers. We can see
+the effects of this by examining the waveform in audacity:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/audacity-NES.png" alt="Screenshot of audacity showing the step shape of the wave form" /></p>
+<p>The step shape of this wave form is the result of samples losing precision when
+being converted to 7 bit integers.</p>
+<p>Download the ROM <a href="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/rainbow-road.nes">here</a>.</p>
+<p>We could improve the quality by increasing the sample rate but this would
+shorten the length of the song we can store. Some ways we could increase this
+limit:</p>
+<ul>
+<li>Store compressed audio - The code spends most of its waiting for the right
+moment to send the next sample to the DMC. There might be a way to store
+audio in a compressed form and use this time to expand the audio data into
+RAM and then play it back from there.</li>
+<li>Delta modulation - Recall that DMC stands for Delta Modulated Channel. Delta
+modulation takes advantage of the fact that successive audio samples are
+usually numerically close, and saves space by only storing the differences
+between successive samples. When using delta modulation on the NES, only
+differences of 1 and -1 can be represented, so additional quality will be
+lost, but it may make up for it by allowing higher sampling rates.</li>
+<li>Bank switching - This program used the simplest of NES cartridge types (known as
+NROM) but many different types of cartridge have been produced. Some
+cartridges contain hardware for dynamically switching the ROM bank attached
+to the memory bus, which lets them store more than 32kb of static data.</li>
+</ul>
+<p>Games tended not to use the DMC load register for most of their music, instead
+opting to use delta encoded audio. The DMC could read the sample deltas out of
+memory in the background while the CPU did other things. In this simple example
+it was easy to feed samples to the DMC load register at the correct times, but
+if we were trying to juggle loading the DMC with also updating graphics and
+reading controller input it would quickly get out of hand. Also as we saw,
+storing raw audio samples takes up a lot of memory relative to the tiny amount
+of ROM available on the NES. Delta-encoded audio data is much more space
+efficient.</p>
+<p>The info I used to get started programming the NES DMC:</p>
+<ul>
+<li><a href="https://www.nesdev.org/wiki/APU_DMC">NesDev wiki page about the DMC</a></li>
+<li><a href="https://www.youtube.com/watch?v=mJnz6dEWwIw">Youtube video about the DMC</a></li>
+</ul>
+<p>One final thing just for fun. Since we’re using tile ROM to store audio data,
+you might be wondering what the resulting “tiles” look like. The fceux NES
+emulator has a PPU viewer which can be used to inspect tile data. I had to
+manually set the palette colours, and then the tiles were clearly visible:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/playing-sound-on-the-nes-by-directly-setting-its-dmc-output/tiles.png" alt="Screenshot of fceux showing the tiles resulting from using tile memory to store audio samples" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;demystifying-floating-points&#x2F;" aria-label="Previous">
+	  Previous: Demystifying Floating Points
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;chargrid-sdl-frontend&#x2F;" aria-label="Next">
+	  Next: Chargrid SDL Frontend
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

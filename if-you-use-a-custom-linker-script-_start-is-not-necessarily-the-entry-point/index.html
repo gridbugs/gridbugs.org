@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="If you use a custom linker script, _start might not be your entry point">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/if-you-use-a-custom-linker-script-_start-is-not-necessarily-the-entry-point/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/if-you-use-a-custom-linker-script-_start-is-not-necessarily-the-entry-point/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-01-07T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+If you use a custom linker script, _start might not be your entry point
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">If you use a custom linker script, _start might not be your entry point</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-01-07T00:00:00+00:00">
+    January 07, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/unix" aria-label="tag">unix</a>
+  
+</p>
+
+
+  
+
+<p>For most of my life I took for granted that programs begin executing at an
+address denoted by the symbol <code>_start</code> (a single underscore, followed by the
+word “start”). Turns out it’s not so simple.</p>
+<p>Take this x86 assembly program that prints “Hello, World!” on Linux:</p>
+<pre data-lang="asm" style="background-color:#ffffff;color:#323232;" class="language-asm "><code class="language-asm" data-lang="asm"><span style="font-weight:bold;color:#795da3;">.</span><span style="color:#62a35c;">global </span><span style="font-weight:bold;color:#795da3;">_start
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">.text
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">message:
+</span><span style="font-weight:bold;color:#795da3;">    .ascii </span><span style="color:#183691;">&quot;Hello, World!\n&quot;
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">_start:
+</span><span style="font-weight:bold;color:#795da3;">    # print the message
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">1</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rax        </span><span style="font-weight:bold;color:#795da3;"># </span><span style="font-weight:bold;color:#a71d5d;">syscall </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#795da3;">is write
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">1</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdi        </span><span style="font-weight:bold;color:#795da3;"># file descriptor </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#795da3;">is stdout
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="font-weight:bold;color:#795da3;">message</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rsi  </span><span style="font-weight:bold;color:#795da3;"># pass address of messsage
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">13</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdx       </span><span style="font-weight:bold;color:#795da3;"># pass length of message
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">syscall             </span><span style="font-weight:bold;color:#795da3;"># perform write system </span><span style="font-weight:bold;color:#a71d5d;">call
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">    # exit
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">60</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rax       </span><span style="font-weight:bold;color:#795da3;"># </span><span style="font-weight:bold;color:#a71d5d;">syscall </span><span style="color:#0086b3;">60 </span><span style="font-weight:bold;color:#795da3;">is exit
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">0</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdi        </span><span style="font-weight:bold;color:#795da3;"># pass exit status of </span><span style="color:#0086b3;">0
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">syscall             </span><span style="font-weight:bold;color:#795da3;"># perform exit system </span><span style="font-weight:bold;color:#a71d5d;">call
+</span></code></pre>
+<p>To compile and run this program (assume it’s in the file hello.s):</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ gcc -c hello.s   # compile hello.s to object file hello.o
+</span><span>$ ld hello.o       # link hello.o to executable a.out
+</span><span>$ ./a.out
+</span><span>Hello, World!
+</span></code></pre>
+<span id="continue-reading"></span>
+<p>Now add this custom linker script in a file named link.ld:</p>
+<pre data-lang="ld" style="background-color:#ffffff;color:#323232;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="font-weight:bold;color:#a71d5d;">SECTIONS</span><span> {
+</span><span>    . = </span><span style="color:#0086b3;">0x1000</span><span>;
+</span><span>}
+</span></code></pre>
+<p>The linker decides how a program will be laid out in memory, and the
+<code>. = 0x1000;</code> line instructs the linker to begin at (virtual) address 0x1000
+(without this line it defaults to starting from address 0 which would cause
+problems on most systems).</p>
+<p>Re-link the executable, this time passing <code>-T link.ld</code> to the linker to get it
+to use the custom linker script:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ld hello.o -T link.ld
+</span><span>$ ./a.out
+</span><span>Segmentation fault (core dumped)
+</span></code></pre>
+<p>Oh no.</p>
+<p>Use <code>readelf</code> to find out the entry point of a.out:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ readelf --file-header a.out
+</span><span>ELF Header:
+</span><span>...
+</span><span>  Entry point address:               0x1000
+</span></code></pre>
+<p>And use <code>objdump</code> to disassemble a.out:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ objdump -d a.out
+</span><span>
+</span><span>a.out:     file format elf64-x86-64
+</span><span>
+</span><span>
+</span><span>Disassembly of section .text:
+</span><span>
+</span><span>0000000000001000 &lt;message&gt;:
+</span><span>    1000:       48                      rex.W
+</span><span>    1001:       65 6c                   gs insb (%dx),%es:(%rdi)
+</span><span>    1003:       6c                      insb   (%dx),%es:(%rdi)
+</span><span>    1004:       6f                      outsl  %ds:(%rsi),(%dx)
+</span><span>    1005:       2c 20                   sub    $0x20,%al
+</span><span>    1007:       57                      push   %rdi
+</span><span>    1008:       6f                      outsl  %ds:(%rsi),(%dx)
+</span><span>    1009:       72 6c                   jb     1077 &lt;_start+0x69&gt;
+</span><span>    100b:       64 21 0a                and    %ecx,%fs:(%rdx)
+</span><span>
+</span><span>000000000000100e &lt;_start&gt;:
+</span><span>    100e:       48 c7 c0 01 00 00 00    mov    $0x1,%rax
+</span><span>    1015:       48 c7 c7 01 00 00 00    mov    $0x1,%rdi
+</span><span>    101c:       48 c7 c6 00 10 00 00    mov    $0x1000,%rsi
+</span><span>    1023:       48 c7 c2 0d 00 00 00    mov    $0xd,%rdx
+</span><span>    102a:       0f 05                   syscall
+</span><span>    102c:       48 c7 c0 3c 00 00 00    mov    $0x3c,%rax
+</span><span>    1033:       48 c7 c7 00 00 00 00    mov    $0x0,%rdi
+</span><span>    103a:       0f 05                   syscall
+</span></code></pre>
+<p>First in memory at 0x1000 is the ascii-encoded message “Hello, World!”
+which <code>objdump</code> has attempted to disassemble, not realizing that it’s
+not code (you generally wouldn’t put literal data in the <code>.text</code> section anyway).
+The <code>_start</code> function begins at address 0x100e which is where we’d like to
+begin execution, but <code>readelf</code> reported that the entry point is 0x1000.
+So execution is beginning at the start of the message, and the processor is trying
+to execute whatever instructions happen to correspond to the ascii-encoding
+of “Hello, World!”.</p>
+<p>No wonder it crashes.</p>
+<p>One way to fix this problem is to force the linker to use <code>_start</code> as the
+entry point by updating the linker script to:</p>
+<pre data-lang="ld" style="background-color:#ffffff;color:#323232;" class="language-ld "><code class="language-ld" data-lang="ld"><span style="font-weight:bold;color:#a71d5d;">ENTRY</span><span>(_start);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">SECTIONS</span><span> {
+</span><span>    . = </span><span style="color:#0086b3;">0x1000</span><span>;
+</span><span>}
+</span></code></pre>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ld hello.o -T link.ld
+</span><span>$ ./a.out
+</span><span>Hello, World!
+</span></code></pre>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ readelf --file-header a.out
+</span><span>ELF Header:
+</span><span>...
+</span><span>  Entry point address:               0x100e
+</span></code></pre>
+<p>The program now works again, and the entry point is set to 0x100e as expected (that’s the address
+referred to by <code>_start</code> according to the output of <code>objdump</code> above).</p>
+<p>But hang on, why is this necessary, isn’t <code>_start</code> the default entry point?</p>
+<p>Well according to <a href="https://ftp.gnu.org/old-gnu/Manuals/ld-2.9.1/html_chapter/ld_3.html#SEC24">the ld docs</a>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>ENTRY is only one of several ways of choosing the entry point.
+</span><span>You may indicate it in any of the following ways.
+</span><span> - the `-e&#39; entry command-line option;
+</span><span> - the ENTRY(symbol) command in a linker control script;
+</span><span> - the value of the symbol start, if present;
+</span><span> - the address of the first byte of the .text section, if present;
+</span><span> - The address 0.
+</span></code></pre>
+<p>Note the option <code>the value of the symbol start, if present;</code>.</p>
+<p>So with that in mind, get rid of the <code>ENTRY(_start);</code> from the custom linker script, and change the assembly
+program to replace <code>_start</code> with <code>start</code>:</p>
+<pre data-lang="asm" style="background-color:#ffffff;color:#323232;" class="language-asm "><code class="language-asm" data-lang="asm"><span style="font-weight:bold;color:#795da3;">.</span><span style="color:#62a35c;">global </span><span style="font-weight:bold;color:#795da3;">start
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">.text
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">message:
+</span><span style="font-weight:bold;color:#795da3;">    .ascii </span><span style="color:#183691;">&quot;Hello, World!\n&quot;
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">start:
+</span><span style="font-weight:bold;color:#795da3;">...
+</span></code></pre>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ld hello.o -T link.ld
+</span><span>$ ./a.out
+</span><span>Hello, World!
+</span></code></pre>
+<p>And sure enough, that works too.</p>
+<p>Also note the option <code>the address of the first byte of the .text section, if present;</code>.
+This is the option we were hitting that led to the program crashing earlier.
+I must confess that I contrived an example program where <code>_start</code> wasn’t
+at the beginning of the <code>.text</code> section so the program wouldn’t work when the linker fell back to this option.
+A lot of toy assembly programs define a <code>_start</code> symbol at the start of the <code>.text</code> section.
+It feels natural for <code>_start</code> to be the first function in your program’s text, and if
+you use a custom linker script and don’t specify <code>_start</code> as your entry point,
+it will work just fine although the <code>_start</code> symbol will be ignored.</p>
+<p>If your program starts at the beginning of <code>text</code>, you don’t even need a symbol to point
+to the entry point:</p>
+<pre data-lang="asm" style="background-color:#ffffff;color:#323232;" class="language-asm "><code class="language-asm" data-lang="asm"><span style="font-weight:bold;color:#795da3;">.text
+</span><span style="font-weight:bold;color:#795da3;">    # print the message
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">1</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rax        </span><span style="font-weight:bold;color:#795da3;"># </span><span style="font-weight:bold;color:#a71d5d;">syscall </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#795da3;">is write
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">1</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdi        </span><span style="font-weight:bold;color:#795da3;"># file descriptor </span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#795da3;">is stdout
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="font-weight:bold;color:#795da3;">message</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rsi  </span><span style="font-weight:bold;color:#795da3;"># pass address of messsage
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">13</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdx       </span><span style="font-weight:bold;color:#795da3;"># pass length of message
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">syscall             </span><span style="font-weight:bold;color:#795da3;"># perform write system </span><span style="font-weight:bold;color:#a71d5d;">call
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">    # exit
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">60</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rax       </span><span style="font-weight:bold;color:#795da3;"># </span><span style="font-weight:bold;color:#a71d5d;">syscall </span><span style="color:#0086b3;">60 </span><span style="font-weight:bold;color:#795da3;">is exit
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">mov </span><span style="color:#62a35c;">$</span><span style="color:#0086b3;">0</span><span>, </span><span style="font-weight:bold;color:#795da3;">%</span><span>rdi        </span><span style="font-weight:bold;color:#795da3;"># pass exit status of </span><span style="color:#0086b3;">0
+</span><span style="font-weight:bold;color:#795da3;">    </span><span style="font-weight:bold;color:#a71d5d;">syscall             </span><span style="font-weight:bold;color:#795da3;"># perform exit system </span><span style="font-weight:bold;color:#a71d5d;">call
+</span><span>
+</span><span style="font-weight:bold;color:#795da3;">message:
+</span><span style="font-weight:bold;color:#795da3;">    .ascii </span><span style="color:#183691;">&quot;Hello, World!\n&quot;
+</span></code></pre>
+<p>So it looks like the default entry point is at <code>start</code>, not <code>_start</code>.
+If that’s the case, why did the initial program work?</p>
+<p>Relink the executable without the custom linker script, but pass <code>--verbose</code>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ ld hello.o --verobse
+</span><span>GNU ld (GNU Binutils) 2.39
+</span><span>  Supported emulations:
+</span><span>   elf_x86_64
+</span><span>   elf32_x86_64
+</span><span>   elf_i386
+</span><span>   elf_iamcu
+</span><span>using internal linker script:
+</span><span>==================================================
+</span><span>/* Script for -z combreloc -z separate-code */
+</span><span>/* Copyright (C) 2014-2022 Free Software Foundation, Inc.
+</span><span>   Copying and distribution of this script, with or without modification,
+</span><span>   are permitted in any medium without royalty provided the copyright
+</span><span>   notice and this notice are preserved.  */
+</span><span>OUTPUT_FORMAT(&quot;elf64-x86-64&quot;, &quot;elf64-x86-64&quot;,
+</span><span>              &quot;elf64-x86-64&quot;)
+</span><span>OUTPUT_ARCH(i386:x86-64)
+</span><span>ENTRY(_start)
+</span><span>...
+</span></code></pre>
+<p>If you don’t specify a custom linker script, the linker uses an internal linker script, which explicitly sets
+the entry point to <code>_start</code>.</p>
+<p>For programs that don’t use a custom linker script (ie. the vast majority of programs), <code>_start</code> is effectively
+the default entry point by means of the linker’s internal linker script.
+However as soon as you define your own linker script, it’s up to you to ensure that your program’s entry point is set correctly.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;reverse-engineering-nes-tetris-to-add-hard-drop&#x2F;" aria-label="Previous">
+	  Previous: Reverse-Engineering NES Tetris to add Hard Drop
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;demystifying-floating-points&#x2F;" aria-label="Next">
+	  Next: Demystifying Floating Points
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

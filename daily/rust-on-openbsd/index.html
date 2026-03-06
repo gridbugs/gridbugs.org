@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Rust on OpenBSD">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/rust-on-openbsd/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/rust-on-openbsd/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-10T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Rust on OpenBSD
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;time-to-stop-using-language-managers&#x2F;" aria-label="Previous">
+	  Previous: Time to stop using language managers
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;bootstrapping-nightly-rust-on-openbsd&#x2F;" aria-label="Next">
+	  Next: Bootstrapping Nightly Rust on OpenBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Rust on OpenBSD</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-10T00:00:00+00:00">
+    August 10, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Rust projects tend to start using new language features as soon as they land in the stable compiler.
+The rust compiler gets an update once per month, often adding new language features.
+OpenBSD releases a new version every six months, and packages do not gain feature updates outside
+of this release schedule (only security updates and bug fixes).
+The implication of this is that most of the time, the rust compiler from OpenBSD’s package repository
+is too out-of-date to build most rust packages.</p>
+<p>On pretty much any other system, the solution would be to just install rust with <a href="https://rustup.rs/">rustup</a>,
+but rust doesn’t make binaries available for OpenBSD, so that won’t work here.
+I could compile the rust compiler from source, but as the rust compiler is written in rust, and like most
+rust projects, depends on recently-added language features, I’ll need a fairly up-to-date rust compiler
+to bootstrap the compiler from source, and the one in the package repo is till too old.</p>
+<p>I sought help on the OpenBSD subreddit, and the advice I got was to switch to the “-current” branch
+of OpenBSD, which takes the base system and packages from developer snapshots, rather than the biannual
+stable release. I ran archlinux for the better part of a decade, so I’m not phased by this!
+I followed the advice and everything has worked fine so far.</p>
+<p>This means that the only issue preventing me from running OpenBSD on my personal laptop is a
+lack of support for OpenBSD’s audio system in the <a href="https://crates.io/crates/cpal">cpal</a> rust
+library. I need this because I make games in rust, and cpal appears to be the de-facto standard
+way to play audio in rust, and I used it for audio in my game engine.
+Now that I have a working rust compiler, I can start working on
+adding OpenBSD support to cpal myself.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;time-to-stop-using-language-managers&#x2F;" aria-label="Previous">
+	  Previous: Time to stop using language managers
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;bootstrapping-nightly-rust-on-openbsd&#x2F;" aria-label="Next">
+	  Next: Bootstrapping Nightly Rust on OpenBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

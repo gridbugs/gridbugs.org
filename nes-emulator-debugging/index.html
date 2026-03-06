@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="NES Emulator Debugging">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/nes-emulator-debugging/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/nes-emulator-debugging/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-05-08T08:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+NES Emulator Debugging
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">NES Emulator Debugging</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-05-08T08:00:00+10:00">
+    May 08, 2019
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/nes" aria-label="tag">nes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/emulation" aria-label="tag">emulation</a>
+  
+</p>
+
+
+  
+
+<style>
+.nes-emulator-debugging-screenshot img {
+    width: 512px;
+    height: 480px;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+.nes-emulator-debugging-screenshot video {
+    width: 512px;
+    height: 480px;
+}
+
+
+.nes-tile img {
+    width: 64px;
+    height: 64px;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+.mario-render img {
+    width: 328px;
+    height: auto;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+</style>
+<p>Making an emulator for a 1980s game console is an exercise in reading and comprehension.
+The work is mostly translating documentation into code.
+It’s oddly satisfying, building a model of an ancient machine,
+instruction by instruction, device by device, especially once it can start running real programs.
+You end up with an appreciation for the capabilities (or lack thereof) of hardware at the time,
+and out of necessity, end up intimately familiar with the inner workings of a piece of computing history.</p>
+<p>This post is not about making an emulator.</p>
+<p>It is about the nightmarish, overwhelmingly complex, and at times seemingly hopeless
+task of hunting down the parts of your emulator that don’t behave exactly
+like the real hardware.</p>
+<div class="nes-emulator-debugging-screenshot">
+<img src="example.png">
+</div>
+<span id="continue-reading"></span><h2 id="let-s-a-go"><a class="zola-anchor" href="#let-s-a-go" aria-label="Anchor link for: let-s-a-go">Let’s a-go!</a></h2>
+<p>I’m making an emulator for the <a href="https://en.wikipedia.org/wiki/Nintendo_Entertainment_System">Nintendo Entertainment System (NES)</a>.
+To test my emulator, I run the game <a href="https://en.wikipedia.org/wiki/Mario_Bros.">Mario Bros.</a>
+When you start the game, it displays a menu for about 20 seconds, then runs a demo of gameplay.
+Once I had the CPU and video output working to the point that <em>something</em> not completely unintelligible was being rendered,
+I ran the game. I wasn’t emulating input yet, so I waited for the demo.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="demo.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p><em>Hey, it mostly works!</em></p>
+<p>There’s no gravity, Mario and Luigi look wrong, but only when they face to the right, and platforms get wider
+when you hit the bottom-left corner. These artifacts are the manifestation of emulator bugs that would take
+the better part of a month to find.</p>
+<h2 id="debugging-printouts"><a class="zola-anchor" href="#debugging-printouts" aria-label="Anchor link for: debugging-printouts">Debugging Printouts</a></h2>
+<p>The core of my debugging strategy is logging each instruction that is executed, and printing extra information
+when something meaningful happens. In the case of the “no gravity” problem, I identified the address that stores
+the vertical position of the first turtle (<code>0x0368</code>) to emerge from the pipe - the first character which gravity
+should affect. The value it holds while the turtle is floating instead of
+falling is <code>0x2C</code>. Therefore at some point the game is writing<code>0x2C</code> to <code>0x0368</code> when it should be writing
+something <em>else</em>, so I instrumented the emulator to print a message whenever <code>0x2C</code> was read from any address in
+memory, and also when address <code>0x0368</code> was written to.</p>
+<p>Here’s a snippet of the output showing the Y position of the turtle being set to <code>0x2C</code>.
+I’ve annotated each instruction with a description of what it does.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>CBDA  Iny(Implied)               increment index register Y
+</span><span>CBDB  Inx(Implied)               intrement index register X
+</span><span>CBDC  Cpx(Immediate) 20          compare index register X to 0x20 (32)
+</span><span>CBDE  Bne(Relative) F6           branch if X != 0x20 (true in this case)
+</span><span>CBD6  Lda(ZeroPageXIndexed) B0   load accumulator from address 0xB0 + X
+</span><span>reading 0x2C from 0xB8
+</span><span>CBD8  Sta(IndirectYIndexed) 14   store accumulator in [addess at 0x14] + Y
+</span><span>writing 0x2C to t1 y position
+</span></code></pre>
+<p>The non-human-readable lines are executed instructions. For example:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>CBD6  Lda(ZeroPageXIndexed) B0
+</span></code></pre>
+<ul>
+<li>Address of instruction: <code>0xCBD6</code></li>
+<li>Instruction: <code>Lda</code> (load accumulator from memory)</li>
+<li>Addressing Mode (ie. how to interpret the instruction argument): <code>ZeroPageXIndexed</code></li>
+<li>Instruction Argument: <code>0xB0</code></li>
+</ul>
+<p>The execution trace above is copying the turtle’s Y position from <code>0x00B8</code> to <code>0x0368</code>.
+The <code>Lda</code> instruction reads a value from memory into a CPU register called the “accumulator”.
+The <code>Sta</code> instruction stores the accumulator in memory. This is part of a loop that transfers
+data from the “zero page” - the first 256 bytes of memory - into other parts of memory.
+Most instructions have special variants (e.g. <code>Lda(ZeroPageXIndexed)</code> which can only access the zero page,
+but take up less memory and execute faster.
+It seems that Mario Bros. uses the zero page
+for function arguments and return values, and other temporary intra-frame storage.
+The <code>0xB0</code> address read from above is, at other points in the execution, used to store the
+Y position of other characters. For inter-frame storage of character data, address in
+<code>0x0300</code> - <code>0x0400</code> seem to be used.</p>
+<p>This code is probably transferring the result of some computation into longer-term memory.
+This indicates that the problem happened earlier in the frame.
+To find details of what is done to the Y position while it’s in <code>0x00B8</code>,
+we could instrument the emulator to print whenever <code>0x2C</code> is read from this new address.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>C750  Jsr(Absolute) CC90  call function at 0xCC90
+</span><span>CC90  Lda(ZeroPage) B8    load value at 0xB8 into accumulator
+</span><span>reading 0x2C from 0xB8
+</span><span>CC92  Clc(Implied)        clear carry flag
+</span><span>CC93  Adc(Immediate) 08   add 8 to the value in accumulator
+</span><span>CC95  Cmp(Immediate) E4   compare accumulator to 0xE4
+</span><span>CC97  Bcc(Relative) 08    branch if accumulator &lt; 0xE4 (true)
+</span><span>CCA1  Sta(ZeroPage) 01    store accumulator at address 0x01
+</span><span>CCA3  Lda(ZeroPage) B9    load accumulator with value from address 0xB9
+</span><span>CCA5  Sta(ZeroPage) 00    store accumulator at address 0x00
+</span><span>CCA7  Jsr(Absolute) CA9A  call function at 0xCA9A
+</span><span>
+</span></code></pre>
+<p>This code is reading the turtle Y position from 0xB8, adding 8 to it, and storing the
+result in address 0x0001. The Y coordinate increases moving down the screen, so at
+first I thought that adding to the turtle’s Y position was gravity at work, but
+this will turn out to be incorrect.</p>
+<h2 id="what-are-we-searching-for"><a class="zola-anchor" href="#what-are-we-searching-for" aria-label="Anchor link for: what-are-we-searching-for">What are we searching for?</a></h2>
+<p>The debugging process so far has closely resembled how we might debug Mario Bros. -
+the program being run on the emulator -
+without access to its source code. We’re trying to find the part of the program
+that applies gravity to characters because it looks like something is wrong with gravity.
+Of course, we know that the program we’re running
+is fine! Run it on someone else’s emulator, or real NES, and gravity works.</p>
+<p>And this is the crux of why debugging an emulator is hard. The layer of abstraction where
+the problem manifests is never the layer of abstraction where we’ll find the problem.
+The problem “gravity is not working” is a symptom of a problem that has nothing to do
+with gravity. One or more instructions is being interpreted incorrectly, and these instructions
+happen to be used by the game at some point to apply gravity.</p>
+<p>If we were to look at the code that applies gravity in Mario Bros., we would find that
+there is nothing wrong with it. Our best bet would be to look at a trace of this
+code being run (what we’ve been doing so far) with enough detail logged such that when
+a broken instruction is executed, the update to the machine state won’t match our expectations.
+Of course the instruction emulation is based on my interpretation of the CPU manual,
+so it’s likely that my expectations themselves are incorrect.</p>
+<p>Since the virtual hardware, and my expectations of how the hardware should behave
+may both be faulty, the only real “source of truth” we can rely on is the software
+running on the emulator. This is an interesting reversal of the usual assumptions -
+one typically assumes that their hardware works as expected and all bugs are problems with
+software. We’ll trace the execution of Mario Bros., and if it looks like the game
+is doing something that doesn’t make sense, that might indicate that the emulator is
+behaving differently than the real hardware would.</p>
+<h2 id="fixing-a-hopefully-simpler-problem"><a class="zola-anchor" href="#fixing-a-hopefully-simpler-problem" aria-label="Anchor link for: fixing-a-hopefully-simpler-problem">Fixing a (hopefully!) simpler problem</a></h2>
+<p>I spent a few days pouring over execution traces trying to find where gravity was applied
+and the bug which prevent it from working. Eventually I decided to take a break
+and work on what was hopefully a simpler problem.</p>
+<div class="mario-render">
+<img src="mario-incorrect-render.png">
+</div>
+<p>The Mario and Luigi sprites are a 2x3 rectangle of 8 pixel square tiles.
+When they face to the right, both columns are drawn overlapping instead of
+adjacent.</p>
+<p>It’s supposed to look like this.</p>
+<div class="mario-render">
+<img src="mario-correct-render.png">
+</div>
+<h3 id="nes-sprite-rendering"><a class="zola-anchor" href="#nes-sprite-rendering" aria-label="Anchor link for: nes-sprite-rendering">NES Sprite Rendering</a></h3>
+<p>To get to the bottom of this, we need to know a little about how rendering works
+on the NES. The NES Picture Processing Unit (PPU) can render up to 64 8x8
+pixel foreground sprite tiles at a time. Backgrounds are rendered differently,
+but aren’t important for finding this bug. To render a sprite tile, the game
+writes a 4-byte description of the tile to a special region of memory called the
+Object Attribute Memory (OAM). This description contains the position of the
+tile on the screen, a tile index specifying which tile to render, and some
+attributes to fine-tune rendering.</p>
+<p>OAM is not addressable directly by the CPU. Instead, the CPU writes a copy of
+what it wants OAM to contain into RAM, starting at a 256-byte aligned address (ie. an
+address whose low byte is 0), then writes the high byte of this address to a PPU
+register named <code>OAM DMA</code>. Writing to <code>OAM DMA</code> causes the PPU to directly read the
+256 bytes starting at specified address, and upload it to OAM.</p>
+<h3 id="finding-the-mario-sprite"><a class="zola-anchor" href="#finding-the-mario-sprite" aria-label="Anchor link for: finding-the-mario-sprite">Finding the Mario Sprite</a></h3>
+<p>By logging writes to <code>OAM DMA</code>, I found that the only value Mario Bros. ever
+writes to it is <code>2</code>. This means that it’s storing sprite data in the region of
+RAM at <code>0x0200</code> - <code>0x02FF</code>.</p>
+<p>Next we need to find out which part of OAM contains the description of the Mario
+tiles. Each sprite tile is described with a 4-byte data structure. The 4th byte
+of this structure contains the X coordinate of the tile. By logging the X
+coordinate of each tile every frame and watching how they change as Mario moves
+on the screen, I identified the 6 OAM entries corresponding to Mario as those
+occupying <code>0x0210</code> - <code>0x0227</code> (24 bytes = 6 tiles * 4 bytes per tile)
+prior to uploading.</p>
+<p>I instrumented the emulator to log writes to <code>0x0213</code> and <code>0x0217</code> which
+should correspond to the X positions of the top 2 tiles of Mario.
+I found a single loop where one iteration wrote to <code>0x0213</code>, and another
+iteration wrote to <code>0x0217</code>.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>CC20  Inx(Implied)
+</span><span>CC21  Lda(IndirectYIndexed) 12
+</span><span>CC23  Bit(ZeroPage) B7
+</span><span>CC25  Bvs(Relative) 03     branch if overflow flag is set
+</span><span>CC2A  Eor(Immediate) FF
+</span><span>CC2C  Sec(Implied)
+</span><span>CC2D  Sbc(Immediate) 08    subtract 8 from the accumulator
+</span><span>CC2F  Sec(Implied)
+</span><span>CC30  Adc(ZeroPage) B9
+</span><span>CC32  Iny(Implied)
+</span><span>CC33  Sta(AbsoluteXIndexed) 0200
+</span><span>writing 0x68 to 0x0213
+</span><span>...
+</span><span>CC20  Inx(Implied)
+</span><span>CC21  Lda(IndirectYIndexed) 12
+</span><span>CC23  Bit(ZeroPage) B7
+</span><span>CC25  Bvs(Relative) 03     branch if overflow flag is set
+</span><span>CC27  Clc(Implied)
+</span><span>CC28  Bcc(Relative) 06
+</span><span>CC30  Adc(ZeroPage) B9
+</span><span>CC32  Iny(Implied)
+</span><span>CC33  Sta(AbsoluteXIndexed) 0200
+</span><span>writing 0x68 to 0x0217
+</span></code></pre>
+<h3 id="a-hunch"><a class="zola-anchor" href="#a-hunch" aria-label="Anchor link for: a-hunch">A Hunch</a></h3>
+<p>These two iterations look slightly different. Notice that in the <code>0x0213</code>
+iteration (the first iteration) 8 is subtracted from the accumulator
+(instruction address
+<code>0xCC2D</code>), and in
+the <code>0x0217</code> iteration, this subtraction is skipped. 8 happens to be the
+width of a sprite tile in pixels. If this subtraction occurred in the latter
+iteration, it would have written <code>0x60</code> instead of <code>0x68</code> to OAM, and the left
+half of the sprite would be shifted 8 pixels to the left and would no longer overlap
+with the right half (note that this assumes that the former iteration is the
+top-right tile, and the latter one is the top-left tile).</p>
+<p>The first point where the two iterations differ is the <code>Bvs</code> instruction
+at address <code>0xCC25</code>. This instruction branches by a specified offset if the
+“overflow” flag is set. This branch is taken in the first iteration (note the
+change in instruction address after <code>Bvs</code> executes), and not
+taken in the second iteration.</p>
+<p>Arithmetic operations set the overflow flag when a
+signed integer overflow occurs. The fact that this code executes the <code>Bit</code>
+instruction, and then branches based on the overflow flag’s value, suggests that
+<code>Bit</code> sets and clears the overflow flag too.
+My emulator was updating the
+overflow flag when emulating <code>Bit</code>, but I double checked the manual at this
+point just to be safe.</p>
+<p>The <code>Bit</code> instruction computes the bitwise AND of a value from memory and the
+accumulator, discarding the result, and setting some status register flags.</p>
+<p>Here’s what the MOS6502 Programmer’s Manual has to say about the status register
+flags set by <code>Bit</code>:</p>
+<p><em>The bit instruction affects the N (negative) flag with N being set to
+the value of bit 7 of the memory being tested, the <strong>V (overflow) flag with V
+being set equal to bit 6 of the memory being tested</strong> and Z (zero) being set
+by the result of the AND operation between the accumulator and the
+memory if the result is Zero, Z is reset otherwise. It does not
+affect the accumulator.</em></p>
+<p><code>Bit</code> is unusual because it
+sets the overflow (V) and negative (N) flags based on its argument, instead of
+its result. Every other instruction that updates the overflow and negative flags does so
+based on its result.</p>
+<p>In my first pass through the manual I did not pick up on this subtlety!</p>
+<p>Correcting this instruction in my emulator, and now Mario renders correctly.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="gravity-works.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>It seems that fixing this bug also fixed gravity…</p>
+<p><em>Great!</em></p>
+<h2 id="platforms-get-wider-when-you-jump-into-them"><a class="zola-anchor" href="#platforms-get-wider-when-you-jump-into-them" aria-label="Anchor link for: platforms-get-wider-when-you-jump-into-them">Platforms get wider when you jump into them</a></h2>
+<p>Look closely at the previous recording. Luigi jumps and hits the ceiling, and
+the platform
+seems to grow a little wider as a result. This is not supposed to happen!</p>
+<p>To help debug this, I implemented input emulation so I could actually <em>play</em> the
+game and conduct experiments.</p>
+<p>Here’s a more explicit demonstration of the problem.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="floor-extension.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>This only happens if you hit a platform on its bottom-left corner. This fact,
+coupled with the turtle falling through the floor suggests that this bug relates
+to collision detection. In Mario Bros., when you hit a platform from underneath,
+an animation plays where the platform bulges above you, damaging any enemies
+standing on that part of the platform. There is an emulator bug with the symptom
+that collision detection with platforms has a lateral offset, which means that
+if you jump just to the left of a platform, the game thinks you hit the platform
+from beneath. Because it thinks you hit a platform from beneath, the game plays
+the platform bulge animation above the character, which leaves a fresh platform where there was none
+before. This new platform can now be collided with in the same way allowing it
+to grow even further to the left.</p>
+<p>If collision detection has an erroneous offset, you should be able to move
+through the right-hand side of a platform too.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="jump-through-floor.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>Turtles also fall through platforms too early on the right-hand side, and too
+late on the left-hand side.</p>
+<h3 id="function-analysis"><a class="zola-anchor" href="#function-analysis" aria-label="Anchor link for: function-analysis">Function Analysis</a></h3>
+<p>Collision detection is complicated, and after a few days of blindly staring at
+execution traces I elected to take a step back and try to get a better
+understanding of how the game works. To that end I wrote a little library for
+exploring function definitions in NES programs. The NES CPU has an instruction
+named <code>JSR</code> (Jump SubRoutine) which pushes the current program counter on the
+stack, and moves execution to a specified address. A second instruction, <code>RTS</code>
+(Return from SubRoutine) pops an address from the stack and moves execution to
+that address. Respectively, these instructions are used to call and return from
+functions.</p>
+<p>To find all the functions in the program, my library scans the ROM for all
+instances of the <code>JSR</code> instruction, looking at its argument to find addresses
+where functions begin. To find out where a given function ends, step through the
+function instruction by instruction, stopping when a <code>RTS</code> instruction is
+reached. Upon encountering a conditional branch, we need to account for the case
+when the condition is true, and when the condition is false. I use a stack (the
+data structure) to keep track of execution paths yet to be explored.
+Instructions that unconditionally change the program counter are followed,
+with the exception of <code>JSR</code> (we’re only exploring the current function - not
+the functions it calls) and <code>RTS</code>, which indicates we should stop exploring the
+current branch. Keep track of the addresses that have been explored in this
+traversal and stop if an instruction would change the program counter to
+somewhere we’ve already been.
+This is effectively a depth-first search through the control flow graph of the
+function.</p>
+<p>Here’s a trace of a simple function.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0xCDD1  Pha(Implied)        ;; save accumulator onto stack
+</span><span>0xCDD2  Clc(Implied)        ;; clear the carry flag
+</span><span>0xCDD3  Lda(ZeroPage) 0x14  ;; load value at address 0x14 into accumulator
+</span><span>0xCDD5  Adc(ZeroPage) 0x12  ;; add value at address 0x12 to accumulator
+</span><span>0xCDD7  Sta(ZeroPage) 0x14  ;; store accumulator at address 0x14
+</span><span>0xCDD9  Lda(ZeroPage) 0x15  ;; load value at address 0x15 into accumulator
+</span><span>0xCDDB  Adc(ZeroPage) 0x13  ;; add value at address 0x13 to accumulator
+</span><span>0xCDDD  Sta(ZeroPage) 0x15  ;; store accumulator at address 0x15
+</span><span>0xCDDF  Pla(Implied)        ;; restore accumulator from stack
+</span><span>0xCDE0  Rts(Implied)        ;; return
+</span></code></pre>
+<p>What is this function doing?</p>
+<p>It adds the byte at address <code>0x14</code> with the byte at address <code>0x12</code>, storing the
+result at address <code>0x14</code>, then adds the byte at <code>0x15</code> with the byte at <code>0x13</code>,
+storing the result in <code>0x15</code>. Notice the carry flag is cleared once at the
+start, and then not cleared in between the two additions. The <code>ADC</code> instruction
+adds the carry flag to its result, and sets the carry flag if the result of the
+addition is greater than 255 (the maximum value that fits in a byte).</p>
+<p>This function treats the 2 bytes at <code>0x14</code> and <code>0x15</code> as a single 2-byte
+little-endian
+integer, and likewise for the 2 bytes at <code>0x12</code> and <code>0x13</code>. This function adds
+these two 16-bit integers, and returns the result. We can interpret
+<code>0x12</code> - <code>0x15</code> as containing function’s arguments. Similarly, we can interpret
+<code>0x14</code> - <code>0x15</code> as containing the function’s return value (after the function
+returns).</p>
+<p>Here’s how you might write this function in rust:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">add16</span><span>(a: </span><span style="font-weight:bold;color:#a71d5d;">u16</span><span>, b: </span><span style="font-weight:bold;color:#a71d5d;">u16</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">u16 </span><span>{
+</span><span>    a </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> b
+</span><span>}
+</span></code></pre>
+<p>The function calling convention Mario Bros. seems to use is to choose a range
+of addresses in the zero page (<code>0x0000</code> - <code>0x00FF</code>) for each function, and to
+store the function’s arguments and return value in this range. Each function
+seems to use unique addresses for its arguments and return values, which would
+allow one function to call another function without the first function needing
+to worry about its own arguments being overwritten by some later function.
+Note that this calling convention does not support recursion,
+as the second nested call of a function would overwrite the arguments from
+the first call.</p>
+<p>Function analysis didn’t directly help solve my problem, but it did help
+get a better understanding of what the program was trying to do.</p>
+<h3 id="a-mysterious-function"><a class="zola-anchor" href="#a-mysterious-function" aria-label="Anchor link for: a-mysterious-function">A Mysterious Function</a></h3>
+<p>Much like before, I started by inspecting the memory of the running game to find
+out which address contained Mario’s X and Y coordinates between frames. Tracing
+load and store instructions involving these addresses led me to the following function, which was being
+passed Mario’s X and Y coordinates through zero page addresses <code>0x00</code> and
+<code>0x01</code>.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>;; Load coord_x into accumulator.
+</span><span>CA9A  Lda(ZeroPage) 00
+</span><span>
+</span><span>;; Right-shift the accumulator by 1 bit 3 times, effectively dividing it by 8.
+</span><span>CA9C  Lsr(Accumulator)
+</span><span>CA9D  Lsr(Accumulator)
+</span><span>CA9E  Lsr(Accumulator)
+</span><span>
+</span><span>;; Store the accumulator [coord_x / 8] in address 0x12.
+</span><span>CA9F  Sta(ZeroPage) 12
+</span><span>
+</span><span>;; Store the value 0x20 in address 0x13.
+</span><span>;; The 2 bytes at 0x12-0x13 now represent a 16-bit integer
+</span><span>;; whose value is [0x2000 + (coord_x / 8)].
+</span><span>;; This is because 0x20 is the high byte, and [coord_x / 8] is the low byte.
+</span><span>CAA1  Lda(Immediate) 20
+</span><span>CAA3  Sta(ZeroPage) 13
+</span><span>
+</span><span>;; Store a 0 at address 0x15.
+</span><span>CAA5  Lda(Immediate) 00
+</span><span>CAA7  Sta(ZeroPage) 15
+</span><span>
+</span><span>;; Load coord_y into accumulator.
+</span><span>CAA9  Lda(ZeroPage) 01
+</span><span>
+</span><span>;; Bitwise AND the accumulator with 0xF8.
+</span><span>;; 0xF8 in binary is 11111000, so this clears the low 3 bits of coord_y.
+</span><span>;; This effectively rounds coord_y down to the next lowest multiple of 8.
+</span><span>CAAB  And(Immediate) F8
+</span><span>
+</span><span>;; Left-shift the accumulator, setting the carry flag to the most-significant
+</span><span>;; bit of the accumulator prior to this instruction executing.
+</span><span>;; Then left-rotate the value in address 0x15 (explicitly set to 0 above).
+</span><span>;; Left-rotating is the same as left-shifting, except the least-significant
+</span><span>;; bit of the result is set to the carry flag&#39;s current value, and then the
+</span><span>;; carry flag is set to the original most-significant bit (ie. it rotates
+</span><span>;; &quot;through&quot; the carry flag).
+</span><span>;;
+</span><span>;; This doubles the value in the accumulator. If twice the value of the
+</span><span>;; accumulator is too large to fit in the 8-bit accumulator register, the
+</span><span>;; overflowing bits are stored in the low bits of address 0x15.
+</span><span>CAAD  Asl(Accumulator)
+</span><span>CAAE  Rol(ZeroPage) 15
+</span><span>
+</span><span>;; Repeat the above, doubling the accumulator a second time.
+</span><span>CAB0  Asl(Accumulator)
+</span><span>CAB1  Rol(ZeroPage) 15
+</span><span>
+</span><span>;; Store the accumulator in address 0x14.
+</span><span>;; At this point, the little-endian 16-bit integer at 0x14-0x15 is
+</span><span>;; coord_y rounded down to the next multiple of 8, then multiplied
+</span><span>;; by 4.
+</span><span>CAB3  Sta(ZeroPage) 14
+</span><span>
+</span><span>;; Call the add16 function defined above.
+</span><span>;; Once this function returns, the sum of the 16-bit integer at 0x12
+</span><span>;; and the 16-bit integer at 0x14 ends up in 0x14-0x15.
+</span><span>CAB5  Jsr(Absolute) CDD1
+</span><span>
+</span><span>;; Copy the result of add16 into the return value address of this function.
+</span><span>;; This function will return the 16-bit integer returned by add16
+</span><span>CAB8  Lda(ZeroPage) 15
+</span><span>CABA  Sta(ZeroPage) 00
+</span><span>CABC  Lda(ZeroPage) 14
+</span><span>CABE  Sta(ZeroPage) 01
+</span><span>
+</span><span>;; Return.
+</span><span>CAC0  Rts(Implied)
+</span></code></pre>
+<p>Phew!</p>
+<p>Just what is going on here?</p>
+<p>The first hint is that <code>coord_x</code> is divided by 8. 8 happens to be the width and
+height of a
+sprite tile in pixels. Dividing the X pixel coordinate by 8 translates it into
+a tile coordinate. If X is being translated into tile space, it seems sensible
+to also translate the Y coordinate, but this Y coordinate translation is not so
+straightforward.</p>
+<p>The <code>And(Immediate) F8</code> instruction holds
+the key. This rounds the Y coordinate down to the next multiple of 8, which is
+equivalent to dividing Y by 8, rounding down, and then multiplying the result
+by 8. The result of this operation is then multiplied by 4 (left-shifting twice),
+so the final result for Y is <code>((coord_y / 8 ) * 8) * 4</code> = <code>(coord_y / 8) * 32</code> (assuming integer division).</p>
+<p>The second hint is that the NES video output is 256 pixels wide = 8 pixels per
+tile * 32 tiles. The width of the screen is 32 tiles.</p>
+<p>The rust code with the same intent as the above assembly would be:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// don&#39;t forget about the 0x2000 which is added to X after dividing by 8
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">MYSTERIOUS_OFFSET</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u16 = </span><span style="color:#0086b3;">0x2000</span><span>;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TILE_SIZE_PIXELS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">8</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SCREEN_WIDTH_TILES</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u16 = </span><span style="color:#0086b3;">32</span><span>;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">mystery</span><span>(pixel_coord_x: </span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>, pixel_coord_y: </span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">u16 </span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_coord_x </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(pixel_coord_x </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">TILE_SIZE_PIXELS</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u16</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_coord_y </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(pixel_coord_y </span><span style="font-weight:bold;color:#a71d5d;">/ </span><span style="color:#0086b3;">TILE_SIZE_PIXELS</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as u16</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> index </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> tile_coord_x </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(tile_coord_y </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">SCREEN_WIDTH_TILES</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> index </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">MYSTERIOUS_OFFSET</span><span>;
+</span><span>}
+</span></code></pre>
+<p>If we treat the 32x30 (NES video output is 240 pixels = 30 tiles high)
+tiles on the screen as a 1D array of tiles ordered
+left-to-right, then top-to-bottom, then this function computes the index of the
+tile containing Mario’s coordinate. And then it adds <code>0x2000</code>. How mysterious.</p>
+<p>When this function is called with Mario’s coordinates, the result is stored
+in <code>0x0520</code>-<code>0x0521</code>. Later in the frame, these addresses are read:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>CB87  Lda(AbsoluteXIndexed) 0520
+</span><span>CB8A  Sta(Absolute) 2006
+</span><span>CB8D  Inx(Implied)
+</span><span>CB8E  Lda(AbsoluteXIndexed) 0520
+</span><span>CB91  Sta(Absolute) 2006
+</span><span>CB94  Lda(Absolute) 2007
+</span><span>CB97  Lda(Absolute) 2007
+</span></code></pre>
+<p>The above code is run in a loop several times each frame. The addresses <code>0x2006</code> and <code>0x2007</code>
+contain Picture Processing Unit (PPU) registers. Thus, I assumed that this code is
+somehow related to rendering. Not collision detection. So I moved on to look
+elsewhere.</p>
+<h3 id="execution-trace-diffing"><a class="zola-anchor" href="#execution-trace-diffing" aria-label="Anchor link for: execution-trace-diffing">Execution Trace Diffing</a></h3>
+<p>What is the difference between a frame with a Mario collision, and a frame
+without? To get to the bottom of collision detection, I came up with an
+experiment to find out how execution differs between a frame where Mario
+collides with the ceiling, and a frame where he does not.</p>
+<p>I recorded a save
+state mid-jump, and instrumented my emulator to load the save and overwrite
+Mario’s X position with a specific value which won’t result in a collision.</p>
+<p>Notice how Mario teleports a few pixels to the left on the second frame.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="short-jump-no-collision.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>I ran this for a specific number of frames, and recorded an execution trace.
+Then I repeated the experiment with an X offset which would result in a
+collision.</p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="short-jump-collision.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>Equipped with a collision trace, and a non-collision trace, I could now compare
+the two. Since there’s a discrete difference in the program’s behaviour between
+the two traces, it stands to reason that there will be at least one branch
+instruction where one instance branches, and the other does not. The first such
+branch instruction will hopefully tell me something about how this game does
+collision detection.</p>
+<p>In addition to the instructions being executed, I also logged several other data
+which I thought would be useful, such as the value read by the <code>LDA</code> (load
+accumulator from memory) instruction.</p>
+<p>In these diffs, the black lines are in both traces, the “<strong><span style="color:red">-</span></strong>” (red) lines are only in the
+collision trace, and the “<strong><span style="color:green">+</span></strong>” (green) lines are only in the non-collision trace.</p>
+<p>As expected, during the first few frames where no collision occurs, the only difference
+was the result of the Mario X position being different between traces. The first
+difference in the diff snippet below is clearly an example of this, as the
+values <code>0xB2</code> and <code>0xB3</code> differ by 1.</p>
+<pre data-lang="patch" style="background-color:#ffffff;color:#323232;" class="language-patch "><code class="language-patch" data-lang="patch"><span style="font-weight:bold;font-style:italic;color:#969896;">@@ -40592,12 +40592,12 @@ LDA read value 22
+</span><span> CB8A  Sta(Absolute) 2006
+</span><span> CB8D  Inx(Implied) 
+</span><span> CB8E  Lda(AbsoluteXIndexed) 0520
+</span><span style="background-color:#ffecec;color:#323232;">-LDA read value B3
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">LDA read value B2
+</span><span> CB91  Sta(Absolute) 2006
+</span><span> CB94  Lda(Absolute) 2007
+</span><span> LDA read value 24
+</span><span> CB97  Lda(Absolute) 2007
+</span><span style="background-color:#ffecec;color:#323232;">-LDA read value 93
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">LDA read value 24
+</span><span> CB9A  Sta(AbsoluteXIndexed) 0520
+</span><span> CB9D  Inx(Implied) 
+</span><span> CB9E  Dey(Implied) 
+</span></code></pre>
+<p>The second difference is more interesting. <code>0x93</code> vs <code>0x24</code>? And look at those
+instruction addresses. We’ve been here before! This is the code that reads from
+the result of the mysterious index-computing function from the previous section.</p>
+<p>A bit further down the diff, we see the first instance of a branch instruction
+that is followed in one trace but not the other. The <code>CAC3 Bcc(Relative) 0E</code>
+instruction has this honour. This instruction, and the <code>Cmp</code> instruction which
+precedes it, compare the accumulator to the immediate value <code>0x92</code>, and branch if
+the accumulator is less than <code>0x92</code>. In the collision case (red), the branch was
+not followed. The preceding <code>LDA</code> indicates that in this case the accumulator
+contained 0x93. In the no-collision case (green) the branch was followed as the
+accumulator contained <code>0x24</code>.</p>
+<pre data-lang="patch" style="background-color:#ffffff;color:#323232;" class="language-patch "><code class="language-patch" data-lang="patch"><span style="font-weight:bold;font-style:italic;color:#969896;">@@ -41963,193 +41963,22 @@ LDA read value 1
+</span><span> C97F  And(Immediate) 0F
+</span><span> C981  Beq(Relative) 09
+</span><span> C983  Lda(ZeroPage) CB
+</span><span style="background-color:#ffecec;color:#323232;">-LDA read value 93
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">LDA read value 24
+</span><span> C985  Jsr(Absolute) CAC1
+</span><span> CAC1  Cmp(Immediate) 92
+</span><span> CAC3  Bcc(Relative) 0E
+</span><span style="background-color:#ffecec;color:#323232;">-CAC5  Cmp(Immediate) A0
+</span><span style="background-color:#ffecec;color:#323232;">-CAC7  Bcc(Relative) 07
+</span><span style="background-color:#ffecec;color:#323232;">-CAD0  Lda(Immediate) 01
+</span><span style="background-color:#ffecec;color:#323232;">-LDA read value 1
+</span><span style="background-color:#ffecec;color:#323232;">-CAD2  Rts(Implied) 
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">CAD3  Lda(Immediate) 00
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">LDA read value 0
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">CAD5  Rts(Implied) 
+</span><span> C988  Ora(Immediate) 00
+</span><span> C98A  Bne(Relative) 04
+</span></code></pre>
+<p>The values <code>0x24</code> and <code>0x93</code> have <em>something</em> to do with graphics, as they are read
+in the part of the program that interacts with the Picture Processing Unit
+(remember addresses <code>0x2006</code> and <code>0x2007</code> refer to PPU registers), and they probably
+have something to do with collision detection, as the first differing branch
+between the two traces was because of these two values.</p>
+<p>Let’s hazard a guess that these are indices of background tiles.</p>
+<p>Tile number <code>0x24</code>:</p>
+<div class="nes-tile">
+<img src="tile-24.png">
+</div>
+<p>That is an 8x8 square of black pixels, used for the empty space in the
+background.</p>
+<p>Can you guess what tile <code>0x93</code> is:</p>
+<div class="nes-tile">
+<img src="tile-93.png">
+</div>
+<p>A floor tile!</p>
+<p>All the other solid tiles have indices greater than <code>0x92</code> as well.
+The comparison with <code>0x92</code> is this game’s way of checking if an area of the screen
+is solid.</p>
+<p>Recall that the problem we’re trying to solve is that collision detection seems
+to be off some value. Let’s assume for a second that this value is 8 pixels, or
+1 tile. An off-by-one error in the function that computes the tile index seems
+like the obvious culprit, but I checked the arguments and return value of this
+function in my trace and it definitely was working as intended.</p>
+<h3 id="the-ppu-more-than-just-rendering"><a class="zola-anchor" href="#the-ppu-more-than-just-rendering" aria-label="Anchor link for: the-ppu-more-than-just-rendering">The PPU: More than just rendering!</a></h3>
+<p>The diff revealed something interesting going on in the code from earlier which
+I dismissed as related to rendering.
+Before diving back in, here’s all you need to know about the NES Picture
+Processing Unit.</p>
+<p>This code is interacting with 2 PPU registers, mapped to <code>0x2006</code> and <code>0x2007</code>.</p>
+<p><code>0x2006</code> refers to the “PPU Address” register. Not unlike modern computers, the
+NES had a dedicated memory attached to its graphics hardware. This video memory
+could not be addressed directly by the CPU. If the CPU wishes to read or write
+from video memory, it must write the low byte of the 2-byte video memory address to <code>0x2006</code>, and then
+write the high byte of the address to <code>0x2006</code>.</p>
+<p>Once the CPU has written both bytes of the address to <code>0x2006</code>, it can read or
+write <code>0x2007</code>, the “PPU Data” register, to access video memory at the specified
+address. The PPU keeps
+track of the “current” address being accessed, and increments this address after
+each access. Thus if you wished to write 16 consecutive bytes to video memory,
+you would first write the intended video memory address to <code>0x2006</code>, and then
+write to <code>0x2007</code> 16 times.</p>
+<p>Here’s the trace:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>;; Assume that the X index register is initially 0,
+</span><span>;; so the first 2 LDAs read from 0x520 and 0x521.
+</span><span>;; Also assume that 0x0520 contains the low byte of
+</span><span>;; the tile index computed by the mysterious function,
+</span><span>;; and 0x0521 contains the high byte.
+</span><span>
+</span><span>;; Write the low byte of the mysterious function output
+</span><span>;; to the PPU Address Register.
+</span><span>CB87  Lda(AbsoluteXIndexed) 0520
+</span><span>CB8A  Sta(Absolute) 2006
+</span><span>
+</span><span>;; Write the high byte of the mysterious function output
+</span><span>;; to the PPU Address Register.
+</span><span>CB8D  Inx(Implied)
+</span><span>CB8E  Lda(AbsoluteXIndexed) 0520
+</span><span>CB91  Sta(Absolute) 2006
+</span><span>
+</span><span>;; Load accumulator from PPU Data Register.
+</span><span>CB94  Lda(Absolute) 2007
+</span><span>
+</span><span>;; Load accumulator from PPU Data Register again.
+</span><span>;; The value loaded here is the one that later gets compared
+</span><span>;; with 0x92 to see if the tile is solid.
+</span><span>CB97  Lda(Absolute) 2007
+</span></code></pre>
+<p>This code takes the output of the mysterious index + offset function detailed
+above, and reads the byte from video memory at that address. It then discards
+this value, overwriting it with the byte read from the next video memory
+address. This second byte is then compared with <code>0x92</code> to check if a collision
+occurred.</p>
+<p>This explains what the mysterious offset, <code>0x2000</code>, is for. In the NES video
+memory layout, 0x2000 is the address of the start of the first “nametable” - an
+array of tile indices that specify the background tiles to render. The
+mysterious function computes an offset within this array, and then adds it to
+the video memory address of the start of the array.</p>
+<p>One mystery solved!</p>
+<p>This also explains how character/level collision detection worked in Mario Bros.
+To test if an area of the screen is solid, determine the tile currently rendered
+there by reading from video memory, and check if it’s one of the solid tiles. That’s why
+rendering the floor bulge animation resulted in a solid floor remaining in the
+game world. If you can see it, you can collide with it.</p>
+<p>The last two lines of the trace above (both <code>Lda(Absolute) 2007</code>) made me highly
+suspicious. The index computation seemed to be doing something sensible, and
+getting the correct result. The tile index read by the first of these two
+instructions should be the tile used for collision detection decisions. Why
+then, is the first-read value being discarded and replaced with the index of the tile one space to
+the right?</p>
+<p> 
+ </p>
+<p><em>Making an emulator for a 1980s game console is an exercise in reading and comprehension.</em></p>
+<p> 
+ </p>
+<p>An excerpt from the <a href="https://wiki.nesdev.com/w/index.php/PPU_registers#PPUDATA">nesdev wiki</a>
+that I overlooked when first reading about the PPU:</p>
+<p><em>When reading while the VRAM address is in the range 0-$3EFF (i.e., before the
+palettes), the read will return the contents of an internal read buffer. This
+internal buffer is updated only when reading PPUDATA, and so is preserved across
+frames. After the CPU reads and gets the contents of the internal buffer, the
+PPU will immediately update the internal buffer with the byte at the current
+VRAM address. <strong>Thus, after setting the VRAM address, one should first read this
+register and discard the result.</strong></em></p>
+<div class="nes-emulator-debugging-screenshot">
+<video autoplay muted loop>
+  <source src="working.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+</div>
+<p>Now that I’ve had my fun, I’m going to subject my emulator to a
+<a href="https://github.com/christopherpow/nes-test-roms">suite of test ROMs</a>
+to clean up any not-yet manifested bugs. There’s still a lot of work to do
+before my emulator is finished. At the moment there’s no sound, many PPU features are
+unimplemented, and only the most basic cartridges are supported.</p>
+<p>You can view the source code for my emulator <a href="https://gitlab.com/stevebob/mos6502/">here</a>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;wave-function-collapse&#x2F;" aria-label="Previous">
+	  Previous: Procedural Generation with Wave Function Collapse
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;zelda-screen-transitions-are-undefined-behaviour&#x2F;" aria-label="Next">
+	  Next: Zelda Screen Transitions are Undefined Behaviour
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

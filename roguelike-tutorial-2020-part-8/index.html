@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 8 - Items and Inventory">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-29T18:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/item-menu.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 8 - Items and Inventory
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-7&#x2F;" aria-label="Previous">
+	  Previous: Part 7 - User Interface
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-9&#x2F;" aria-label="Next">
+	  Next: Part 9 - Ranged Scrolls and Targeting
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 8 - Items and Inventory
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-29T18:00:00+10:00">
+    July 29, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll introduce items, and add an inventory menu.</p>
+<p>By the end of this part you’ll be able to pick up, use, and drop items.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/item-menu.png" alt="item-menu.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-8/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7-end">part-7-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#placing-health-potions">Placing Health Potions</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#adding-items-to-inventory">Adding Items to Inventory</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#using-and-dropping-items">Using and Dropping Items</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#event-routine-intro">Event Routine Intro</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#state-machine-management-with-event-routines">State Machine Management with Event Routines</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/#death-screen">Death Screen</a></li>
+</ul>
+<h2 id="placing-health-potions"><a class="zola-anchor" href="#placing-health-potions" aria-label="Anchor link for: placing-health-potions">Placing Health Potions</a></h2>
+<p>In a previous section we added a layer to the spatial grid for corpses.
+Generalize this into what we’ll call “objects”, which consist of corpses and items, which will be introduced in this part.
+The implication of this is that corpses and items cannot exist in the same game cell, which will simplify some gameplay logic.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>spatial_table::declare_layers_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    layers {
+</span><span>        floor: Floor,
+</span><span>        character: Character,
+</span><span>        object: Object,
+</span><span>        feature: Feature,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_die</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, entity: Entity) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(occpied_by_entity) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update_layer</span><span>(entity, Layer::Object)
+</span><span>            .</span><span style="color:#62a35c;">err</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">map</span><span>(|e| e.</span><span style="color:#62a35c;">unwrap_occupied_by</span><span>())
+</span><span>        {
+</span><span>            </span><span style="font-style:italic;color:#969896;">// If a character dies on a cell which contains an object, remove the existing object
+</span><span>            </span><span style="font-style:italic;color:#969896;">// from existence and replace it with the character&#39;s corpse.
+</span><span>            self.</span><span style="color:#62a35c;">remove_entity</span><span>(occpied_by_entity);
+</span><span>            self.spatial_table
+</span><span>                .</span><span style="color:#62a35c;">update_layer</span><span>(entity, Layer::Object)
+</span><span>                .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        game_state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; -</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Object) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">2</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Character) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">3</span><span>,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now make it possible to represent items, using health potions as our first item.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemType {
+</span><span>    HealthPotion,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ItemType {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">name</span><span>(self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;health potion&quot;</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>Tile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Item(ItemType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        item: ItemType,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord, item_type: ItemType) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> entity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entity_allocator.</span><span style="color:#62a35c;">alloc</span><span>();
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                entity,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Object),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.components.tile.</span><span style="color:#62a35c;">insert</span><span>(entity, Tile::Item(item_type));
+</span><span>        self.components.item.</span><span style="color:#62a35c;">insert</span><span>(entity, item_type);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Place health potions during terrain generation.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{ItemType, NpcType};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, PartialEq, Eq)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>TerrainTile {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    Item(ItemType),
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` health potions random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_health_potions</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Item(ItemType::HealthPotion));
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_POTIONS_PER_ROOM_DISTRIBUTION</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>] </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>[</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">2</span><span>];
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-style:italic;color:#969896;">// Add health potions to the room
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>num_health_potions </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">HEALTH_POTIONS_PER_ROOM_DISTRIBUTION</span><span>.</span><span style="color:#62a35c;">choose</span><span>(rng).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        room.</span><span style="color:#62a35c;">place_health_potions</span><span>(num_health_potions, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid, rng);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>terrain_tile) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> terrain.</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> terrain_tile {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                TerrainTile::Item(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_item</span><span>(coord, item_type);
+</span><span>                    self.</span><span style="color:#62a35c;">spawn_floor</span><span>(coord);
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Add rendering logic for health potions:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub const </span><span style="color:#0086b3;">HEALTH_POTION</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">255</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">255</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        Tile::Item(ItemType::HealthPotion) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;!&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(colours::</span><span style="color:#0086b3;">HEALTH_POTION</span><span>),
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Run the game. There should be health potions on the ground, but you won’t be able to pick them up or use them yet.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/health-potions.png" alt="health-potions.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.0">part-8.0</a></p>
+<h2 id="adding-items-to-inventory"><a class="zola-anchor" href="#adding-items-to-inventory" aria-label="Anchor link for: adding-items-to-inventory">Adding Items to Inventory</a></h2>
+<p>Define a data structure to represent the player’s inventory.
+The inventory has a finite number of slots, and each slot may contain an item.
+We’ll just store the entity (remember, just a numeric identifier) of items in
+inventory slots.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Inventory {
+</span><span>    slots: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>InventoryIsFull;
+</span><span>
+</span><span>#[derive(Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>InventorySlotIsEmpty;
+</span><span>
+</span><span>#[derive(Clone, Copy)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>ItemUsage {
+</span><span>    Immediate,
+</span><span>    Aim,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Inventory {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(capacity: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> slots </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>vec![</span><span style="color:#0086b3;">None</span><span>; capacity];
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ slots }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">slots</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[</span><span style="color:#0086b3;">Option</span><span>&lt;Entity&gt;] {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.slots
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">insert</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, item: Entity) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), InventoryIsFull&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(slot) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.slots.</span><span style="color:#62a35c;">iter_mut</span><span>().</span><span style="color:#62a35c;">find</span><span>(|s| s.</span><span style="color:#62a35c;">is_none</span><span>()) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>slot </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(item);
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(InventoryIsFull)
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">remove</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;Entity, InventorySlotIsEmpty&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(slot) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.slots.</span><span style="color:#62a35c;">get_mut</span><span>(index) {
+</span><span>            slot.</span><span style="color:#62a35c;">take</span><span>().</span><span style="color:#62a35c;">ok_or</span><span>(InventorySlotIsEmpty)
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(InventorySlotIsEmpty)
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">get</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;Entity, InventorySlotIsEmpty&gt; {
+</span><span>        self.slots
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(index)
+</span><span>            .</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">flatten</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">ok_or</span><span>(InventorySlotIsEmpty)
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Introduce an inventory component and give the player a 10-slot inventory.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>entity_table::declare_entity_module</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>    components {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        inventory: Inventory,
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">spawn_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord) -&gt; Entity {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.components.inventory.</span><span style="color:#62a35c;">insert</span><span>(entity, Inventory::new(</span><span style="color:#0086b3;">10</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Make it possible for the player to get the item they are standing on.
+Print inventory-related messages to the game’s message log.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_get_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(object_entity) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(coord).object {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>item_type) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.item.</span><span style="color:#62a35c;">get</span><span>(object_entity) {
+</span><span>                </span><span style="font-style:italic;color:#969896;">// this assumes that the only character that can get items is the player
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>                    .components
+</span><span>                    .inventory
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no inventory&quot;</span><span>);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> inventory.</span><span style="color:#62a35c;">insert</span><span>(object_entity).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                    self.spatial_table.</span><span style="color:#62a35c;">remove</span><span>(object_entity);
+</span><span>                    message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerGets(item_type));
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Ok</span><span>(());
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                    message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerInventoryIsFull);
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NoItemUnderPlayer);
+</span><span>        </span><span style="color:#0086b3;">Err</span><span>(())
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{HitPoints, ItemType, Location, NpcType, Populate, Tile, World};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    PlayerGets(ItemType),
+</span><span>    PlayerInventoryIsFull,
+</span><span>    NoItemUnderPlayer,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_get_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self
+</span><span>            .world
+</span><span>            .</span><span style="color:#62a35c;">maybe_get_item</span><span>(self.player_entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log)
+</span><span>            .</span><span style="color:#62a35c;">is_ok</span><span>()
+</span><span>        {
+</span><span>            self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                PlayerGets(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You get the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, item_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::item_colour(item_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                PlayerInventoryIsFull </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;Inventory is full!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NoItemUnderPlayer </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;Nothing to get!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_colour</span><span>(item_type: ItemType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">HEALTH_POTION</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Finally set up the controls such that pressing ‘g’ picks up the item under the player.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39;g&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_get_item</span><span>(),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            },
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now you can pick items but you can’t use them, drop them, or view your inventory.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/get-health-potion.png" alt="get-health-potion.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.1">part-8.1</a></p>
+<h2 id="using-and-dropping-items"><a class="zola-anchor" href="#using-and-dropping-items" aria-label="Anchor link for: using-and-dropping-items">Using and Dropping Items</a></h2>
+<p>Start by defining what it means to use and drop an item.
+In the interface for using and dropping items, items will be specified by inventory slot index
+rather than (say) by their <code>Entity</code>. This will simplify plugging this logic into the game’s ui
+later. While reading this, keep in mind that using or dropping an item can fail for a number
+of ways, and if an attempt to use or drop an item fails, we don’t want NPCs to take their turn
+afterwards.</p>
+<p>Also expose some getters and helper functions which will come in handy shortly.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_use_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .inventory
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> inventory.</span><span style="color:#62a35c;">remove</span><span>(inventory_index) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(item) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> item,
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(InventorySlotIsEmpty) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NoItemInInventorySlot);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>            }
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>item_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .item
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(item)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;non-item in inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> item_type {
+</span><span>            ItemType::HealthPotion </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> hit_points </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>                    .components
+</span><span>                    .hit_points
+</span><span>                    .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no hit points&quot;</span><span>);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_TO_HEAL</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">5</span><span>;
+</span><span>                hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> hit_points.max.</span><span style="color:#62a35c;">min</span><span>(hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">HEALTH_TO_HEAL</span><span>);
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerHeals);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_drop_item</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character: Entity,
+</span><span>        inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(coord).object.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>            message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NoSpaceToDropItem);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .inventory
+</span><span>            .</span><span style="color:#62a35c;">get_mut</span><span>(character)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no inventory&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> inventory.</span><span style="color:#62a35c;">remove</span><span>(inventory_index) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(item) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> item,
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(InventorySlotIsEmpty) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NoItemInInventorySlot);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Err</span><span>(());
+</span><span>            }
+</span><span>        };
+</span><span>        self.spatial_table
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(
+</span><span>                item,
+</span><span>                Location {
+</span><span>                    coord,
+</span><span>                    layer: </span><span style="color:#0086b3;">Some</span><span>(Layer::Object),
+</span><span>                },
+</span><span>            )
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>item_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .components
+</span><span>            .item
+</span><span>            .</span><span style="color:#62a35c;">get</span><span>(item)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;non-item in inventory&quot;</span><span>);
+</span><span>        message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerDrops(item_type));
+</span><span>        </span><span style="color:#0086b3;">Ok</span><span>(())
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">inventory</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Inventory&gt; {
+</span><span>        self.components.inventory.</span><span style="color:#62a35c;">get</span><span>(entity)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_type</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ItemType&gt; {
+</span><span>        self.components.item.</span><span style="color:#62a35c;">get</span><span>(entity).</span><span style="color:#62a35c;">cloned</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    NoItemInInventorySlot,
+</span><span>    PlayerHeals,
+</span><span>    PlayerDrops(ItemType),
+</span><span>    NoSpaceToDropItem,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_use_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> result </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            self.world
+</span><span>                .</span><span style="color:#62a35c;">maybe_use_item</span><span>(self.player_entity, inventory_index, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> result.</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>            self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>        }
+</span><span>        result
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_player_drop_item</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, inventory_index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;(), ()&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> result </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            self.world
+</span><span>                .</span><span style="color:#62a35c;">maybe_drop_item</span><span>(self.player_entity, inventory_index, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> result.</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>            self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>        }
+</span><span>        result
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_inventory</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Inventory {
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">inventory</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no inventory&quot;</span><span>)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">item_type</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, entity: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ItemType&gt; {
+</span><span>        self.world.</span><span style="color:#62a35c;">item_type</span><span>(entity)
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">size</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Size {
+</span><span>        self.world.</span><span style="color:#62a35c;">size</span><span>()
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                NoItemInInventorySlot </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;No item in inventory slot!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                PlayerHeals </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You feel slightly better.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">0</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">187</span><span>, </span><span style="color:#0086b3;">0</span><span>));
+</span><span>                }
+</span><span>                PlayerDrops(item_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You drop the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, item_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::item_colour(item_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NoSpaceToDropItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;No space to drop item!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Unlike all the actions players can currently take, using and dropping items won’t be done with a single key press.
+Instead, pressing a key will display a <em>menu</em>, from which the player can select the item they’d like to use or drop.</p>
+<p>Here’s how it will look when it’s finished.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/item-menu.png" alt="item-menu.png" /></p>
+<p>The <code>chargrid</code> library comes with some tools for working with menus, and rendering UI elements in general.
+We’ve already seen some of this in the health bar and message log.</p>
+<p>Update the <code>AppData</code> type to include a menu:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    app::{App </span><span style="font-weight:bold;color:#a71d5d;">as</span><span> ChargridApp, ControlFlow},
+</span><span>    input::{keys, Input, KeyboardInput},
+</span><span>    menu::{MenuInstanceBuilder, MenuInstanceChooseOrEscape},
+</span><span>    render::{ColModify, Frame, ViewCell, ViewContext},
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::collections::HashMap;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>InventorySlotMenuEntry {
+</span><span>    index: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, </span><span style="font-style:italic;color:#969896;">// the index of the inventory slot
+</span><span>    key: </span><span style="font-weight:bold;color:#a71d5d;">char</span><span>,    </span><span style="font-style:italic;color:#969896;">// a character corresponding to the slot so players can select with a key
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    inventory_slot_menu: MenuInstanceChooseOrEscape&lt;InventorySlotMenuEntry&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> inventory_slot_menu </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> items </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>player_inventory.</span><span style="color:#62a35c;">slots</span><span>().</span><span style="color:#62a35c;">len</span><span>())
+</span><span>                .</span><span style="color:#62a35c;">zip</span><span>(</span><span style="color:#183691;">&#39;a&#39;</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>)
+</span><span>                .</span><span style="color:#62a35c;">map</span><span>(|(index, key)| InventorySlotMenuEntry { index, key })
+</span><span>                .collect::&lt;</span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;&gt;();
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> hotkeys </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> items
+</span><span>                .</span><span style="color:#62a35c;">iter</span><span>()
+</span><span>                .</span><span style="color:#62a35c;">map</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>entry| (entry.key, entry))
+</span><span>                .collect::&lt;HashMap&lt;</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>&gt;&gt;();
+</span><span>            MenuInstanceBuilder {
+</span><span>                items,
+</span><span>                hotkeys: </span><span style="color:#0086b3;">Some</span><span>(hotkeys),
+</span><span>                selected_index: </span><span style="color:#0086b3;">0</span><span>,
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">build</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">into_choose_or_escape</span><span>()
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            inventory_slot_menu,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>The menu types defined in <code>chargrid</code> can be <code>ticked</code> - fed input events, which updates their internal state,
+and possibly resolves them to a selected value or an explicit cancellation.
+Menus can be controlled by the arrow keys, the mouse, and by an optional list of hotkeys, as is done here so players
+can use letter keys to make selections from the menu (a tradition in roguelike games!).</p>
+<p>A <code>MenuInstanceChooseOrEscape&lt;T&gt;</code> is a menu which can be used to select a value of type <code>T</code> that is cancelled when the
+escape key is pressed.
+At the moment pressing the escape key quits the entire game, but if the inventory is open we’d like for it to close
+the inventory instead. Update <code>impl ChargridApp for App</code> to pass escape keys into <code>AppData::handle_input</code> and let
+that function decide whether to quit the game.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ChargridApp </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">on_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ControlFlow&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(keys::</span><span style="color:#0086b3;">ETX</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(ControlFlow::Exit),
+</span><span>            other </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.data.</span><span style="color:#62a35c;">handle_input</span><span>(other, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.view),
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Note that this change requires <code>AppData::handle_input</code> to return a <code>Option&lt;ControlFlow&gt;</code>. For now it can just return <code>None</code> to get
+the code to compile.</p>
+<p>The meaning of key presses is different depending on whether a menu is open, and we need a way of determining whether
+an input event should go to the game state or a menu.</p>
+<p>Add a new field to <code>AppData</code> for tracking the state of the application.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>AppStateMenu {
+</span><span>    UseItem,
+</span><span>    DropItem,
+</span><span>}
+</span><span>
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>AppState {
+</span><span>    Game,
+</span><span>    Menu(AppStateMenu),
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    app_state: AppState,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            app_state: AppState::Game,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now update <code>AppData::handle_input</code> to operate as before if the <code>app_state</code> is <code>Game</code>, and otherwise tick the menu.
+Also add the ‘i’ and ‘d’ controls for opening the use and drop item menus respectively.</p>
+<p>The logic for having the escape key quit the game is now in this function as well.</p>
+<p>Note the code for ticking the menu includes handlers for what happens when a selection is made which call the
+<code>maybe_player_use_item</code> and <code>maybe_player_drop_item</code> defined earlier.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input, view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AppView) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;ControlFlow&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>self.game_state.</span><span style="color:#62a35c;">is_player_alive</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">None</span><span>;
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self.app_state {
+</span><span>            AppState::Game </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> input {
+</span><span>                Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                    KeyboardInput::Left </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::West)
+</span><span>                    }
+</span><span>                    KeyboardInput::Right </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::East)
+</span><span>                    }
+</span><span>                    KeyboardInput::Up </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::North)
+</span><span>                    }
+</span><span>                    KeyboardInput::Down </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::South)
+</span><span>                    }
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39; &#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">wait_player</span><span>(),
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;g&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_get_item</span><span>(),
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;i&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.app_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppState::Menu(AppStateMenu::UseItem)
+</span><span>                    }
+</span><span>                    KeyboardInput::Char(</span><span style="color:#183691;">&#39;d&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        self.app_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppState::Menu(AppStateMenu::DropItem)
+</span><span>                    }
+</span><span>                    keys::</span><span style="color:#0086b3;">ESCAPE </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(ControlFlow::Exit),
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>                },
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>            },
+</span><span>            AppState::Menu(menu) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match </span><span>self
+</span><span>                .inventory_slot_menu
+</span><span>                .</span><span style="color:#62a35c;">choose</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>view.inventory_slot_menu_view, input)
+</span><span>            {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(</span><span style="color:#0086b3;">Err</span><span>(menu::Escape)) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.app_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppState::Game,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(</span><span style="color:#0086b3;">Ok</span><span>(entry)) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> menu {
+</span><span>                    AppStateMenu::UseItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_use_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                            self.app_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppState::Game;
+</span><span>                        }
+</span><span>                    }
+</span><span>                    AppStateMenu::DropItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_drop_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                            self.app_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppState::Game;
+</span><span>                        }
+</span><span>                    }
+</span><span>                },
+</span><span>            },
+</span><span>        }
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(self.visibility_algorithm);
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now we need to define how a menu will be <em>rendered</em>.
+Chargrid doesn’t prescribe how a menu should be rendered, but does provide some helper functions for
+defining menu rendering logic. It’s fairly easy to write a basic menu renderer,
+but the api doesn’t get in your way if you want to write something more complex.</p>
+<p>Just for fun, let’s make this menu complex. Entries will be coloured based on the <code>colours::item_colour</code> function
+defined in a previous section. The selected entry will be bold, of a brighter colour, and be annotated with a “&gt;”.</p>
+<p>The logic for rendering the menu is split into 2 parts - the list of menu items, and a <em>decorator</em> which adds
+a border and a title, and centres the menu on the screen.</p>
+<p>Finally, we’ll use the <code>ColModify</code> trait to modify the colour of the game area, dimming it while the menu is visible.</p>
+<p>Here’s the code for rendering the menu items:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    app::{App </span><span style="font-weight:bold;color:#a71d5d;">as</span><span> ChargridApp, ControlFlow},
+</span><span>    input::{keys, Input, KeyboardInput},
+</span><span>    menu::{
+</span><span>        self, MenuIndexFromScreenCoord, MenuInstanceBuilder, MenuInstanceChoose,
+</span><span>        MenuInstanceChooseOrEscape, MenuInstanceMouseTracker,
+</span><span>    },
+</span><span>    render::{ColModify, ColModifyMap, Frame, Style, View, ViewCell, ViewContext},
+</span><span>    text::{RichTextPart, RichTextViewSingleLine},
+</span><span>};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>InventorySlotMenuView {
+</span><span>    mouse_tracker: MenuInstanceMouseTracker,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>MenuIndexFromScreenCoord </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">menu_index_from_screen_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, len: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, coord: Coord) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>&gt; {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">menu_index_from_screen_coord</span><span>(len, coord)
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_inventory_slots </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_inventory</span><span>().</span><span style="color:#62a35c;">slots</span><span>();
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">new_frame</span><span>(context.offset);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>((i, entry, maybe_selected), </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>slot) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data
+</span><span>            .inventory_slot_menu
+</span><span>            .</span><span style="color:#62a35c;">menu_instance</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">enumerate</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">zip</span><span>(player_inventory_slots.</span><span style="color:#62a35c;">into_iter</span><span>())
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(name, name_colour) </span><span style="font-weight:bold;color:#a71d5d;">= if let </span><span style="color:#0086b3;">Some</span><span>(item_entity) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> slot {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item_type </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data
+</span><span>                    .game_state
+</span><span>                    .</span><span style="color:#62a35c;">item_type</span><span>(item_entity)
+</span><span>                    .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;non-item in player inventory&quot;</span><span>);
+</span><span>                (item_type.</span><span style="color:#62a35c;">name</span><span>(), colours::item_colour(item_type))
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                (</span><span style="color:#183691;">&quot;-&quot;</span><span>, Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>))
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(selected_prefix, prefix_style, name_style) </span><span style="font-weight:bold;color:#a71d5d;">= if</span><span> maybe_selected.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                (
+</span><span>                    </span><span style="color:#183691;">&quot;&gt;&quot;</span><span>,
+</span><span>                    Style::new()
+</span><span>                        .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>))
+</span><span>                        .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>),
+</span><span>                    Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(name_colour).</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>),
+</span><span>                )
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                (
+</span><span>                    </span><span style="color:#183691;">&quot; &quot;</span><span>,
+</span><span>                    Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)),
+</span><span>                    Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(name_colour.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(</span><span style="color:#0086b3;">2</span><span>, </span><span style="color:#0086b3;">3</span><span>)),
+</span><span>                )
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> prefix </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>format!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{} {}</span><span style="color:#183691;">) &quot;</span><span>, selected_prefix, entry.key);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> text </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>[
+</span><span>                RichTextPart {
+</span><span>                    text: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>prefix,
+</span><span>                    style: prefix_style,
+</span><span>                },
+</span><span>                RichTextPart {
+</span><span>                    text: name,
+</span><span>                    style: name_style,
+</span><span>                },
+</span><span>            ];
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> size </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>RichTextViewSingleLine::new().</span><span style="color:#62a35c;">view_size</span><span>(
+</span><span>                text.</span><span style="color:#62a35c;">into_iter</span><span>().</span><span style="color:#62a35c;">cloned</span><span>(),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>)),
+</span><span>                frame,
+</span><span>            );
+</span><span>            self.mouse_tracker.</span><span style="color:#62a35c;">on_entry_view_size</span><span>(size);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Of note here is the <code>MenuIndexFromScreenCoord</code> trait which is implemented by <code>InventorySlotMenuView</code>.
+In order to support selecting from the menu with the mouse, the menu needs to know its absolute
+position on the screen so it can be compared with the mouse position.
+The <code>MenuInstanceMouseTracker</code> is a helper type which simplifies implementing this trait.</p>
+<p>Add an <code>InventorySlotMenuView</code> to <code>AppView</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {
+</span><span>    ...
+</span><span>    inventory_slot_menu_view: InventorySlotMenuView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            inventory_slot_menu_view: InventorySlotMenuView::default(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Now update the implementation of <code>View</code> for <code>AppView</code> to use a decorated version of this new view,
+and dim the game area while the menu is visible. We’ll use a type <code>chargrid::render::ColModifyMap</code> to
+apply a function to colours selected in the game rendering logic.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    decorator::{
+</span><span>        AlignView, Alignment, BorderStyle, BorderView, BoundView, FillBackgroundView, MinSizeView,
+</span><span>    },
+</span><span>    render::{ColModify, ColModifyMap, Frame, Style, View, ViewCell, ViewContext},
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">col_modify_dim</span><span>(num: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>, denom: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; impl ColModify {
+</span><span>            ColModifyMap(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>col: Rgb24</span><span style="font-weight:bold;color:#a71d5d;">|</span><span> col.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(num, denom))
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> game_col_modify </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> data.app_state {
+</span><span>            AppState::Game </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#62a35c;">col_modify_dim</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>            AppState::Menu(menu) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> title_text </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> menu {
+</span><span>                    AppStateMenu::UseItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Use Item&quot;</span><span>,
+</span><span>                    AppStateMenu::DropItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;Drop Item&quot;</span><span>,
+</span><span>                };
+</span><span>                BoundView {
+</span><span>                    size: data.game_state.</span><span style="color:#62a35c;">size</span><span>(),
+</span><span>                    view: AlignView {
+</span><span>                        alignment: Alignment::centre(),
+</span><span>                        view: FillBackgroundView {
+</span><span>                            rgb24: Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            view: BorderView {
+</span><span>                                style: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>BorderStyle {
+</span><span>                                    title: </span><span style="color:#0086b3;">Some</span><span>(title_text.</span><span style="color:#62a35c;">to_string</span><span>()),
+</span><span>                                    title_style: Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                                    </span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">Default</span><span>::default()
+</span><span>                                },
+</span><span>                                view: MinSizeView {
+</span><span>                                    size: Size::new(</span><span style="color:#0086b3;">12</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                                    view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.inventory_slot_menu_view,
+</span><span>                                },
+</span><span>                            },
+</span><span>                        },
+</span><span>                    },
+</span><span>                }
+</span><span>                .</span><span style="color:#62a35c;">view</span><span>(data, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">10</span><span>), frame);
+</span><span>                </span><span style="color:#62a35c;">col_modify_dim</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>)
+</span><span>            }
+</span><span>        };
+</span><span>        self.game_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state,
+</span><span>            context.</span><span style="color:#62a35c;">compose_col_modify</span><span>(game_col_modify),
+</span><span>            frame,
+</span><span>        );
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_hit_points </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_hit_points</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> messages </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">message_log</span><span>();
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData {
+</span><span>                player_hit_points,
+</span><span>                messages,
+</span><span>            },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>It’s now possible to view, use, and drop items from your inventory.
+Here’s what it looks like when you use a health potion.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/use-health-potion.png" alt="use-health-potion.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.2">part-8.2</a></p>
+<h2 id="event-routine-intro"><a class="zola-anchor" href="#event-routine-intro" aria-label="Anchor link for: event-routine-intro">Event Routine Intro</a></h2>
+<p>In the previous section we introduced an <code>AppState</code> type which keeps track of whether a menu is open.
+Chargrid apps must be event-driven, so while a menu is displayed, each input must be routed to the correct place
+Based on the state of the game. Also note that depending on the state of the application, rendering logic must
+behave differently. For a game of this scale, we can manage the app state reasonably well using our
+<code>app_state</code> flag, but as the game grow, keeping track of input routing and app state can become painful.</p>
+<p>Chargrid contains a module <code>chargrid::event_routine</code>, which is an attempt to simplify the management of state machines
+where input routing and rendering is dependent on the application state. For a motivating example, consider menus.
+In the explicitly event-driven code we just wrote, each input must be explicitly handed to the menu, and then we must
+check whether the menu declares that a selection has been made. It would be nice if we could call a function that
+blocked until a selection is made, and then the function just returns the selection. Then we could call this function
+directly from (say) the <code>i</code> key handler, and process the “use item” command then and there. Blocking isn’t possible in
+this context, but we can do something “kind of like blocking” that gives us some of the convenience while remaining
+fully event-driven.</p>
+<p>At the core of <code>chargrid::event_routine</code> is the <code>EventRoutine</code> trait. Implementations of <code>EventRoutine</code> know
+render themselves and  handle events. While handling an event, an <code>EventRoutine</code> may complete and “return”
+a value.</p>
+<p>Chargrid comes with <code>EventRoutine</code> definitions for menus which tick the menu as events come in, and return
+the selected value when a selection is made. <code>EventRoutine</code>s have several combinators defined which allow
+them to be composed with other computations or other <code>EventRoutine</code>s.</p>
+<p>The idea of <code>EventRoutine</code>s is very similar to that of <a href="https://doc.rust-lang.org/stable/std/future/trait.Future.html"><code>Future</code>s</a>
+in that they are asynchronous, composable values which represent a computation.</p>
+<p>This section will show very basic usage of <code>EventRoutine</code> - wrapping up all our event-driven logic inside a giant <code>EventRoutine</code>.
+The next section will pull apart the existing event-driven explicit state machine, and replace parts of it with smaller <code>EventRoutine</code>s
+which are composed to form the application.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    app::App </span><span style="font-weight:bold;color:#a71d5d;">as</span><span> ChargridApp,
+</span><span>    event_routine::{self, common_event::CommonEvent, EventOrPeek, EventRoutine, Handled},
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Stop depending on <code>std::time::Duration</code> and <code>chargrid::app::ControlFlow</code>.</p>
+<p>Instead of using <code>ControlFlow::Exit</code>, define our own <code>Exit</code> unit type.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Exit;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input, view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AppView) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;Exit&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match </span><span>self.app_state {
+</span><span>            AppState::Game </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> input {
+</span><span>                Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    keys::</span><span style="color:#0086b3;">ESCAPE </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(Exit),
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Remove the <code>App</code> type, and replace it with another unit type <code>AppEventRoutine</code>, which
+implements <code>EventRoutine</code>. This type will wrap all our existing logic in a giant <code>EventRoutine</code>.
+We’ll totally replace <code>AppEventRoutine</code> in the next section with the composition of several simpler
+<code>EventRoutine</code>s. It’s a temporary measure to make the transition to <code>EventRoutine</code>s more gentle.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppEventroutine;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>EventRoutine </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppEventroutine {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Return </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>();
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Event </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CommonEvent;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle</span><span>&lt;EP&gt;(
+</span><span>        self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>Data,
+</span><span>        view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>View,
+</span><span>        event_or_peek: EP,
+</span><span>    ) -&gt; Handled&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Return, </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        EP: EventOrPeek&lt;Event = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Event&gt;,
+</span><span>    {
+</span><span>        event_routine::event_or_peek_with_handled(event_or_peek, self, |s, event| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> event {
+</span><span>            CommonEvent::Input(input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> data.</span><span style="color:#62a35c;">handle_input</span><span>(input, view) {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Handled::Continue(s),
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Exit) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Handled::Return(()),
+</span><span>            },
+</span><span>            CommonEvent::Frame(</span><span style="font-weight:bold;color:#a71d5d;">_</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Handled::Continue(s),
+</span><span>        })
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>View,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        view.</span><span style="color:#62a35c;">view</span><span>(data, context, frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The logic in <code>impl EventRoutine for AppEventroutine</code> is very similar to what used to be in <code>impl ChargridApp for App</code>,
+just with a little more boilerplate.</p>
+<p>Note the 4 associated types of the <code>EventRoutine</code> trait:</p>
+<ul>
+<li><code>Return</code>: when the <code>EventRoutine</code> completes, this is the type of the value it “returns”</li>
+<li><code>Data</code>: type of external mutable data which the event routine may modify when it handles events.
+Roughly corresponds to the type parameter of the <code>chargrid::render::View</code> trait.</li>
+<li><code>View</code>: type of data necessary to render <code>Data</code>. This will often be an implementation of <code>chargrid::render::View&lt;&amp;Data&gt;</code>.</li>
+<li><code>Event</code>: type of event that the <code>EventRoutine</code> can handle.
+This will often be <code>chargrid::event_routine::common_event::CommonEvent</code> which is an <code>enum</code> of <code>chargrid::input::Input</code> and `std::time::Duration-
+to represent user input or an animation frame (to allow realtime animations).</li>
+</ul>
+<p>Add a function <code>game_loop</code> which returns an <code>AppEventRoutine</code>.
+Note the <code>return_on_exit</code> combinator which causes the event return to complete when the application is exited (e.g. by closing its window).
+Its argument is a function that will be called when the application is closed. For now this will do nothing.
+In the next section, we’ll replace the body of this function with a composition of several <code>EventRoutine</code>s.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    AppEventroutine.</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Finally, define a public function <code>app</code> which instantiates <code>AppData</code> and <code>AppView</code>, and calls <code>game_loop</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">app</span><span>(
+</span><span>    screen_size: Size,
+</span><span>    rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>    visibility_algorithm: VisibilityAlgorithm,
+</span><span>) -&gt; impl ChargridApp {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> data </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppData::new(screen_size, rng_seed, visibility_algorithm);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AppView::new(screen_size);
+</span><span>    </span><span style="color:#62a35c;">game_loop</span><span>().</span><span style="color:#62a35c;">app_one_shot_ignore_return</span><span>(data, view)
+</span><span>}
+</span></code></pre>
+<p>Note the <code>app_one_shot_ignore_return</code> method which converts <code>EventRoutine</code>s into <code>ChargridApp</code>s.</p>
+<p>Update <code>main.rs</code> to call the new <code>app</code> function:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// main.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>app::app;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span>() {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">app</span><span>(screen_size, rng_seed, visibility_algorithm);
+</span><span>    context.</span><span style="color:#62a35c;">run_app</span><span>(app);
+</span><span>}
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.3">part-8.3</a></p>
+<h2 id="state-machine-management-with-event-routines"><a class="zola-anchor" href="#state-machine-management-with-event-routines" aria-label="Anchor link for: state-machine-management-with-event-routines">State Machine Management with Event Routines</a></h2>
+<p>This section is a major refactor of <code>app.rs</code> to use <code>EventRoutine</code>s.</p>
+<p>Grab some more dependencies from <code>chargrid::event_routine</code> and <code>chargrid::menu</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    event_routine::{
+</span><span>        self, common_event::CommonEvent, make_either, DataSelector, Decorate, EventOrPeek,
+</span><span>        EventRoutine, EventRoutineView, Handled, Loop, SideEffect, Value, ViewSelector,
+</span><span>    },
+</span><span>    menu::{
+</span><span>        self, ChooseSelector, MenuIndexFromScreenCoord, MenuInstanceBuilder, MenuInstanceChoose,
+</span><span>        MenuInstanceChooseOrEscape, MenuInstanceMouseTracker, MenuInstanceRoutine,
+</span><span>    },
+</span><span>};
+</span></code></pre>
+<p>It will turn out convenient to move the ui-rendering logic into a method of <code>AppView</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">render_ui</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_hit_points </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_hit_points</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> messages </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">message_log</span><span>();
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData {
+</span><span>                player_hit_points,
+</span><span>                messages,
+</span><span>            },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Define a unit type <code>InventorySlotMenuSelect</code> and implement the traits <code>ChooseSelector</code>, <code>DataSelector</code> and <code>ViewSelector</code>.
+We’re going to use <code>chargrid::menu</code>’s built-in <code>EventRoutine</code> for menus, and it needs to be told for a given <code>Data</code> and <code>View</code>
+(<code>EventRoutine</code>’s associated types - in this case <code>AppData</code> and <code>AppView</code>), select a field containing the menu to display (<code>ChooseSelector</code>),
+the data to use when rendering the menu (<code>DataSelector</code>) and the view to use when rendering the menu (<code>ViewSelector</code>).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>InventorySlotMenuSelect;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ChooseSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ChooseOutput </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>MenuInstanceChooseOrEscape&lt;InventorySlotMenuEntry&gt;;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ChooseOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.inventory_slot_menu
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>DataSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ViewSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> InventorySlotMenuView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>input.inventory_slot_menu_view
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.inventory_slot_menu_view
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now define a decorator for the menu. Previously it was decorated inside <code>impl&lt;'a&gt; View&lt;&amp;'a AppData&gt; for AppView</code>,
+but since the menu will now be handled by an <code>EventRoutine</code> we need to implement the <code>chargrid::event_routine::Decorator</code> trait.
+This code is largely cut’n’pasted from <code>impl&lt;'a&gt; View&lt;&amp;'a AppData&gt; for AppView</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>InventorySlotMenuDecorate&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    title: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a str</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; Decorate </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>InventorySlotMenuDecorate&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;E, F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">mut </span><span>event_routine_view: EventRoutineView&lt;E&gt;,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        E: EventRoutine&lt;Data = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Data, View = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>View&gt;,
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        BoundView {
+</span><span>            size: data.game_state.</span><span style="color:#62a35c;">size</span><span>(),
+</span><span>            view: AlignView {
+</span><span>                alignment: Alignment::centre(),
+</span><span>                view: FillBackgroundView {
+</span><span>                    rgb24: Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>),
+</span><span>                    view: BorderView {
+</span><span>                        style: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>BorderStyle {
+</span><span>                            title: </span><span style="color:#0086b3;">Some</span><span>(self.title.</span><span style="color:#62a35c;">to_string</span><span>()),
+</span><span>                            title_style: Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">Default</span><span>::default()
+</span><span>                        },
+</span><span>                        view: MinSizeView {
+</span><span>                            size: Size::new(</span><span style="color:#0086b3;">12</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> event_routine_view,
+</span><span>                        },
+</span><span>                    },
+</span><span>                },
+</span><span>            },
+</span><span>        }
+</span><span>        .</span><span style="color:#62a35c;">view</span><span>(data, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">10</span><span>), frame);
+</span><span>        event_routine_view.view.game_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state,
+</span><span>            context.</span><span style="color:#62a35c;">compose_col_modify</span><span>(ColModifyMap(|c: Rgb24| c.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>))),
+</span><span>            frame,
+</span><span>        );
+</span><span>        event_routine_view.view.</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note that the title displayed in the border is now in a field of the <code>InventorySlotMenuDecorate</code> type.</p>
+<p>The point of the <code>Decorate</code> trait is to take the rendering logic from an <code>EventRoutine</code> (encapsulated as the <code>event_routine_view</code> argument)
+and decorate it using existing decorator logic from <code>chargrid::decorators</code>, or custom logic that you define yourself.
+This works because the <code>EventRoutineView</code> type implements <code>chargrid::render::View</code>.</p>
+<p>Now define a function which creates the menu event routine. It will take the title of the inventory menu as an argument,
+and run until the user makes a choice or explicitly cancels returning a <code>Result</code> of either the user’s choice, or <code>menu::Escape</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">inventory_slot_menu</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(
+</span><span>    title: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a str</span><span>,
+</span><span>) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a
+</span><span>       </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>EventRoutine&lt;
+</span><span>    Return = </span><span style="color:#0086b3;">Result</span><span>&lt;InventorySlotMenuEntry, menu::Escape&gt;,
+</span><span>    Data = AppData,
+</span><span>    View = AppView,
+</span><span>    Event = CommonEvent,
+</span><span>&gt; {
+</span><span>    MenuInstanceRoutine::new(InventorySlotMenuSelect)
+</span><span>        .</span><span style="color:#62a35c;">convert_input_to_common_event</span><span>()
+</span><span>        .</span><span style="color:#62a35c;">decorated</span><span>(InventorySlotMenuDecorate { title })
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>The <code>convert_input_to_common_event</code> converts an <code>EventRoutine</code> which expects only <code>chargrid::input::Input</code> as its events (the menu event routine)
+into an <code>EventRoutine</code> which expects <code>CommonEvents</code> which can also include animation frames. These animation frame events will be ignored by the
+resulting <code>EventRoutine</code>, but it’s needed to make the types line up.</p>
+<p>The <code>decorate</code> method applies the decorator we defined above, creating a new <code>EventRoutine</code> which behaves the same, but is rendered differently.</p>
+<p>Add a unit type <code>GameEventRoutine</code> which represents the game running normally (with no menus open) where the player controls the player character
+and the game area and ui are rendered. Implement <code>EventRoutine</code> for this type.</p>
+<p>Also define a type <code>GameReturn</code> which enumerates all the conditions under which normal gameplay can be interrupted.</p>
+<p>A <code>GameEventRoutine</code> will run until normal gameplay is interrupted.
+Then, depending on the nature of interruption (as indicated by the returned <code>GameReturn</code>), some action will be taken
+and then <code>GameEventRoutine</code> will be invoked again. This continues in a loop until an <code>Exit</code> or <code>GameOver</code> are returned,
+in which case the program will terminate.
+The game’s state is stored in a field of <code>AppData</code> (as before),
+so it will persist across invocations of <code>GameEventRoutine</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>GameEventRoutine;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>GameReturn {
+</span><span>    Exit,
+</span><span>    UseItem,
+</span><span>    DropItem,
+</span><span>    GameOver,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>EventRoutine </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameEventRoutine {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Return </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> GameReturn;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Event </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CommonEvent;
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle</span><span>&lt;EP&gt;(
+</span><span>        self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>Data,
+</span><span>        _view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>View,
+</span><span>        event_or_peek: EP,
+</span><span>    ) -&gt; Handled&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Return, </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>&gt;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        EP: EventOrPeek&lt;Event = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Event&gt;,
+</span><span>    {
+</span><span>        event_routine::event_or_peek_with_handled(event_or_peek, self, |s, event| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> event {
+</span><span>            CommonEvent::Input(input) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(game_return) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.</span><span style="color:#62a35c;">handle_input</span><span>(input) {
+</span><span>                    Handled::Return(game_return)
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                    Handled::Continue(s)
+</span><span>                }
+</span><span>            }
+</span><span>            CommonEvent::Frame(_period) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Handled::Continue(s),
+</span><span>        })
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut Self::</span><span>View,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        view.game_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state, context, frame);
+</span><span>        view.</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>In the above code, input events are forwarded to <code>AppData::handle_input</code>.
+Previously, this method handled both game inputs and menu inputs.
+Now that menus will be handled by an <code>EventRoutine</code>, we can simplify <code>AppData::handle_input</code> to only be concerned with game inputs.
+Remove the <code>AppState</code> type and <code>app_state</code> field of <code>AppData</code>. Instead of setting the <code>app_state</code> field to the appropriate menu,
+when the ‘i’ or ‘d’ keys are pressed, return a <code>GameReturn</code> indicating which menu to switch to.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    game_state: GameState,
+</span><span>    visibility_algorithm: VisibilityAlgorithm,
+</span><span>    inventory_slot_menu: MenuInstanceChooseOrEscape&lt;InventorySlotMenuEntry&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>self.game_state.</span><span style="color:#62a35c;">is_player_alive</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::GameOver);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; match</span><span> key {
+</span><span>                KeyboardInput::Left </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::West),
+</span><span>                KeyboardInput::Right </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::East),
+</span><span>                KeyboardInput::Up </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::North),
+</span><span>                KeyboardInput::Down </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_move_player</span><span>(CardinalDirection::South),
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39; &#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">wait_player</span><span>(),
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39;g&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>self.game_state.</span><span style="color:#62a35c;">maybe_player_get_item</span><span>(),
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39;i&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::UseItem),
+</span><span>                KeyboardInput::Char(</span><span style="color:#183691;">&#39;d&#39;</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::DropItem),
+</span><span>                keys::</span><span style="color:#0086b3;">ESCAPE </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::Exit),
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>            },
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span>(),
+</span><span>        }
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(self.visibility_algorithm);
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>All rendering logic is now contained within <code>GameEventRoutine</code> and the menu renderer and decorator.
+Remove <code>impl&lt;'a&gt; View&lt;&amp;'a AppData&gt; for AppView</code> (but keep the <code>AppView</code> type around as a place to store rendering-related state).</p>
+<p>Define a pair of functions for running the <code>use_item</code> and <code>drop_item</code> menus.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">use_item</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B);
+</span><span>    Loop::new(|| {
+</span><span>        </span><span style="color:#62a35c;">inventory_slot_menu</span><span>(</span><span style="color:#183691;">&quot;Use Item&quot;</span><span>).</span><span style="color:#62a35c;">and_then</span><span>(|result| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> result {
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(entry) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(SideEffect::new_with_view(
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data.game_state.</span><span style="color:#62a35c;">maybe_player_use_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                        </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>                    } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                        </span><span style="color:#0086b3;">None
+</span><span>                    }
+</span><span>                },
+</span><span>            )),
+</span><span>        })
+</span><span>    })
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">drop_item</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B);
+</span><span>    Loop::new(|| {
+</span><span>        </span><span style="color:#62a35c;">inventory_slot_menu</span><span>(</span><span style="color:#183691;">&quot;Drop Item&quot;</span><span>).</span><span style="color:#62a35c;">and_then</span><span>(|result| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> result {
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(entry) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(SideEffect::new_with_view(
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data.game_state.</span><span style="color:#62a35c;">maybe_player_drop_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                        </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>                    } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                        </span><span style="color:#0086b3;">None
+</span><span>                    }
+</span><span>                },
+</span><span>            )),
+</span><span>        })
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<p>Each of these functions calls <code>inventory_slot_menu</code> until either a valid selection or explicit cancellation was made.
+In the case of a valid selection, the appropriate action for each menu is taken (using or dropping).
+Note the <code>make_either!</code> macro. These function both include logic which executes one of two possible event routines
+depending on whether the user made a selection or cancelled the menu.</p>
+<p>To pull one out:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">match</span><span> result {
+</span><span>    </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>    </span><span style="color:#0086b3;">Ok</span><span>(entry) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(SideEffect::new_with_view(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data.game_state.</span><span style="color:#62a35c;">maybe_player_use_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                </span><span style="color:#0086b3;">None
+</span><span>            }
+</span><span>        },
+</span><span>    )),
+</span><span>})
+</span></code></pre>
+<p>In the first case here, the use hit the escape key to cancel the menu, in which case we run the event routine:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))
+</span></code></pre>
+<p>The <code>Value</code> <code>EventRoutine</code> returns immediately with a specified value. Returning <code>Some(())</code> in this case tells the <code>Loop</code> that we’re inside to stop iterating.</p>
+<p>In the second case the user made a selection, so we run the event routine:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>SideEffect::new_with_view(
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, </span><span style="font-weight:bold;color:#a71d5d;">_</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;_| </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data.game_state.</span><span style="color:#62a35c;">maybe_player_use_item</span><span>(entry.index).</span><span style="color:#62a35c;">is_ok</span><span>() {
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="color:#0086b3;">None
+</span><span>        }
+</span><span>    },
+</span><span>)
+</span></code></pre>
+<p><code>SideEffect</code> is an <code>EventRoutine</code> which lets you run arbitrary code on its <code>Data</code>. It’s used here to update the game state by
+attempting to have the player use an item.</p>
+<p>The <code>EventRoutine</code>s executed in both cases implement the same <em>trait</em>, but they are not the same  <em>type</em>. Rust requires that
+all branches of a conditional statement have the same <em>type</em>.
+The <code>make_either!(Ei = A | B | ...)</code> macro creates a type:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">enum </span><span>Ei&lt;AType, BType, ...&gt; {
+</span><span>    A(AType),
+</span><span>    B(BType),
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>…and implements <code>EventRoutine</code> for the generated type. This macro is necessary whenever you have a conditional statement
+where each branch is a different <code>EventRoutine</code>.</p>
+<p>So far we’ve defined an <code>EventRoutine</code> for running the game and displaying inventory menus. Now we just need something to stitch
+it all together. Remove the <code>AppEventRoutine</code> type defined in the previous section, and re-implement <code>game_loop</code> as:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            GameReturn::Exit </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            GameReturn::GameOver </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            GameReturn::UseItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::C(</span><span style="color:#62a35c;">use_item</span><span>().</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>            GameReturn::DropItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::D(</span><span style="color:#62a35c;">drop_item</span><span>().</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>        })
+</span><span>    }).</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>It repeatedly runs the game, handles any interruptions, and then resumes the game unless it has been quit or the game is over.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.4">part-8.4</a></p>
+<h2 id="death-screen"><a class="zola-anchor" href="#death-screen" aria-label="Anchor link for: death-screen">Death Screen</a></h2>
+<p>To celebrate making it through the previous section, let’s implement a death screen!</p>
+<p>At the moment we check whether the player is alive at the begining of <code>AppData::handle_input</code>.
+Because of this, when the player dies as a result of an NPCs action, the game doesn’t exit until the next input is handled.
+Let’s change this to use a timeout, where a death screen is briefly displayed before exiting the game.</p>
+<p>Move the code which checks whether the player is dead to the end of <code>AppData::handle_input</code> so we can react immediately to the player’s demise:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>(self.visibility_algorithm);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>self.game_state.</span><span style="color:#62a35c;">is_player_alive</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::GameOver);
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Implement a function returning an <code>EventRoutine</code> that displays a death screen for 2 seconds before completing with <code>()</code>.
+There’s a <code>Delay</code> <code>EventRoutine</code> already defined in <code>chargrid</code> so let’s just use that, with a custom decorator that
+replaces <code>Delay</code>’s rendering logic (which is to draw nothing) with rendering logic for our death screen.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    event_routine::{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        common_event::{CommonEvent, Delay},
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    },
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    text::{RichTextPart, RichTextViewSingleLine, StringViewSingleLine},
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_over</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>GameOverDecorate;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Decorate </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameOverDecorate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;E, F, C&gt;(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>            data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>            event_routine_view: EventRoutineView&lt;E&gt;,
+</span><span>            context: ViewContext&lt;C&gt;,
+</span><span>            frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>        ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>            E: EventRoutine&lt;Data = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Data, View = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>View&gt;,
+</span><span>            F: Frame,
+</span><span>            C: ColModify,
+</span><span>        {
+</span><span>            AlignView {
+</span><span>                alignment: Alignment::centre(),
+</span><span>                view: StringViewSingleLine::new(
+</span><span>                    Style::new()
+</span><span>                        .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">255</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>))
+</span><span>                        .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>),
+</span><span>                ),
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(</span><span style="color:#183691;">&quot;YOU DIED&quot;</span><span>, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">10</span><span>), frame);
+</span><span>            FillBackgroundView {
+</span><span>                rgb24: Rgb24::new(</span><span style="color:#0086b3;">31</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> event_routine_view.view.game_view,
+</span><span>            }
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state,
+</span><span>                context.</span><span style="color:#62a35c;">compose_col_modify</span><span>(ColModifyMap(|c: Rgb24| {
+</span><span>                    c.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">3</span><span>)
+</span><span>                        .</span><span style="color:#62a35c;">saturating_add</span><span>(Rgb24::new(</span><span style="color:#0086b3;">31</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>))
+</span><span>                })),
+</span><span>                frame,
+</span><span>            );
+</span><span>            event_routine_view.view.</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>        }
+</span><span>    }
+</span><span>    Delay::new(Duration::from_millis(</span><span style="color:#0086b3;">2000</span><span>)).</span><span style="color:#62a35c;">decorated</span><span>(GameOverDecorate)
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Finally update <code>game_loop</code> to call <code>game_over</code> when the game is over:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">..
+</span><span>            GameReturn::GameOver </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(</span><span style="color:#62a35c;">game_over</span><span>().</span><span style="color:#62a35c;">map</span><span>(|()| </span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        })
+</span><span>    }).</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Switching to <code>EventRoutine</code> was a big change, but imagine how much messing about with state variables and countdown timers it would take
+to implement a death screen with explicit state machines.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/death-screen.png" alt="death-screen.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-8.5">part-8.5</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-9/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-7&#x2F;" aria-label="Previous">
+	  Previous: Part 7 - User Interface
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-9&#x2F;" aria-label="Next">
+	  Next: Part 9 - Ranged Scrolls and Targeting
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

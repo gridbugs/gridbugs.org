@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2019: Content, Plot, Polish, Publish">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-03-09T23:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2019: Content, Plot, Polish, Publish
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2019: More Enemies, More Upgrades, More Cards
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-plan&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2020: Plan
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2019: Content, Plot, Polish, Publish</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-03-09T23:00:00+10:00">
+    March 09, 2019
+  </time>
+  
+</p>
+
+
+  
+
+<p>I spent all of Saturday adding content, fixing bugs, play-testing, and balancing gameplay.</p>
+<p>There are now roughly 20 different cards and 3 different level generators.
+I added a win condition, a little flavour text, and organised the game into a sequence
+of 6 procedurally-generated levels, each configured to be more difficult than the last.</p>
+<p>Then I spent about 4 hours play-testing and tweaking.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/glow.png" alt="glow.png" /></p>
+<span id="continue-reading"></span>
+<p>The first gameplay issue I addressed was the player would spend most of their time
+being chased by a crowd of enemies. Most of the cards do not directly
+deal damage to enemies. While the player could semi-successfully
+evade enemies, they tend to all group together into giant mob which often
+would eventually overwhelm the player.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/ruins.png" alt="ruins.png" /></p>
+<p>My initial solution was to add the “Caltrop” and “Deposit” cards, which move the player,
+and place a temporary spike trap and wall respectively, in their previous position.
+This helps prevent the situation where an enemy is following right behind the player,
+with no way to create distance.</p>
+<p>This helped, deal with enemies staying right on the player’s tail, but the greater
+problem of the mob of enemies forming persisted. Taking a more direct approach,
+I enabled bump-combat, which previously had just been for enemies.
+“Bump Combat” means that walking into an enemy deals them some damage.
+This meant
+the player could deal significantly more damage, which successfully quelled the
+tide of NPCs. I also added health pickups to give the player another slight edge.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/first-death.png" alt="first-death.png" /></p>
+<p>Adding bump combat came with new problems however!
+Enemies telegraph their next move before the player takes their turn.
+Playing the game with bump combat on, I found myself waiting for the enemy
+to move 1 space away from the player, then bumping them. The problem with this
+is that if an enemy has 1 hit point left, and each bump deals a single point
+of damage, you can always kill the enemy without losing hit points yourself.</p>
+<p>Many games address this problem by adding randomness to the combat system.
+I probably would have done this if I noticed the problem at the start of the
+week! Instead, I elected to just get rid of the wait command, and gave
+all enemies at least 2 hit points. Now, enemies only
+move when you move or play a card. If you’re in the correct “phase” with
+respect to a particular enemy, you can coax them into moving next to you
+and deliver a risk-free hit. I like this because if you’re out of phase with an enemy, and want a risk-free
+hit, you can play a card just to get the enemy to move towards you, changing you into the right phase.
+This makes the intentionally useless cards a little useful, but they still cost power to play so I don’t
+think it’s too broken.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/start.png" alt="start.png" /></p>
+<p>Removing waiting caused yet another problem. Some cards let you place temporary walls, which
+block movement of the player and enemies. The walls vanish 8 turns after summoning.
+If you surround yourself with walls, you might not be able to take 8 actions to progress time
+until the walls come down. I discovered this by accidentally soft-locking the game, surrounded
+by walls with no cards in my hand.</p>
+<p>The quick-fix I went for is progressing time when the player walks into a temporary wall.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day7/trapped.png" alt="trapped.png" /></p>
+<p>I’ll post a landing page for Get Well Soon tomorrow, along with a recap of how I think the week went.</p>
+<h2 id="wishlist"><a class="zola-anchor" href="#wishlist" aria-label="Anchor link for: wishlist">Wishlist</a></h2>
+<ul>
+<li>My animation system can’t display concurrent animations. The “Blast” ability
+was originally supposed to shoot a spark in each direction at the same time,
+but instead each spark starts after the previous one stops. The effect ended
+up looking kinda neat, so I didn’t fix it. Still, it would be nice to have the
+option for concurrent animation going forward.</li>
+<li>Complex cards requiring multiple animations are difficult to express.
+It should be easier to compose multiple animations to form new animations.</li>
+<li>Direction iterators (from my <a href="https://github.com/gridbugs/direction">direction</a>
+library) should be reversible.</li>
+</ul>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day6&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2019: More Enemies, More Upgrades, More Cards
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-plan&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2020: Plan
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2016: Pathfinding">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2016-pathfinding/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2016-pathfinding/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2016-03-09T01:56:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2016: Pathfinding
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-procedural-generation&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Procedural Generation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-polish&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Polish
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2016: Pathfinding</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2016-03-09T01:56:00+10:00">
+    March 09, 2016
+  </time>
+  
+</p>
+
+
+  
+
+<p>The most notable change from tonight is that
+I turned on pathfinding for NPCs for the first time. Up until now they
+had been stationary, and could be injured or killed, or affected by vacuum, but
+could never observe the world or take actions. Enabling AI is scary because it
+greatly increases the amount of work the computer is doing between human turns.
+The vision system is now running once per NPC turn as well as the player. Then
+there’s the additional cost of pathfinding for each NPC. I use Dijkstra maps for
+pathfinding which are
+<a href="http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps">explained in detail on roguebasin</a>.
+This post is about solving a performance problem introduced by all the extra
+characters.</p>
+<p>With AI turned on, there was a noticeable increase in the time between player
+turns.
+Benchmarking revealed most of the time between player turns was spent in the
+vision system.</p>
+<h2 id="vision-system"><a class="zola-anchor" href="#vision-system" aria-label="Anchor link for: vision-system">Vision System</a></h2>
+<p>The vision system uses the Recursive Shadowcast algorithm which I
+<a href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">wrote about earlier</a>.
+Detecting visible cells
+is relatively fast. The problem was what how this information was being used.</p>
+<p>NPC pathfinding and the renderer don’t work on the canonical world
+representation. This game uses
+<a href="https://gridbugs.github.io/gridbugs.org/encoding-rules-for-turn-based-games/">an ECS-based engine described in a previous post</a>,
+so more concretely, AI and the
+renderer don’t directly access entities or components. Instead, each character
+maintains a representation of the world based on what they have observed.
+A character’s knowledge is represented by “shadow entities”, made up of
+“shadow components”. These were designed to be frequently updated by setting
+data in shadow components from “canonical” reference components without allocating
+any new objects. This was a technique I learnt while solving performance problems in a
+<a href="https://gridbugs.github.io/gridbugs.org/bugcatcher/">game I wrote earlier</a>.</p>
+<p>At the
+start of a character’s turn, the vision system runs and updates that character’s
+knowledge of the world by updating shadow components.
+It was this knowledge updating process that was taking
+up most of the time. Knowledge is updated in the following way. It relies on a
+spacial hash of entities, and an analogous spacial hash of shadow entities in
+the knowledge representation of characters.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>for each coordinate visible according to recursive shadowcast:
+</span><span>    knowledgeCell = get knowledge spacial hash cell for the coord
+</span><span>    cell = get canonical spacial hash cell for the coord
+</span><span>
+</span><span>    knowledgeCell.clear() # remove all shadow entities from the cell
+</span><span>    for each entity in that cell:
+</span><span>        knowledgeCell.see(entity) # makes a shadow entity
+</span><span>
+</span></code></pre>
+<p>Knowledge cells re-use shadow entities
+and shadow components to prevent invoking the allocator on each cell that is seen.
+Despite this, this process was still taking too long. A key insight for
+optimization was that most entities in most cells don’t change most of the time.
+The only time a knowledge cell needs to be updated is when an entity has entered
+or left the corresponding canonical cell, or an entity in the cell changes in a
+“knowable” way (ie. a way that will be represented in a character’s knowledge).</p>
+<p>With this in mind, the loop becomes:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>for each coordinate visible according to recursive shadowcast:
+</span><span>    knowledgeCell = get knowledge spacial hash cell for the coord
+</span><span>
+</span><span>    if knowledgeCell.isDirty():
+</span><span>
+</span><span>        cell = get canonical spacial hash cell for the coord
+</span><span>
+</span><span>        knowledgeCell.clear()
+</span><span>        for each entity in that cell:
+</span><span>            knoweldgeCell.see(entity)
+</span><span>
+</span></code></pre>
+<p>The <code>isDirty()</code> method compares a “last modified” timestamp on the canonical
+spacial hash table cell with a “last observed” timestamp on the knowledge cell.
+<strong>A knowledge cell is now only updated if the cell has been changed more recently
+than it was last observed.</strong> A complication this change introduced is now the
+“last modified” timestamps must be updated whenever a cell’s contents is changed
+in a meaningful way.</p>
+<h2 id="windows-and-npcs"><a class="zola-anchor" href="#windows-and-npcs" aria-label="Anchor link for: windows-and-npcs">Windows and NPCs</a></h2>
+<p>I’ve updated the level generator to include windows and NPCs. It also places the
+player in a sane starting position, and determines a sane goal position (though
+there currently isn’t anything there).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2016-pathfinding/screenshot.png" alt="screenshot.png" /></p>
+<p>Still to do is adding items (weapons and healthkits), and stairs. I still
+haven’t decided how the game will end, though the current plan is to have some
+emergency beacon that needs to be activated before the ship-full-of-zombies
+arrives in a populated area.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-procedural-generation&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Procedural Generation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-polish&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Polish
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

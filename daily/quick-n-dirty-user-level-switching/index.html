@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Quick&#x27;n&#x27;dirty user-level switching">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/quick-n-dirty-user-level-switching/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/quick-n-dirty-user-level-switching/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-25T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Quick&#x27;n&#x27;dirty user-level switching
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;x86-basic-interrupt-handling-kind-of-working&#x2F;" aria-label="Previous">
+	  Previous: x86 Basic Interrupt Handling Kind of Working
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fixing-bugs-in-sample-code&#x2F;" aria-label="Next">
+	  Next: Fixing bugs in sample code
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Quick&#x27;n&#x27;dirty user-level switching</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-25T00:00:00+00:00">
+    August 25, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>My goal for the last couple of days has been getting my hobby OS project to the point where
+it can switch into user-mode. I was technically at that point yesterday, but with an
+unsatisfying caveat: the instant the processor entered user-mode (by means of the <code>sysret</code> instruction)
+it would page fault, and for a reasons I still don’t understand, my interrupt handler wasn’t invoked.</p>
+<p>Today I managed to get user-level to (deliberately) infinitely loop. I can use a debugger to verify
+that the processor is in-fact in user-mode. To prevent the fault upon entering user-mode, I adjusted
+some access flags in the paging hierarchy to permit the processor to access the memory containing
+the user program and stack, while the processor is in user-mode.</p>
+<p>I was wrong about the bootloader’s ELF-loading. I incorrectly assumed that it would set up paging
+to match the virtual addresses specified in an ELF-file, but it only loads code/data into a specific
+region of virtual memory, and sets up paging for that region. This means in order to have the user
+program be loaded at its expected virtual address, I need to identify unused physical memory
+and map some of it at this address.</p>
+<p>In the interest of just getting something simple working, I’m currently setting access bits
+such that user-mode has access to some code from the kernel, and the kernel’s stack.
+That way I can just write a <code>while(1);</code> function in the kernel code, and run the <code>sysret</code> instruction
+such that it “returns” to user-mode at the beginning of this function.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;x86-basic-interrupt-handling-kind-of-working&#x2F;" aria-label="Previous">
+	  Previous: x86 Basic Interrupt Handling Kind of Working
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fixing-bugs-in-sample-code&#x2F;" aria-label="Next">
+	  Next: Fixing bugs in sample code
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

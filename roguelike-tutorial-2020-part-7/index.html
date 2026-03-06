@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 7 - User Interface">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-12T17:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 7 - User Interface
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-6&#x2F;" aria-label="Previous">
+	  Previous: Part 6 - AI and Combat
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-8&#x2F;" aria-label="Next">
+	  Next: Part 8 - Items and Inventory
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 7 - User Interface
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-12T17:00:00+10:00">
+    July 12, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll add a heads-up display consisting of a health bar and message log.</p>
+<p>By the end of this part, the game will look like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-7/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-6-end">part-6-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/#basic-health-bar">Basic Health Bar</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/#pretty-health-bar">Pretty Health Bar</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/#message-log">Mesage Log</a></li>
+</ul>
+<h2 id="basic-health-bar"><a class="zola-anchor" href="#basic-health-bar" aria-label="Anchor link for: basic-health-bar">Basic Health Bar</a></h2>
+<p>Right now all our drawing takes place in <code>AppView</code>’s implementation of the <code>View</code> trait.
+One of the goals of the <code>chargrid</code> library is to allow drawing logic to be split up into
+independent modules which can be composed into complex UI’s.
+Thus far the only thing we’ve needed to draw has been the game, but in this part we’ll
+add a UI as well, so start by moving the game-drawing logic into a new type:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>GameView {}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>GameView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        game_state: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> GameState,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.visibility {
+</span><span>                CellVisibility::Currently </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="color:#62a35c;">currently_visible_view_cell_of_tile</span><span>(entity_to_render.tile)
+</span><span>                }
+</span><span>                CellVisibility::Previously </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="color:#62a35c;">previously_visible_view_cell_of_tile</span><span>(entity_to_render.tile)
+</span><span>                }
+</span><span>                CellVisibility::Never </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new(),
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; -</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Corpse) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">2</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Character) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">3</span><span>,
+</span><span>            };
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(entity_to_render.location.coord, depth, view_cell, context);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {
+</span><span>    game_view: GameView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            game_view: GameView::default(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.game_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state, context, frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>In a new file <code>ui.rs</code>, implement a simple UI consisting of just the player’s health bar:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::HitPoints;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    render::{ColModify, Frame, Style, View, ViewContext},
+</span><span>    text::StringViewSingleLine,
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rgb24::Rgb24;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>player_hit_points: HitPoints,
+</span><span>}
+</span><span>
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiView {
+</span><span>    buf: String,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>View&lt;UiData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>UiView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: UiData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>        self.buf.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        write!(
+</span><span>            &amp;mut self.buf,
+</span><span>            </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">/</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>,
+</span><span>            data.player_hit_points.current, data.player_hit_points.max
+</span><span>        )
+</span><span>        .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        StringViewSingleLine::new(Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)))
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.buf, context, frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Similarly to <code>GameView</code> and <code>AppView</code>, the new <code>UiView</code> type implements <code>chargrid::View</code>
+for a specific type of data, in this case <code>UiData</code> which currently consists of just a <code>HitPoints</code>.
+The <code>buf: String</code> field in <code>UiView</code> is to prevent needing to allocate a <code>String</code> each time
+<code>UiView::view</code> gets called. This method <code>write</code>s a string into this buffer, and then uses
+<code>StringViewSingleLine::view</code> to draw the string.</p>
+<p><code>StringViewSingleLine</code> comes from the <code>chargrid::text</code> module, which contains several
+implementations of <code>chargrid::View</code> for rendering text.</p>
+<p>Update <code>main.rs</code> to include the <code>ui</code> module:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// main.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">mod </span><span>ui;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update <code>app.rs</code> to draw the UI.
+The <code>UI_NUM_ROWS</code> constant configures how much of the screen to take up with the UI.
+This reduces the size of the game area.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::ui::{UiData, UiView};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">UI_NUM_ROWS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">2</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> game_area_size </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> screen_size.</span><span style="color:#62a35c;">set_height</span><span>(screen_size.</span><span style="color:#62a35c;">height</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">UI_NUM_ROWS</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            game_state: GameState::new(game_area_size, rng_seed, visibility_algorithm),
+</span><span>            visibility_algorithm,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {
+</span><span>    ui_y_offset: </span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>,
+</span><span>    game_view: GameView,
+</span><span>    ui_view: UiView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">UI_Y_PADDING</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> ui_y_offset </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>(screen_size.</span><span style="color:#62a35c;">height</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">UI_NUM_ROWS </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">UI_Y_PADDING</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            ui_y_offset,
+</span><span>            game_view: GameView::default(),
+</span><span>            ui_view: UiView::default(),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.game_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state, context, frame);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_hit_points </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_hit_points</span><span>();
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData { player_hit_points },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>App {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            view: AppView::new(screen_size),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update <code>game.rs</code> to expose a <code>player_hit_points</code> method:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{HitPoints, Location, Populate, Tile, World};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Game {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_hit_points</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; HitPoints {
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">hit_points</span><span>(self.player_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;player has no hit points&quot;</span><span>)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/health.png" alt="health.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.0">part-7.0</a></p>
+<h2 id="pretty-health-bar"><a class="zola-anchor" href="#pretty-health-bar" aria-label="Anchor link for: pretty-health-bar">Pretty Health Bar</a></h2>
+<p>Now we’ll colour the background of the health bar so it’s filled based on the amount of health the player has.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    decorator::{AlignView, Alignment, BoundView},
+</span><span>    render::{ColModify, Frame, Style, View, ViewCell, ViewContext},
+</span><span>    text::StringViewSingleLine,
+</span><span>};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rgb24::Rgb24;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">10</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_FILL_COLOUR</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">200</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">HEALTH_EMPTY_COLOUR</span><span>: Rgb24 </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Rgb24::new(</span><span style="color:#0086b3;">100</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>View&lt;UiData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>UiView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: UiData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>        self.buf.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        write!(
+</span><span>            &amp;mut self.buf,
+</span><span>            </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">/</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>,
+</span><span>            data.player_hit_points.current, data.player_hit_points.max
+</span><span>        )
+</span><span>        .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> hit_points_text_view </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> BoundView {
+</span><span>            size: Size::new(</span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>, </span><span style="color:#0086b3;">1</span><span>),
+</span><span>            view: AlignView {
+</span><span>                alignment: Alignment::centre(),
+</span><span>                view: StringViewSingleLine::new(Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>))),
+</span><span>            },
+</span><span>        };
+</span><span>        hit_points_text_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.buf, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">1</span><span>), frame);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> health_fill_width </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            (data.player_hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">HEALTH_WIDTH</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">/</span><span> data.player_hit_points.max;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> data.player_hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>            health_fill_width </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> health_fill_width.</span><span style="color:#62a35c;">max</span><span>(</span><span style="color:#0086b3;">1</span><span>);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>health_fill_width {
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(
+</span><span>                Coord::new(i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                ViewCell::new().</span><span style="color:#62a35c;">with_background</span><span>(</span><span style="color:#0086b3;">HEALTH_FILL_COLOUR</span><span>),
+</span><span>                context,
+</span><span>            );
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> health_fill_width</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">HEALTH_WIDTH </span><span>{
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(
+</span><span>                Coord::new(i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                ViewCell::new().</span><span style="color:#62a35c;">with_background</span><span>(</span><span style="color:#0086b3;">HEALTH_EMPTY_COLOUR</span><span>),
+</span><span>                context,
+</span><span>            );
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>This shows an example of decorators. The <code>chargrid::decorator</code> module contains a collection
+of implementations <code>chargrid::View</code> which wrap <em>other</em> implementations of <code>chargrid::View</code>
+and change the way they are rendered.</p>
+<p><code>BoundView</code> constrains the size of its contents.
+<code>AlignView</code> centers its contents within its parent.
+Together these are used to centre the text in the health bar.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/health-pretty.png" alt="health-pretty.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.1">part-7.1</a></p>
+<h2 id="message-log"><a class="zola-anchor" href="#message-log" aria-label="Anchor link for: message-log">Message Log</a></h2>
+<p>Add a type representing the different types of messages that can appear in the log:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{HitPoints, Location, NpcType, Populate, Tile, World};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>LogMessage {
+</span><span>    PlayerAttacksNpc(NpcType),
+</span><span>    NpcAttacksPlayer(NpcType),
+</span><span>    PlayerKillsNpc(NpcType),
+</span><span>    NpcKillsPlayer(NpcType),
+</span><span>}
+</span></code></pre>
+<p>Add a message log to <code>GameState</code>, add an accessor method, and pass the message log to <code>maybe_move_character</code>.
+At the moment all events worthy of the message log are triggered by <code>maybe_move_character</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">..
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    ...
+</span><span>    message_log: </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        initial_visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            message_log: </span><span style="color:#0086b3;">Vec</span><span>::new(),
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        self.world
+</span><span>            .</span><span style="color:#62a35c;">maybe_move_character</span><span>(self.player_entity, direction, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log);
+</span><span>        self.</span><span style="color:#62a35c;">ai_turn</span><span>();
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">ai_turn</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(entity, agent) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.ai_state.</span><span style="color:#62a35c;">iter_mut</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> npc_action {
+</span><span>                NpcAction::Wait </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>                NpcAction::Move(direction) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    self.world
+</span><span>                        .</span><span style="color:#62a35c;">maybe_move_character</span><span>(entity, direction, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.message_log)
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">message_log</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[LogMessage] {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.message_log
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update <code>maybe_move_character</code> to add to the message log:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::LogMessage;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>VictimDies;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">write_combat_log_messages</span><span>(
+</span><span>        attacker_is_player: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>        victim_dies: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>        npc_type: NpcType,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> attacker_is_player {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> victim_dies {
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerKillsNpc(npc_type));
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::PlayerAttacksNpc(npc_type));
+</span><span>            }
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> victim_dies {
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcKillsPlayer(npc_type));
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                message_log.</span><span style="color:#62a35c;">push</span><span>(LogMessage::NpcAttacksPlayer(npc_type));
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_character</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        character_entity: Entity,
+</span><span>        direction: CardinalDirection,
+</span><span>        message_log: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span style="color:#0086b3;">Vec</span><span>&lt;LogMessage&gt;,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">coord_of</span><span>(character_entity)
+</span><span>            .</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;character has no coord&quot;</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> new_character_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> character_coord </span><span style="font-weight:bold;color:#a71d5d;">+</span><span> direction.</span><span style="color:#62a35c;">coord</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> new_character_coord.</span><span style="color:#62a35c;">is_valid</span><span>(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>()) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_layers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.spatial_table.</span><span style="color:#62a35c;">layers_at_checked</span><span>(new_character_coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(dest_character_entity) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> dest_layers.character {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(character_entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dest_character_is_npc </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                    self.components.npc_type.</span><span style="color:#62a35c;">get</span><span>(dest_character_entity).</span><span style="color:#62a35c;">cloned</span><span>();
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> character_is_npc.</span><span style="color:#62a35c;">is_some</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span> dest_character_is_npc.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> victim_dies </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">character_bump_attack</span><span>(dest_character_entity).</span><span style="color:#62a35c;">is_some</span><span>();
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_type </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> character_is_npc.</span><span style="color:#62a35c;">or</span><span>(dest_character_is_npc).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">Self</span><span>::write_combat_log_messages(
+</span><span>                        character_is_npc.</span><span style="color:#62a35c;">is_none</span><span>(),
+</span><span>                        victim_dies,
+</span><span>                        npc_type,
+</span><span>                        message_log,
+</span><span>                    );
+</span><span>                }
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> dest_layers.feature.</span><span style="color:#62a35c;">is_none</span><span>() {
+</span><span>                self.spatial_table
+</span><span>                    .</span><span style="color:#62a35c;">update_coord</span><span>(character_entity, new_character_coord)
+</span><span>                    .</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">character_bump_attack</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, victim: Entity) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;VictimDies&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">DAMAGE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(hit_points) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.components.hit_points.</span><span style="color:#62a35c;">get_mut</span><span>(victim) {
+</span><span>            hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> hit_points.current.</span><span style="color:#62a35c;">saturating_sub</span><span>(</span><span style="color:#0086b3;">DAMAGE</span><span>);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> hit_points.current </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>                self.</span><span style="color:#62a35c;">character_die</span><span>(victim);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">Some</span><span>(VictimDies);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="color:#0086b3;">None
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Now let’s draw the message log.
+Start by moving the rendering of the player’s health bar into a new type <code>HealthView</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>HealthView {
+</span><span>    buf: String,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>View&lt;HitPoints&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>HealthView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        hit_points: HitPoints,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>        self.buf.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>        write!(&amp;mut self.buf, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">/</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, hit_points.current, hit_points.max).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Add a simple helper function for mapping an NPC to a colour in <code>app.rs</code>, and make the <code>colours</code> mod public:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span>colours {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use super</span><span>::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">npc_colour</span><span>(npc_type: NpcType) -&gt; Rgb24 {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> npc_type {
+</span><span>            NpcType::Orc </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">ORC</span><span>,
+</span><span>            NpcType::Troll </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">TROLL</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now define another type <code>MessageView</code> for rendering the message log:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// ui.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::app::colours;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::game::LogMessage;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>chargrid::{
+</span><span>    decorator::{AlignView, Alignment, BoundView},
+</span><span>    render::{ColModify, Frame, Style, View, ViewCell, ViewContext},
+</span><span>    text::{RichTextPartOwned, RichTextViewSingleLine, StringViewSingleLine},
+</span><span>};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>MessagesView {
+</span><span>    buf: </span><span style="color:#0086b3;">Vec</span><span>&lt;RichTextPartOwned&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Default </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">default</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> common </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>RichTextPartOwned::new(</span><span style="color:#0086b3;">String</span><span>::new(), Style::new());
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            buf: vec![common.</span><span style="color:#62a35c;">clone</span><span>(), common.</span><span style="color:#62a35c;">clone</span><span>(), common],
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>[LogMessage]&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MessagesView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">format_message</span><span>(buf: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> [RichTextPartOwned], message: LogMessage) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>std::fmt::Write;
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>LogMessage::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>            buf[</span><span style="color:#0086b3;">0</span><span>].text.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>            buf[</span><span style="color:#0086b3;">1</span><span>].text.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>            buf[</span><span style="color:#0086b3;">2</span><span>].text.</span><span style="color:#62a35c;">clear</span><span>();
+</span><span>            buf[</span><span style="color:#0086b3;">0</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>));
+</span><span>            buf[</span><span style="color:#0086b3;">1</span><span>].style.bold </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(</span><span style="color:#0086b3;">true</span><span>);
+</span><span>            buf[</span><span style="color:#0086b3;">2</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>));
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> message {
+</span><span>                PlayerAttacksNpc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You attack the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NpcAttacksPlayer(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;The &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; attacks you.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                PlayerKillsNpc(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;You kill the &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot;.&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                }
+</span><span>                NpcKillsPlayer(npc_type) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    write!(&amp;mut buf[0].text, </span><span style="color:#183691;">&quot;THE &quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">0</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Rgb24::new(</span><span style="color:#0086b3;">255</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>));
+</span><span>                    write!(&amp;mut buf[1].text, </span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span>, npc_type.</span><span style="color:#62a35c;">name</span><span>()).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].text.</span><span style="color:#62a35c;">make_ascii_uppercase</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">1</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(colours::npc_colour(npc_type));
+</span><span>                    write!(&amp;mut buf[2].text, </span><span style="color:#183691;">&quot; KILLS YOU!&quot;</span><span>).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>                    buf[</span><span style="color:#0086b3;">2</span><span>].style.foreground </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(Rgb24::new(</span><span style="color:#0086b3;">255</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>));
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_MESSAGES</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">4</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> start_index </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> messages.</span><span style="color:#62a35c;">len</span><span>().</span><span style="color:#62a35c;">saturating_sub</span><span>(</span><span style="color:#0086b3;">NUM_MESSAGES</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(i, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>message) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>messages[start_index</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>]).</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="color:#62a35c;">format_message</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.buf, message);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> offset </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Coord::new(</span><span style="color:#0086b3;">0</span><span>, i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>);
+</span><span>            RichTextViewSingleLine.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>                self.buf.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">map</span><span>(|part| part.</span><span style="color:#62a35c;">as_rich_text_part</span><span>()),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(offset),
+</span><span>                frame,
+</span><span>            );
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Similar to the <code>buf</code> field of <code>HealthView</code>, the <code>buf</code> field of <code>MessageView</code>
+exists to prevent the need to allocate on each frame.
+The <code>RichTextPartOwned</code> type from <code>chargrid::text</code> is a combination of a <code>String</code> and a <code>Style</code>
+to apply to it. The <code>RichTextViewSingleLine</code> type, also from <code>chargrid::text</code>, implements
+<code>chargrid::View</code> for iterators over rich text. It’s used here to render messages about NPCs,
+where the names of NPCs are colour coded to match their tiles.</p>
+<p>The <code>UiView</code> type is now a combination of <code>HealthView</code> and <code>MessageView</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>player_hit_points: HitPoints,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>messages: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [LogMessage],
+</span><span>}
+</span><span>
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>UiView {
+</span><span>    health_view: HealthView,
+</span><span>    messages_view: MessagesView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;UiData&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>UiView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: UiData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.health_view
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(data.player_hit_points, context, frame);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> message_log_offset </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Coord::new(</span><span style="color:#0086b3;">HEALTH_WIDTH </span><span style="font-weight:bold;color:#a71d5d;">as i32 + </span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>        self.messages_view
+</span><span>            .</span><span style="color:#62a35c;">view</span><span>(data.messages, context.</span><span style="color:#62a35c;">add_offset</span><span>(message_log_offset), frame);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update <code>app.rs</code> to leave room below for the message log. When calling <code>UiView::view</code>
+inside <code>AppView::view</code>, populate the new <code>messages</code> field.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">UI_NUM_ROWS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">5</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.game_view.</span><span style="color:#62a35c;">view</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state, context, frame);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_hit_points </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">player_hit_points</span><span>();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> messages </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> data.game_state.</span><span style="color:#62a35c;">message_log</span><span>();
+</span><span>        self.ui_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            UiData {
+</span><span>                player_hit_points,
+</span><span>                messages,
+</span><span>            },
+</span><span>            context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, self.ui_y_offset)),
+</span><span>            frame,
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-7/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-7.2">part-7.2</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-8/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-6&#x2F;" aria-label="Previous">
+	  Previous: Part 6 - AI and Combat
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-8&#x2F;" aria-label="Next">
+	  Next: Part 8 - Items and Inventory
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

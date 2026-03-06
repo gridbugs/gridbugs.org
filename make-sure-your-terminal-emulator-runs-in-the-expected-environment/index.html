@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Make sure your terminal emulator runs in the expected environment">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/make-sure-your-terminal-emulator-runs-in-the-expected-environment/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/make-sure-your-terminal-emulator-runs-in-the-expected-environment/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-11-04T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Make sure your terminal emulator runs in the expected environment
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Make sure your terminal emulator runs in the expected environment</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-11-04T00:00:00+00:00">
+    November 04, 2020
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/unix" aria-label="tag">unix</a>
+  
+</p>
+
+
+  
+
+<p>This is a follow-up to <a href="https://gridbugs.github.io/gridbugs.org/why-you-need-a-.bashrc-and-.profile/">Why you need a .bashrc and .profile</a></p>
+<p>Unix processes run in an environment consisting of string values assigned to named environment variables.
+Some processes such as a shell or window manager are responsible for launching additional processes.
+By convention, new processes inherit the environment variables of the process that created them.</p>
+<span id="continue-reading"></span>
+<p><code>$PATH</code> is a particularly interesting variable because it’s usually updated by concatenating a list of directories
+with the original value of <code>$PATH</code>. A conventional place to update <code>$PATH</code> is a “profile” script (usually .profile or
+.bash_profile), which is run when a login shell starts.
+Avoid sourcing this script multiple times, as the <code>$PATH</code> variable will grow larger and larger, as more (duplicate) values are concatenated onto it.
+As long as a login shell is run once when you log in to your machine, and all other processes
+(including other shells) are descendants of the login shell, your <code>$PATH</code> will remain what it was set to when the login shell started.</p>
+<p>Here’s my <code>$PATH</code>:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+steve@fontaine ~ $ echo $PATH
+</span><span>/home/steve/.cargo/bin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:
+</span><span>/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/home/steve/bin:/home/steve/.rvm/bin
+</span></code></pre>
+<p>Run <code>bash</code> to start a new shell as a child of the current shell:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+steve@fontaine ~ $ bash
+</span><span>+steve@fontaine ~ $ echo $PATH
+</span><span>/home/steve/.cargo/bin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:
+</span><span>/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/home/steve/bin:/home/steve/.rvm/bin
+</span></code></pre>
+<p>Note that the <code>$PATH</code> wasn’t affected. My .profile script didn’t run.</p>
+<p>Now run <code>bash --login</code> which starts a new login shell as a child of the current shell:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>+steve@fontaine ~ $ bash --login
+</span><span>+steve@fontaine ~ $ echo $PATH
+</span><span>/home/steve/.cargo/bin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:
+</span><span>/home/steve/.cargo/bin:/home/steve/bin:/home/steve/.bin:/home/steve/.local/bin:/home/steve/.local/sbin:
+</span><span>/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/home/steve/bin:/home/steve/.rvm/bin:/home/steve/.rvm/bin
+</span></code></pre>
+<p>This time my <code>$PATH</code> got longer, as all the directories I add when a login shell starts got added <em>again</em>.</p>
+<p>This scenario was contrived, but similar problems can arise in practice, in particular through the use of a window manager (WM).</p>
+<p>How do you launch your window manager? The two common ways are running <code>startx</code> from a tty, and logging in via a display manager, which
+presents a graphical login form and then starts your window manager after login. Much like a text shell (such as bash), your window manager
+creates new processes. <code>$PATH</code> is of particular relevance to terminal emulators, so let’s only consider terminal emulators and the shells that run
+“inside” them. Whether you’re double-clicking on an icon, using a launcher like dmenu, or have configured your window manager to directly launch
+a terminal emulator in response to a key combination, the windows manager is starting your terminal emulator, which in turn is starting a shell.</p>
+<p>Whenever you start a shell, your goal is to have your <code>$PATH</code> be set to whatever your .profile script specifies.
+Something is amiss if <code>$PATH</code> has the settings in .profile applied multiple times (as in the example above), or not at all in which case
+none of your custom executable directories will work.</p>
+<p>If you start your WM with <code>startx</code>, then you must have logged into a tty directly
+which will have started a login shell. Running <code>startx</code> from a login shell will result in your intended <code>$PATH</code> being part of your WM’s
+environment (WMs are unix processes too; they have environments), and when your WM launched a shell (via a terminal emulator)
+the shell inherited the correct <code>$PATH</code> too and you’re done.</p>
+<p>If you use a display manager to login, somehow by the time you launch a shell, you’re .profile script needs to have been invoked <em>exactly once</em> (so your <code>$PATH</code>
+is set the way you like). This can be done from within the WM itself. Most terminal emulators take a flag which instructs them to launch a login
+shell rather than a regular shell. Have your WM pass this flag when launching a terminal. If you were to start a second terminal from the first
+(e.g. tmux), it would just launch a regular (non-login) shell, so the duplicate <code>$PATH</code> problem is avoided. The only gotcha here is if you ever
+start the WM with startx and not a display manager, WM-spawned terminal emulators will have sourced your .profile script twice
+(once from the login shell you got when logging in to a tty, and a second time as you instructed your WM to launch a terminal emulator with a login shell inside).
+A less fragile approach is to configure the display manager to setup your environment before launching the WM, however unfortunately not all display managers can
+be thus configured.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;why-you-need-a-.bashrc-and-.profile&#x2F;" aria-label="Previous">
+	  Previous: Why you need a .bashrc and .profile
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;dmenu_histogram&#x2F;" aria-label="Next">
+	  Next: dmenu_histogram
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

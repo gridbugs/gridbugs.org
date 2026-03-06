@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Trampolining">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/trampolining/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/trampolining/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-22T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Trampolining
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;more-fun-with-linking&#x2F;" aria-label="Previous">
+	  Previous: More fun with linking
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;global-descriptor-table&#x2F;" aria-label="Next">
+	  Next: Global Descriptor Table
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Trampolining</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-22T00:00:00+00:00">
+    August 22, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Today I solved an os-dev problem I’d been stuck on for a few days.
+In my hobby OS project, I want the bootable image to contain both the kernel code, and the code of the
+initial user-level application, packed into a single ELF file, which the bootloader loads before
+starting the kernel. In order for the kernel to (eventually) hand control over to the user program,
+it needs to know the user program’s entry point. I have linker script that describes the (virtual)
+address space layout of the user and kernel memory, which the bootloader instantiates.
+My original plan was to use the linker to make a symbol available in the kernel code which refers
+to the entry point of the user program (ie. it’s <code>_start</code> function’s address), but since user and
+kernel virtual addresses are conventionally very far apart, this turned out to be non-trivial.</p>
+<p>I think I have a solution, though I’m yet to fully test it out (some other things have got in the way).
+The plan is the following: Add a new section to the ELF with a tiny bit of code at the start that just
+jumps to the user program’s entry point. Something like</p>
+<pre data-lang="asm" style="background-color:#ffffff;color:#323232;" class="language-asm "><code class="language-asm" data-lang="asm"><span style="font-style:italic;color:#969896;">; the user &quot;_start&quot; function is renamed to &quot;__user__start&quot; to avoid name conflicts with kernel code
+</span><span style="color:#62a35c;">extern </span><span style="font-weight:bold;color:#795da3;">__user__start
+</span><span>
+</span><span style="color:#62a35c;">bits 64
+</span><span>
+</span><span style="color:#62a35c;">section </span><span style="font-weight:bold;color:#795da3;">.user.trampoline
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">jmp </span><span style="font-weight:bold;color:#795da3;">__user__start
+</span></code></pre>
+<p>This solves the problem because unlike the user’s <code>_start</code> function, which could be located anywhere
+within the user program’s <code>.text</code> section, we can tell the linker to put the above code at the beginning
+of a brand new section dedicated just for it:</p>
+<pre data-lang="ld" style="background-color:#ffffff;color:#323232;" class="language-ld "><code class="language-ld" data-lang="ld"><span>. = user_base;
+</span><span>.user.trampoline : </span><span style="font-weight:bold;color:#a71d5d;">ALIGN</span><span>(</span><span style="color:#0086b3;">0x1000</span><span>) {
+</span><span>    *(.user.trampoline)
+</span><span>} :user
+</span></code></pre>
+<p>This introduces a <code>user_base</code> symbol which can be <code>extern</code>-ed in kernel code, so when the kernel is
+ready, it can switch to user mode and move execution to the address referred to by the symbol <code>user_base</code>.
+Execution will then <em>bounce</em> to the actual user entry point by means of the <code>jmp __user__start</code> instruction.</p>
+<p>This technique is known as “trampolining”.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;more-fun-with-linking&#x2F;" aria-label="Previous">
+	  Previous: More fun with linking
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;global-descriptor-table&#x2F;" aria-label="Next">
+	  Next: Global Descriptor Table
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Move semantics and argument parsing">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/move-semantics-and-argument-parsing/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/move-semantics-and-argument-parsing/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-20T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Move semantics and argument parsing
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-command-line-arguments-with-meap-in-real-programs&#x2F;" aria-label="Previous">
+	  Previous: Parsing command-line arguments with meap in real programs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;separable-convolution-kernels&#x2F;" aria-label="Next">
+	  Next: Separable Convolution Kernels
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Move semantics and argument parsing</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-20T00:00:00+00:00">
+    September 20, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>In my initial design for <a href="https://crates.io/crates/meap">meap</a>, the <code>Parser</code> trait contained this
+method which extracts typed values from an untyped low-level parser output:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parse_low_level</span><span>(
+</span><span>    self,
+</span><span>    ll: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>low_level::LowLevelParserOutput,
+</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Item, </span><span style="color:#0086b3;">Box</span><span>&lt;dyn error::Error&gt;&gt;;
+</span></code></pre>
+<p>Note that the parser is consumed by this method; After calling this method on a parser, the parser
+is destroyed. This allows the parser to contain values which move into its parsed output.
+Two examples:</p>
+<ul>
+<li>a parser wrapping another parser, giving it a default value. The default value stored in the parser can
+be moved into the result in the case where it’s needed, preventing the need to copy the data from the
+parser into its output.</li>
+<li>the <code>Map</code> combinator, which wraps a parser, and calls a function on its output. I want to make the function
+a <code>FnOnce</code> - the most permissive of rust’s function traits - but calling a <code>FnOnce</code> consumes it. If the
+mapped function was in a field of the <code>Map</code> combinator, the entire combinator would need to be consumed
+in order to call the <code>FnOnce</code>.</li>
+</ul>
+<p>This worked perfectly fine up until I added help messages. If the argument parser finds that its input is
+invalid, it stops parsing and prints a help message, including details on arguments that it accepts.
+E.g.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>Usage: sand [OPTIONS] PERIOD
+</span><span>
+</span><span>Args:
+</span><span>    PERIOD     how long to wait
+</span><span>
+</span><span>Options:
+</span><span>    [-i, --interval DURATION]     how frequently to update the display (Default: 1s)
+</span><span>    [-h, --help]                  print help message
+</span></code></pre>
+<p>The problem is that if we’re part-way through parsing, and encounter an error, part of the
+parser has already been consumed by the parsing process, and so can’t be re-traversed to
+generate a help message.</p>
+<p>This requirement led to me changing the type of the method above:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parse_low_level</span><span>(
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>    ll: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>low_level::LowLevelParserOutput,
+</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Item, </span><span style="color:#0086b3;">Box</span><span>&lt;dyn error::Error&gt;&gt;;
+</span></code></pre>
+<p>Now the parser is mutably borrowed, so it remains in scope after parsing.
+This is slightly unfortunate as now some errors that were previously caught at compile-time
+are now caught at runtime. In particular, for parsers that contain some value that is moved
+out during parsing, running the parser twice will panic as the necessary values are gone.
+Previously it was not possible to run the parser twice, as it was destroyed by running.</p>
+<p>Note that running the parser twice is a mistake, but now it’s possible (though still not easy!)
+to make this mistake.</p>
+<p>The <code>Map</code> combinator is now defined as:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>Map&lt;T, U, F: </span><span style="color:#0086b3;">FnOnce</span><span>(T) -&gt; U, PT: Parser&lt;Item = T&gt;&gt; {
+</span><span>    f: </span><span style="color:#0086b3;">Option</span><span>&lt;F&gt;,
+</span><span>    parser_t: PT,
+</span><span>}
+</span></code></pre>
+<p>Its implementation of <code>parse_low_level</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parse_low_level</span><span>(
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>    ll: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>low_level::LowLevelParserOutput,
+</span><span>) -&gt; </span><span style="color:#0086b3;">Result</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Item, </span><span style="color:#0086b3;">Box</span><span>&lt;dyn error::Error&gt;&gt; {
+</span><span>    </span><span style="color:#0086b3;">Ok</span><span>((self.f.</span><span style="color:#62a35c;">take</span><span>().</span><span style="color:#62a35c;">expect</span><span>(</span><span style="color:#183691;">&quot;function has already been called&quot;</span><span>))(
+</span><span>        self.</span><span style="font-weight:bold;color:#a71d5d;">parser_t</span><span>.</span><span style="color:#62a35c;">parse_low_level</span><span>(ll)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>,
+</span><span>    ))
+</span><span>}
+</span></code></pre>
+<p>A similar technique is employed for default combinators.
+Put the “moving out” data inside an <code>Option</code>, and move the data out of the <code>Option</code>
+when needed, setting the <code>Option</code> to <code>None</code> in the process, and crashing if it was
+already <code>None</code>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-command-line-arguments-with-meap-in-real-programs&#x2F;" aria-label="Previous">
+	  Previous: Parsing command-line arguments with meap in real programs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;separable-convolution-kernels&#x2F;" aria-label="Next">
+	  Next: Separable Convolution Kernels
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>
