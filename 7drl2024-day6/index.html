@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2024: Applying Items, Equipment">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2024-03-08T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/screenshot1.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2024: Applying Items, Equipment
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day5&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2024: Items
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day7&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Shops, Organs, Environment Effects, Boss
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2024: Applying Items, Equipment</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2024-03-08T00:00:00+00:00">
+    March 08, 2024
+  </time>
+  
+</p>
+
+
+  
+
+<p>One day left! Tonight I implemented the equipment system. Weapons can be equipped
+from the inventory to the hands. Some weapons require both hands while others
+require only one. This is important as the “Claw” organ takes up a hand; you
+can’t use a two-handed weapon if one of your hands is a claw (and you can’t use
+a one-handed weapon if both of your hands are claws). Getting the logic and
+error handling for equipping, unequipping and reloading weapons was trickier
+than I expected. Especially since you can hold one pistol in each hand.</p>
+<p>It’s possible to lose the game:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/screenshot1.png" alt="death screen" /></p>
+<span id="continue-reading"></span>
+<p>I’ve added lots of information screens to help the player get their bearings.
+Here’s a list of all the current organs of the player character:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/screenshot3.png" alt="list of organs" /></p>
+<p>And here’s one of 3 help screens that explain the controls and mechanics:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2024-day6/screenshot2.png" alt="one of the help screens" /></p>
+<p>I also added two additional enemy types: the poisoner which spreads a trail of
+poison, and the divider which splits into two enemies when damaged.</p>
+<p>Each item in the game can be applied, including the interaction of filling an
+organ container with an organ from a corpse.</p>
+<p>And equipped weapons can now be fired. If you have two pistols, they both fire.
+Also there are weapon organs which cost health to fire.</p>
+<p>It’s all coming together nicely but there is still a fair amount of work left
+for tomorrow but fortunately it’s Friday and I can stay up arbitrarily late.
+Notably I still need to connect the organs to the player’s stats (e.g. so
+having two hearts give you twice as much health) and implement the organ
+traits. I need to implement shops and the organ clinic so players can change
+their organs. I need to add the final boss fight and make the game winnable.
+Finally I need to balance and playtest a bunch.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day5&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2024: Items
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2024-day7&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2024: Shops, Organs, Environment Effects, Boss
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

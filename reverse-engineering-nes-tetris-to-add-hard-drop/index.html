@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Reverse-Engineering NES Tetris to add Hard Drop">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2021-03-21T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/screenshot1.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Reverse-Engineering NES Tetris to add Hard Drop
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Reverse-Engineering NES Tetris to add Hard Drop</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2021-03-21T00:00:00+00:00">
+    March 21, 2021
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/nes" aria-label="tag">nes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/emulation" aria-label="tag">emulation</a>
+  
+</p>
+
+
+  
+
+<style>
+.nes-screenshot img {
+    width: 512px;
+    height: 480px;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+.nes-screenshot-half img {
+    width: 256px;
+    height: 240px;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+.nes-screenshot-quarter img {
+    width: 128px;
+    height: 120px;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+</style>
+<p><a href="https://en.wikipedia.org/wiki/Tetris_(NES_video_game)">Tetris for the NES</a> is one of my favourite versions of Tetris.
+My only complaint is that it lacks the ability to “hard drop” - instantly dropping the current piece and locking it into place.</p>
+<p>Let’s change that!</p>
+<p>This post describes a modification I made to NES Tetris so that pressing the “up” button causes the current piece to hard drop,
+and so that the game renders a “ghost piece” - a dotted outline of the current piece showing where it will land.</p>
+<div class="nes-screenshot">
+<img src="screenshot1.png">
+</div>
+<span id="continue-reading"></span><h2 id="soft-drop-and-hard-drop"><a class="zola-anchor" href="#soft-drop-and-hard-drop" aria-label="Anchor link for: soft-drop-and-hard-drop">Soft Drop and Hard Drop</a></h2>
+<p>The current piece moves down one space each game tick.
+Tetris implementations typically provide two ways for speeding this up - soft drop and hard drop.</p>
+<p>For soft drop, pressing a button will instantly move the current piece down one space, and holding
+the button will cause it to drop faster than it otherwise would.</p>
+<div class="nes-screenshot">
+<img src="soft-drop-animation.gif">
+</div>
+<p>Hard drop instantly drops the current piece and locks it into place.
+Because it can be difficult for the player
+to visually tell whether the piece is lined up with where they want it to land, Tetris implementations with
+hard drop usually display a ghost piece showing where the current piece will end up.</p>
+<div class="nes-screenshot">
+<img src="hard-drop-animation.gif">
+</div>
+<p>Prior to my changes, NES Tetris only supported soft drop.</p>
+<h2 id="the-artefact"><a class="zola-anchor" href="#the-artefact" aria-label="Anchor link for: the-artefact">The Artefact</a></h2>
+<p>I made a <a href="https://crates.io/crates/nes-tetris-hard-drop-patcher">rust program</a> which reads a NES ROM file in <a href="https://wiki.nesdev.com/w/index.php/INES">INES</a>
+format. If its input was NES Tetris (usually in a file named something like “Tetris (U) [!].nes”), it will produce as output, a new NES ROM file which
+is NES Tetris, patched to have hard drop.</p>
+<p>The input file should have a sha1 hash of <code>a99f922e9da20b2a27e4398348505d2e9d15271b</code>.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ cargo install nes-tetris-hard-drop-patcher   # install my tool
+</span><span>$ nes-tetris-hard-drop-patcher &lt; &#39;Tetris (U) [!].nes&#39; &gt; tetris-hd.nes   # patch a NES Tetris ROM
+</span><span>$ fceux tetris-hd.nes   # run the result in an emulator
+</span></code></pre>
+<p>This tool relies on the user to obtain an NES Tetris ROM file. It doesn’t have Tetris built-in.
+The resulting ROM file is compatible with all NES emulators - it’s not specific to fceux.</p>
+<h2 id="patch"><a class="zola-anchor" href="#patch" aria-label="Anchor link for: patch">Patch</a></h2>
+<p>After sharing this post online some folks pointed out that there is a standard format for ROM patches (IPS)
+that is widely supported by emulators.
+Get the NES Tetris hard drop patch <a href="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips">here</a>.</p>
+<h2 id="tooling"><a class="zola-anchor" href="#tooling" aria-label="Anchor link for: tooling">Tooling</a></h2>
+<p>A couple of years ago I made a <a href="https://github.com/gridbugs/mos6502">NES Emulator</a>.
+It turns out to be a useful reverse-engineering tool, as it’s easy to instrument the emulator
+to conduct experiments on the program it’s running. In particular, the ability to log every
+instruction, interleaved with interesting events such as video memory updates, came in very handy.
+Also it can render to gifs, and I used it to generate all the animations in this post!</p>
+<p>To test my emulator, I made a <a href="https://crates.io/crates/mos6502_assembler">rust library</a> for
+writing NES assembly programs in a rust embedded domain-specific language. Here’s an example that
+multiplies the value in the “accumulator” register by 12:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());                  </span><span style="font-style:italic;color:#969896;">// clear carry flag
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());     </span><span style="font-style:italic;color:#969896;">// rotate accumulator 1 bit to the left (x2)
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());     </span><span style="font-style:italic;color:#969896;">// rotate accumulator 1 bit to the left (x4)
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x20</span><span>);      </span><span style="font-style:italic;color:#969896;">// store current accumulator value at address 0x0020
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());     </span><span style="font-style:italic;color:#969896;">// rotate accumulator 1 bit to the left (x8)
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">0x20</span><span>);      </span><span style="font-style:italic;color:#969896;">// add the accumulator with the value at 0x0020 (x12)
+</span></code></pre>
+<p>This lets me use rust as a macro language for NES assembly programs. The flexibility this
+affords is essential when tacking custom code onto an existing program written in the 80s.</p>
+<p>While <a href="https://gridbugs.github.io/gridbugs.org/nes-emulator-debugging/">debugging my emulator</a> I made a simple disassembler
+that can display per-function assembly of NES programs.</p>
+<p>Finally, I used a third-party NES emulator named <a href="https://mesen.ca/">Mesen</a> which boasts a
+rich set of debugging tools. This was helpful for getting an understanding of the current
+contents of memory, and the current state of the graphics chip.</p>
+<h2 id="rendering-the-ghost-piece"><a class="zola-anchor" href="#rendering-the-ghost-piece" aria-label="Anchor link for: rendering-the-ghost-piece">Rendering the Ghost Piece</a></h2>
+<p>The NES has two different types of graphics:</p>
+<ul>
+<li>the <strong>background</strong> is a grid of 8x8 pixel tiles</li>
+<li><strong>sprites</strong> are tiles which can be drawn at arbitrary positions on the screen</li>
+</ul>
+<p>Most games use a combination of both, and Tetris is no exception.</p>
+<div class="nes-screenshot-half">
+<img src="demo-full.gif">
+</div>
+<p>Tetris uses sprites to draw the current piece and the next piece, and background graphics for everything else.
+The images below isolate the two types of graphics in the scene above, with the background on the left and sprites on the right.</p>
+<div class="nes-screenshot-half">
+<img src="demo-background.gif">
+<img src="demo-sprites.gif">
+</div>
+<p>The game clearly has logic already for drawing the current piece using sprites, so
+the easiest way of rendering the ghost piece seems to be re-using that logic, but using
+a ghostly tile rather than the normal tile.</p>
+<p>Speaking of ghostly tiles, I added a new tile to the game to use for the ghost piece:</p>
+<div class="nes-screenshot-quarter">
+<img src="ghost-block.png">
+</div>
+<p>My goal here is to hunt down the part of Tetris that renders the current piece in order to
+reappropriate that code for rendering the ghost piece.</p>
+<p>To render sprites on the NES, you populate a region of main memory with sprite metadata (position, tile, etc),
+then write the address of the start of this memory region to the <a href="https://wiki.nesdev.com/w/index.php/PPU_registers#OAMDMA">OAMDMA</a> register.
+(Object Attribute Memory Direct Memory Access - OAM is special memory for storing sprite metadata, and DMA
+is a general term for devices reading and writing main memory directly.) Writing an address to OAMDMA causes the graphics
+hardware on the NES to copy sprite metadata out of the specified region of main memory, and into specialised Object Attribute Memory
+which will be consulted during rendering to draw the sprites.</p>
+<p>The OAMDMA register is mapped into the CPU’s address space at address <code>0x4014</code>.
+Searching the disassembled program for this address reveals:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0xAB63  Lda(Immediate) 0x02       # load accumulator with 2
+</span><span>0xAB65  Sta(Absolute) 0x4014      # write accumulator to 0x4014
+</span></code></pre>
+<p>This writes the value 2 to OAMDMA causing the memory from <code>0x0200</code> to <code>0x02FF</code> to be copied to OAM.
+Searching the code for <code>0x0200</code>, and one function in particular jumps out as being responsible
+for populating the OAM DMA buffer. This function is at <code>0x8A0A</code> and can tell us a great deal
+about how Tetris works.</p>
+<p>It starts by reading values from addresses <code>0x0040</code> and <code>0x0041</code>, multiplying each by 8, and adding them to some offsets.
+On the NES, each tile is 8x8 pixels, so this appears to be translating from a tile coordinate into a pixel coordinate,
+where the offsets are the components of the pixel coordinate of the top left corner of the board.
+A few minutes poking around in mesen confirms this - <code>0x40</code> is the x coordinate, and <code>0x41</code> is the Y coordinate of the current piece.</p>
+<p>The function then reads from <code>0x42</code>. This location always contains a value between 0 and 18 which appears to encode the
+shape of the current piece, as well as its rotation. For shapes with rotational symmetry (such as the “S” piece), the
+multiple identical rotations get a single value in <code>0x42</code>. I’ll refer to this value as the “shape index”.</p>
+<p>Each piece in Tetris is made up of 4 tiles, and one sprite is rendered for each tile.
+The coordinate in <code>0x40</code> and <code>0x41</code> is the position of the piece, but in order to render the
+sprites we must find out the position of each tile. To this end, this function consults a table in ROM
+at address <code>0x8A9C</code> which I’ll refer to as the “shape table”. Each of the 19 pieces (including unique rotations)
+has a 12-byte entry in the shape table. The shape table entry for a piece stores 3 bytes for each of the 4 tiles:</p>
+<ul>
+<li>the y offset of the tile (relative to <code>0x41</code>)</li>
+<li>the index of the sprite to use when rendering the tile</li>
+<li>the x offset of the tile (relative to <code>0x40</code>)</li>
+</ul>
+<p>This function computes the location and sprite index of each tile of the current piece, and populates the
+OAM DMA buffer with this information. To render the ghost piece, I need a similar function, except it renders
+each tile with the ghost tile rather than the tile from the shape table, and it renders the piece at a vertical
+offset so that the piece appears at the location where it would land after a hard drop.
+It would be non-trivial to modify this function in-place to be general over the ghost piece and regular piece,
+so instead I copy/pasted the code and changed it to do what I need.</p>
+<p>I started by using mesen’s memory viewer to locate a seemingly unused region of ROM.
+I don’t know why it’s striped with <code>0x00</code> and <code>0xFF</code>! Also I don’t know how to change mesen’s font to be monospace!</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/mesen1.png" alt="mesen1.png" /></p>
+<p>I claimed 512 bytes of memory starting at address <code>0xD6D0</code>. The first code I added to this region was
+a function that simply calls the existing OAM DMA buffer update function:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;oam-dma-buffer-update&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x8A0A</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<p>My patching tool replaces all calls to the original function (<code>0x8A0A</code>) with calls to this new one.</p>
+<p>Next I took the disassembled code from the original OAM DMA buffer update function and hand-translated
+it into my rust domain-specific language for NES assembly.</p>
+<p>This:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0x8A0A  Lda(ZeroPage) 0x40
+</span><span>0x8A0C  Asl(Accumulator)
+</span><span>0x8A0D  Asl(Accumulator)
+</span><span>0x8A0E  Asl(Accumulator)
+</span><span>0x8A0F  Adc(Immediate) 0x60
+</span><span>0x8A11  Sta(ZeroPage) 0xAA
+</span><span>...
+</span></code></pre>
+<p>…becomes:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;render-ghost-piece&quot;</span><span>); </span><span style="font-style:italic;color:#969896;">// function label so it can be called by name later
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">0x40</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(Immediate), </span><span style="color:#0086b3;">0x60</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0xAA</span><span>);
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>I modified my copy of the OAM DMA buffer update to use the ghost tile instead of the tile
+read from the shape buffer. To test this change, I updated <code>oam-dma-buffer-update</code> to call
+this function instead of the original:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;oam-dma-buffer-update&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call new function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;render-ghost-piece&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<div class="nes-screenshot">
+<img src="ghost-piece-test1.gif">
+</div>
+<p>Next I made my ghost-piece-rendering function take an argument specifying the vertical distance
+below the current piece at which it should render the ghost piece. Eventually this will be
+computed based on how many times the piece could move downwards before colliding, but first
+I tried calling it with a constant (6).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;oam-dma-buffer-update&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call original function first
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x8A0A</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Render the ghost piece, passing the vertical offset argument in address `0x0028`.
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">6</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x28</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;render-ghost-piece&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<div class="nes-screenshot">
+<img src="ghost-piece-test2.gif">
+</div>
+<p>Now to compute the true vertical offset from the current piece to the place it would land after
+dropping. By watching memory with mesen, I observed that nothing seemed to be using memory from <code>0x0020</code> to <code>0x0028</code>.
+The first 256 bytes of memory is referred to as the “zero page” and affords faster access than the rest of memory.
+I wanted 8 zero page bytes to store the X,Y coordinates of each tile of the current piece during collision detection,
+and one additional byte to store temporary values during computation.</p>
+<p>Start by initializing the values at <code>0x20</code> to <code>0x27</code> to the X,Y coordinates of each tile of the current piece:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;compute-hard-drop-distance&quot;</span><span>); </span><span style="font-style:italic;color:#969896;">// function label so it can be called by name later
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SHAPE_TABLE</span><span>: Address </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0x8A9C</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">ZP_PIECE_COORD_X</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x40</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x41</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">ZP_PIECE_SHAPE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x42</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Multiply the shape by 12 to make an offset into the shape table,
+</span><span style="font-style:italic;color:#969896;">// storing the result in IndexRegisterX.
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_SHAPE</span><span>);  </span><span style="font-style:italic;color:#969896;">// read shape index into accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());               </span><span style="font-style:italic;color:#969896;">// clear carry flag to prepare for arithmetic
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());  </span><span style="font-style:italic;color:#969896;">// rotate left: index * 2
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());  </span><span style="font-style:italic;color:#969896;">// rotate left: index * 4
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x20</span><span>);   </span><span style="font-style:italic;color:#969896;">// store index * 4 at 0x0020
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rol(Accumulator), ());  </span><span style="font-style:italic;color:#969896;">// rotate left: index * 8
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">0x20</span><span>);   </span><span style="font-style:italic;color:#969896;">// add to 0x0020: index * 12
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Tax, ());               </span><span style="font-style:italic;color:#969896;">// transfer accumulator to IndexRegisterX
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Store absolute X,Y coords of each tile by reading relative coordinates from shape table
+</span><span style="font-style:italic;color:#969896;">// and adding the piece offset, storing the result in zero page 0x20..=0x27.
+</span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">4 </span><span>{ </span><span style="font-style:italic;color:#969896;">// this is a rust loop - the assembly generated inside will be generated 4 times
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(AbsoluteXIndexed), Addr(</span><span style="color:#0086b3;">SHAPE_TABLE</span><span>)); </span><span style="font-style:italic;color:#969896;">// read Y offset from shape table
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());                                  </span><span style="font-style:italic;color:#969896;">// clear carry flag to prepare for addition
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);          </span><span style="font-style:italic;color:#969896;">// add to Y coordinate of piece
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x21 </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2</span><span>));            </span><span style="font-style:italic;color:#969896;">// store the result in zero page
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Inx, ());                                  </span><span style="font-style:italic;color:#969896;">// increment IndexRegisterX to sprite index
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Inx, ());                                  </span><span style="font-style:italic;color:#969896;">// increment IndexRegisterX to X offset
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(AbsoluteXIndexed), Addr(</span><span style="color:#0086b3;">SHAPE_TABLE</span><span>)); </span><span style="font-style:italic;color:#969896;">// read X offset from shape table
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());                                  </span><span style="font-style:italic;color:#969896;">// clear carry flag to prepare for addition
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_X</span><span>);          </span><span style="font-style:italic;color:#969896;">// add to X coordinate of piece
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x20 </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2</span><span>));            </span><span style="font-style:italic;color:#969896;">// store the result in zero page
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Inx, ());                                  </span><span style="font-style:italic;color:#969896;">// increment IndexRegisterX to next tile
+</span><span>}
+</span></code></pre>
+<p>Now for the actual collision detection!
+Repeatedly increment the Y component of each tile coordinate in the <code>0x20</code> to <code>0x27</code> addresses
+until one of the tiles either collides with a locked-in tile, or goes off the bottom of the
+board.
+By examining memory with mesen, I learnt that the board state is stored as a row-major array
+of sprite indices beginning at <code>0x0400</code>, and that <code>0xEF</code> is the index of the “empty space” tile.
+The strategy will be to use the coordinate of each tile to construct an index into this
+array, and stop if anything other than <code>0xEF</code> is found.</p>
+<p>A possible point of confusion in the code below is that it implements a loop in assembly,
+but there is also a rust for-loop that generates assembly. These two loops are unrelated.
+The assembly code in the rust loop is emitted 4 times, and the result makes up the body of the
+assembly loop.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">BOARD_TILES</span><span>: Address </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0x0400</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">EMPTY_TILE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xEF</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">BOARD_HEIGHT</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">20</span><span>;
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Ldx(Immediate), </span><span style="color:#0086b3;">0</span><span>);   </span><span style="font-style:italic;color:#969896;">// Load 0 into IndexRegisterX - this will be our loop counter
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;start-ghost-depth-loop&quot;</span><span>); </span><span style="font-style:italic;color:#969896;">// This is a label - a target for branch instructions
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">for</span><span> i </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">4 </span><span>{ </span><span style="font-style:italic;color:#969896;">// the assembly in this rust loop will be emitted 4 times
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Increment the Y component of the coordinate
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Inc(ZeroPage), </span><span style="color:#0086b3;">0x21 </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Break out of the loop if the tile is off the bottom of the board
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">0x21 </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2</span><span>));
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(Immediate), </span><span style="color:#0086b3;">BOARD_HEIGHT</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bpl, LabelRelativeOffset(</span><span style="color:#183691;">&quot;end-ghost-depth-loop&quot;</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Multiply the Y component of the coordinate by 10 (the number of columns)
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x28</span><span>); </span><span style="font-style:italic;color:#969896;">// store Y * 2
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Asl(Accumulator), ()); </span><span style="font-style:italic;color:#969896;">// accumulator now contains Y * 8
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">0x28</span><span>); </span><span style="font-style:italic;color:#969896;">// accumulator now contains Y * 10
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Now add the X component to get the row-major index of the cell
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">0x20 </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span>(i </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#0086b3;">2</span><span>));
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Load the tile at that coordinate
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Tay, ());
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Lda(AbsoluteYIndexed), </span><span style="color:#0086b3;">BOARD_TILES</span><span>);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Test whether the tile is empty, breaking out of the loop if it is not
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Cmp(Immediate), </span><span style="color:#0086b3;">EMPTY_TILE</span><span>);
+</span><span>    b.</span><span style="color:#62a35c;">inst</span><span>(Bne, LabelRelativeOffset(</span><span style="color:#183691;">&quot;end-ghost-depth-loop&quot;</span><span>));
+</span><span>}
+</span><span style="font-style:italic;color:#969896;">// Increment counter and loop
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Inx, ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jmp(Absolute), </span><span style="color:#183691;">&quot;start-ghost-depth-loop&quot;</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;end-ghost-depth-loop&quot;</span><span>);
+</span></code></pre>
+<p>This results with <code>IndexRegisterX</code> containing the number of times the loop iterated, which is
+also the vertical distance from the current piece to where it will end up after dropping.
+For the convenience of callers, this function will return this result via the accumulator register:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// Return depth via accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Txa, ());  </span><span style="font-style:italic;color:#969896;">// transfer IndexRegisterX to accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());  </span><span style="font-style:italic;color:#969896;">// return
+</span></code></pre>
+<p>The full body of the replacement OAM DMA buffer update function is now:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;oam-dma-buffer-update&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call original function first
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x8A0A</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Compute distance from current piece to drop destination, placing result in accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;compute-hard-drop-distance&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Check if the distance is 0, and skip rendering the ghost piece in this case
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Beq, LabelRelativeOffset(</span><span style="color:#183691;">&quot;after-render-ghost-piece&quot;</span><span>));
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Render the ghost piece, passing the vertical offset argument in address `0x0028`.
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">0x28</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;render-ghost-piece&quot;</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;after-render-ghost-piece&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<p>The result:</p>
+<div class="nes-screenshot">
+<img src="ghost-piece-test3.gif">
+</div>
+<h2 id="adding-the-hard-drop-control"><a class="zola-anchor" href="#adding-the-hard-drop-control" aria-label="Anchor link for: adding-the-hard-drop-control">Adding the Hard Drop Control</a></h2>
+<p>Now that the ghost piece is rendering, the next step is to make it so that when the “up”
+button on the controller is pressed, the hard drop happens. The “up” button isn’t used by
+Tetris, so we don’t have to worry about losing some functionality in order to gain hard drop.</p>
+<p>As with adding the ghost piece, I set out to find a function that I could replace with a new function
+that calls the original before doing extra stuff - in this case checking whether “up” was pressed, and
+hard dropping if so.</p>
+<p>My first attempt was to look for code that reads the controller state register <code>0x4016</code>, but
+there seems to be a fair bit of indirection between reading that register and updating the
+game state based on which buttons are pressed.</p>
+<p>My second idea was to instrument my emulator to log every instruction executed.
+I loaded up Tetris, and navigated the menus to start a new game, then saved a state file.
+My emulator has an option to run for a specific number of frames.
+I set it up to run for 20 frames, loaded the state file, and logged each instruction without pressing any controls.
+Then I repeated this process, however this time around I pressed the left button during the 20 frame window.
+I now had two logs of the instruction stream - one with no controls pressed, and a second with a control pressed.
+It stands to reason that the first place where these streams differ would be the first time the program branched
+on the state of the left button.</p>
+<p>Sure enough:</p>
+<pre data-lang="diff" style="background-color:#ffffff;color:#323232;" class="language-diff "><code class="language-diff" data-lang="diff"><span style="font-weight:bold;font-style:italic;color:#969896;">@@ -116912,9 +116912,175 @@
+</span><span> 0x89B8  Lda(ZeroPage) 0xB5
+</span><span> 0x89BA  And(Immediate) 0x03
+</span><span> 0x89BC  Bne(Relative) 0x15
+</span><span style="background-color:#ffecec;color:#323232;">-0x89BE  Lda(ZeroPage) 0xB6
+</span><span style="background-color:#ffecec;color:#323232;">-0x89C0  And(Immediate) 0x03
+</span><span style="background-color:#ffecec;color:#323232;">-0x89C2  Beq(Relative) 0x45
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">0x89D3  Lda(Immediate) 0x00
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">0x89D5  Sta(ZeroPage) 0x46
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">0x89D7  Lda(ZeroPage) 0xB6
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">0x89D9  And(Immediate) 0x01
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">0x89DB  Beq(Relative) 0x0F
+</span><span>...
+</span></code></pre>
+<p>Cross-referencing this with the disassembled ROM, this function begins with:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0x89AE  Lda(ZeroPage) 0x40
+</span><span>0x89B0  Sta(ZeroPage) 0xAE
+</span><span>0x89B2  Lda(ZeroPage) 0xB6
+</span><span>0x89B4  And(Immediate) 0x04
+</span><span>0x89B6  Bne(Relative) 0x51 (relative: 0x51, absolute: 0x8A09)
+</span><span>0x89B8  Lda(ZeroPage) 0xB5
+</span><span>0x89BA  And(Immediate) 0x03
+</span><span>0x89BC  Bne(Relative) 0x15 (relative: 0x15, absolute: 0x89D3)
+</span><span>0x89BE  Lda(ZeroPage) 0xB6
+</span><span>0x89C0  And(Immediate) 0x03
+</span><span>0x89C2  Beq(Relative) 0x45 (relative: 0x45, absolute: 0x8A09)
+</span><span>...
+</span></code></pre>
+<p>This branches based on the contents of addresses <code>0x00B5</code> and <code>0x00B6</code>.
+Watching these addresses in mesen while mashing the controls gives me the impression that
+<code>0xB5</code> stores the frame to frame differences in controller state, and <code>0xB6</code> stores the
+current controller state. Despite not being used by Tetris, the state of the “up” button
+is reflected in these values.</p>
+<p>I started this function the same as my replacement for OAM DMA buffer update - all it did was
+call the original function and return:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;handle-controls&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call the original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x89AE</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<p>Now add a check for whether the “up” button is pressed. For now, just teleport the current piece
+to a fixed height when the button is pressed:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;handle-controls&quot;</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xB6</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x08</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call the original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x89AE</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Skip to the end if the UP bit of the controller state is not set
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(And(Immediate), </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Beq, LabelRelativeOffset(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>));
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Set the current piece&#39;s Y coordinate to 7
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">7</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<p>Here’s the code in action, with me pressing “up” multiple times:</p>
+<div class="nes-screenshot">
+<img src="hard-drop-test1.gif">
+</div>
+<p>Next, replace the testing constant 7 with the actual position that the
+piece will end up after hard dropping. Use the <code>compute-hard-drop-distance</code>
+function we wrote for ghost piece rendering, then just add the current
+position of the piece to get the absolute Y coordinate it will end up at
+after dropping:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;handle-controls&quot;</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xB6</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x08</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call the original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x89AE</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Skip to the end if the UP bit of the controller state is not set
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(And(Immediate), </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Beq, LabelRelativeOffset(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>));
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Compute distance from current piece to drop destination, placing result in accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;compute-hard-drop-distance&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Add the current piece&#39;s Y coordinate
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Update the current piece&#39;s Y coordinate with the result
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<div class="nes-screenshot">
+<img src="hard-drop-test2.gif">
+</div>
+<p>That’s looking pretty good!</p>
+<p>There’s a minor issue with timing though. It appears the game is waiting until the end of the
+current “tick” before spawning the next piece. After a hard drop, the current tick should
+end immediately and the next piece should spawn without delay.</p>
+<p>Looking at the memory with mesen, it looks like there’s a counter at <code>0x0045</code> counting up to some number
+and then resetting on the next tick (when the current piece moves down on its own).
+To learn more, I had my emulator log all instructions and ran the game for 13 ticks.
+I chose 13 because it seemed unlikely to appear by accident.</p>
+<div class="nes-screenshot">
+<img src="13.gif">
+</div>
+<p>During this run, the timer would have expired 13 times. Somewhere in the instruction log there is a
+related instruction that was executed exactly 13 times. Let’s find it!</p>
+<p>The instruction log is in a file named /tmp/log.txt:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>cat /tmp/log.txt | sort | uniq --count | sort --numeric-sort
+</span></code></pre>
+<p>This makes a histogram of instructions by frequency. Perusing the instructions that were executed 13 times, I spotted:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>13 0x8958  Lda(Immediate) 0x00
+</span><span>13 0x895A  Sta(ZeroPage) 0x45
+</span></code></pre>
+<p>It seems relevant because it interacts with the timer at <code>0x0045</code>!</p>
+<p>Consulting the disassembled code around that instruction:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>0x8980  Lda(ZeroPage) 0x45    # load the timer value
+</span><span>0x8982  Cmp(ZeroPage) 0xAF    # compare with the value at 0x00AF
+</span><span>0x8984  Bpl(Relative) 0xD2 (relative: D2, absolute: 8958)  # branch if it was higher
+</span><span>0x8986  Jmp(Absolute) 0x8972
+</span><span>0x8972  Rts(Implied)
+</span><span>0x8958  Lda(Immediate) 0x00  # load 0 into the accumulator
+</span><span>0x895A  Sta(ZeroPage) 0x45   # store the accumulator (0) in the timer
+</span></code></pre>
+<p>Those last two instructions set the timer value to 0, and they’re executed exactly 13 times.
+The only way to get to these instructions is via the branch (<code>0x8984</code>) which means the branch condition
+is only true 13 times - likely once per tick.
+So a likely narrative is that the timer is incremented each frame and the frame on which it becomes larger
+than the value in <code>0xAF</code> marks the end of the current tick at which point the timer is reset and the current piece moves down.</p>
+<p>Watching <code>0x00AF</code> in mesen, and it appears to be the maximum value that the timer in <code>0x0045</code> reaches.
+Furthermore, when you complete a level, the value in <code>0x00AF</code> is decreased, speeding up the game!
+So after a hard drop, just set the timer value to be the value in <code>0x00AF</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;handle-controls&quot;</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xB6</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x08</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TIMER</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x45</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TIMER_MAX</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xAF</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call the original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x89AE</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Skip to the end if the UP bit of the controller state is not set
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(And(Immediate), </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Beq, LabelRelativeOffset(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>));
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Compute distance from current piece to drop destination, placing result in accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;compute-hard-drop-distance&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Add the current piece&#39;s Y coordinate
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Update the current piece&#39;s Y coordinate with the result
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Set the timer to its maximum value
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">TIMER</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">TIMER_MAX</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<div class="nes-screenshot">
+<img src="hard-drop-test3.gif">
+</div>
+<p>Looking better, but there’s still a long delay if you hard drop the first piece during the first tick.
+It turns out that the first tick takes longer than all the other ticks.
+Staring at the memory in mesen, I noticed the value at <code>0x004E</code> counting up during the first
+tick. It’s set to 0 during all other ticks. Setting it to 0 after a hard drop appears to
+fix the timing issue.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;handle-controls&quot;</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xB6</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x08</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TIMER</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x45</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TIMER_MAX</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0xAF</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">TIMER_FIRST_TICK</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u8 = </span><span style="color:#0086b3;">0x4E</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Call the original function
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#0086b3;">0x89AE</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Skip to the end if the UP bit of the controller state is not set
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">CONTROLLER_STATE</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(And(Immediate), </span><span style="color:#0086b3;">CONTROLLER_BIT_UP</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Beq, LabelRelativeOffset(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>));
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Compute distance from current piece to drop destination, placing result in accumulator
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Jsr(Absolute), </span><span style="color:#183691;">&quot;compute-hard-drop-distance&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Add the current piece&#39;s Y coordinate
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Clc, ());
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Adc(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Update the current piece&#39;s Y coordinate with the result
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">ZP_PIECE_COORD_Y</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Set the timer to its maximum value
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(ZeroPage), </span><span style="color:#0086b3;">TIMER</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">TIMER_MAX</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Clear the first tick timer
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Lda(Immediate), </span><span style="color:#0086b3;">0x00</span><span>);
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Sta(ZeroPage), </span><span style="color:#0086b3;">TIMER_FIRST_TICK</span><span>);
+</span><span>
+</span><span>b.</span><span style="color:#62a35c;">label</span><span>(</span><span style="color:#183691;">&quot;controller-end&quot;</span><span>);
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// Return
+</span><span>b.</span><span style="color:#62a35c;">inst</span><span>(Rts, ());
+</span></code></pre>
+<div class="nes-screenshot">
+<img src="hard-drop-test4.gif">
+</div>
+<p>That appears to be working!</p>
+<p>The source code for the patching tool is available on <a href="https://github.com/gridbugs/mos6502/tree/master/tetris-hard-drop-patcher">github</a>.</p>
+<p>Download the IPS patch that applies the change described in this post
+<a href="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop.ips">here</a>.</p>
+<p>A second patch that adds hard drop but doesn’t show the ghost piece is available
+<a href="https://gridbugs.github.io/gridbugs.org/reverse-engineering-nes-tetris-to-add-hard-drop/tetris-hard-drop-no-ghost.ips">here</a>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;2020-recap&#x2F;" aria-label="Previous">
+	  Previous: 2020 Recap
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;if-you-use-a-custom-linker-script-_start-is-not-necessarily-the-entry-point&#x2F;" aria-label="Next">
+	  Next: If you use a custom linker script, _start might not be your entry point
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

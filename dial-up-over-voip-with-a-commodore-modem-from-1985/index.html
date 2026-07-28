@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Dial-Up over VoIP with a Commodore Modem from 1985">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/">
+
+	
+	    <meta name="description" content="Guide for setting up a point-to-point dial-up network between a pair of computers using old-fashioned modems connected over VoIP lines">
+	    <meta property="og:description" content="Guide for setting up a point-to-point dial-up network between a pair of computers using old-fashioned modems connected over VoIP lines">
+	
+
+	
+	    <meta property="article:published_time" content="2026-02-27T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/setup.jpg">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Dial-Up over VoIP with a Commodore Modem from 1985
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Dial-Up over VoIP with a Commodore Modem from 1985</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2026-02-27T00:00:00+00:00">
+    February 27, 2026
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/retrocomputing" aria-label="tag">retrocomputing</a>
+  
+</p>
+
+
+  
+
+<p>I connected a pair of computers with a 300 bits/s point-to-point dial-up
+network through a pair of Voice-over-IP (VoIP) phone lines. This type of
+networking predates commercial dial-up internet, and required users to directly
+call the specific online service they wished to connect to, such as CompuServe
+or a bulletin board system. Nowadays there’s little practical benefit to
+dial-up networking. It’s also become more difficult over time because telcos
+have started digitizing landlines employing codecs and audio filtering
+optimized for voice that can interfere with the tones that dial-up modems use
+to communicate. VoIP phone lines have been known to suffer from similar issues,
+but at least give users some amount of control over how the signal is digitized.</p>
+<p>Despite this I thought it would be really cool to connect my Commodore 64 to
+some dial-up BBSes, but there don’t seem to be any left in Australia.
+So then I thought it would be even cooler to run my own.
+I’m not at that point yet, but getting two computers to communicate with each
+other at all was very involved so I’m documenting what I’ve found out so far
+before going further. Two months ago I’d never heard of an ATA or
+Hayes-compatible modem so telephony-wise I was really starting from scratch. This
+post is aimed at me two months ago and anyone else curious about going online
+like it’s 1985 but aren’t sure how to start.</p>
+<p>Here’s my setup:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/setup.jpg" alt="Desk with a pair of computers. On the left is a Commodore 64 and on the right is a PC. Between them is an analog telephone adapter and dial-up modem" /></p>
+<p>On the left is a Commodore 64 with a Commodore 300 Modem attached.
+On the right is a regular PC running Linux. In between, the beige box
+is a dial-up modem connected to the PC’s serial port, and the black
+box is an analog telephone adapter (ATA) which converts analog telephone
+signals to VoIP. Both modems are attached to the ATA with phone cables.</p>
+<p>Here’s a diagram showing all the devices involved and how they’re connected to each other.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/topology.jpg" alt="Topology of dial-up setup" /></p>
+<p>I can call the PC’s modem from the Commodore 64 and answer the call on the PC side.
+The modems handshake with a variant of the iconic “dial-up modem” sound.
+Then they are connected, and when I type
+on the Commodore the text appears on the PC’s terminal and vice versa.</p>
+<h2 id="dial-up-mental-model"><a class="zola-anchor" href="#dial-up-mental-model" aria-label="Anchor link for: dial-up-mental-model">Dial-up Mental Model</a></h2>
+<p>Each computer is connected to
+a modem via a serial interface. There’s a wire for sending data and a separate wire for
+receiving data, plus some additional wires for control signals and ground.
+At any point in time, each data wire can either be a (relatively) high voltage (e.g. 5v) representing a binary 1
+or a low voltage (e.g. 0v) representing 0, and the sender sends a single bit at a time by setting
+the voltage of the sending wire. There is no clock signal, so both the computer and modem
+must agree on the bit rate to effectively interpret each other’s signals.
+There’s no out of band way to indicate that data is currently being sent.
+Instead, the neutral state of a data wire is high voltage, and data is sent in blocks of (usually 8) bits
+preceded by a single 0 bit called the “start bit”, and followed by one or two 1 bits called “stop bits”,
+and the wire is left at high voltage until the next start bit.
+To send a character over serial, such as when you press a key on your keyboard attached to a serial terminal,
+the character is numerically encoded (e.g. with ASCII) and the encoded value is sent least-significant-bit-first
+wrapped in start and stop bits. When data is received by the serial port, the terminal decodes the value
+and prints the character it represents.</p>
+<p>Many dial-up modems implement a set of commands known as the <a href="https://en.wikipedia.org/wiki/Hayes_AT_command_set">Hayes AT command
+set</a>, where the text of
+commands and their responses are sent over the serial interface between the
+computer and modem. These commands can be used to configure the modem or take actions such as
+dialing a number or answering a call.
+I mention this here as an example of the computer communicating with the modem directly rather than as
+a conduit to connect with a remote computer.</p>
+<p>When one modem is connected to another modem through the phone network, data received by a modem from
+its local computer is sent over the phone line by modulating the frequency of a “carrier signal”, a method
+known as <a href="https://en.wikipedia.org/wiki/Frequency-shift_keying">Frequency-shift Keying (FSK)</a>.
+If you could listen to the analog signal sent or received over the phone line by a modem you would hear a faint
+tone in the order of 1 to 2 kHz. This is the carrier signal.
+Both modems generate a carrier signal which they modulate to send data to the other modem.
+The specific way the carrier signal is
+modulated depends on the speed of the connection between the modems. In my setup they send 300 bits/s
+using a protocol called <a href="https://en.wikipedia.org/wiki/Bell_103">Bell 103</a>, where the initial carrier
+signal represents 1, and its pitch shifted down by ~200Hz to send a 0.</p>
+<p>Here’s a recording I took of the audio received by one of my modems over the phone line while some
+data was being transmitted. The X-axis is time and the Y-axis is pitch, and the pitches representing
+a 0 and 1 are clearly visible.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/modem-recording.jpg" alt="A horizontal green line varying between two different heights, visualizing a binary signal" /></p>
+<p>As with a serial interface
+there is no clock signal, so both modems have to agree on a bit rate.
+There are multiple different FSK modem protocols, and each prescribes the carrier frequencies
+and their modulation, and the speed of the connection. The modems negotiate which protocol they
+will use during the modem handshake when a phone call between modems initially connects.</p>
+<p>If analog landlines were still common the above explanation would be sufficient,
+but to connect two modems over the phone network in 2026 you’re probably going to
+need to do so over the internet using VoIP. To use an analog device like a modem or analog phone
+you’ll need an analog telephone adapter (ATA), which is a device with phone jacks and usually
+an Ethernet port so it can connect to the internet via your router. You’ll also need to make
+an account with a VoIP provider and rent some phone numbers from them, and configure your ATA
+so that each phone number is associated with one of its phone jacks. You’ll also need to disable
+echo cancellation in your ATA’s settings or it messes with the modem signals.</p>
+<h2 id="analog-telephone-adapter-ata"><a class="zola-anchor" href="#analog-telephone-adapter-ata" aria-label="Anchor link for: analog-telephone-adapter-ata">Analog Telephone Adapter (ATA)</a></h2>
+<p>An ATA is a device which converts analog phone signals to VoIP.
+I’m using a Grandstream HT802 v2 as my ATA which has two telephone ports
+allowing me to plug in both modems. I made an account with a VoIP provider
+(Crazytel), set up two SIPs, each with their own associated phone number, and
+then registered one SIP for each port of the ATA via its web interface.</p>
+<p>Dial-up networking over VoIP requires as raw a signal as possible being sent between the modems.
+Make sure the first choice of codec is PCMU, also known as G.711, which is the highest quality
+codec available on most ATAs. Also make sure any echo or silence suppression provided by the ATA
+is disabled. Enable jitter buffering (it’s probably enabled by default). I found it’s most reliable
+to use the maximum amount of jitter buffering available on the ATA.</p>
+<p>Test the ATA setup by making calls between each VoIP phone number and your mobile phone by plugging
+an analog phone into each port on the ATA.</p>
+<h2 id="pc-and-dial-up-modem"><a class="zola-anchor" href="#pc-and-dial-up-modem" aria-label="Anchor link for: pc-and-dial-up-modem">PC and dial-up modem</a></h2>
+<p>My modem is a NetComm Roadster II 56 Ultra SVD. There’s not much information about it online and I
+wasn’t able to dig up a manual, but there are some photos <a href="https://wiki.preterhuman.net/NetComm_Roadster_II_56_Ultra_SVD">here</a> and it’s also mentioned <a href="https://goughlui.com/2012/11/27/tech-flashback-other-external-modems-in-my-collection/">here</a>.</p>
+<p>Here it is. The lights on the front are labeled: Power, Terminal Ready, Off Hook, Carrier Detect, Data.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/netcomm-modem-iso.jpg" alt="Netcomm Roadster II 56 Ultra modem, isometric view" /></p>
+<p>Here’s the back. The “Data” port is how it connects to the PC.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/netcomm-modem-back.jpg" alt="Netcomm Roadster II 56 Ultra modem, rear view showing jacks: Power, Data, Phone, Line" /></p>
+<p>You’ll need a DB9 male to female serial cable like this one to connect it to a PC:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/serial-cable.jpg" alt="The ends of a DB9 M/F serial cable" /></p>
+<p>I was lucky enough to find a computer abandoned under a bridge which is old enough to still have a
+DB9 port but new enough to run a modern OS. Most computers from the past decade or so don’t have this port
+but it should be easy to find a USB to DB9 adapter.</p>
+<p>To interact with the modem from the PC you’ll need terminal software that can send and receive data
+over a serial port. On Linux I usually use <code>picocom</code>. Once everything is connected and powered on, run
+<code>picocom /dev/ttyS0</code> from a terminal.
+This should cause the “Terminal Ready” light on the modem to light up.
+If it doesn’t, your serial cable is bad, and while you’ll still be able to interact with the modem directly
+over serial port, you won’t be able to send or receive any data from the remote side once a connection is
+established. Ask me how I know.</p>
+<p>Typing in a picocom session sends characters over the serial connection.
+Eventually we’ll use this to send characters all the way to the Commodore 64 via the dial-up network, but
+for now the characters will be interpreted by the modem, which implements the
+<a href="https://en.wikipedia.org/wiki/Hayes_AT_command_set">Hayes AT command set</a>.
+These are commands for configuring a modem or performing actions such as
+dialing a number or answering a call.</p>
+<p>To test that the modem is working, try typing <code>AT</code> (then hit enter), to which the modem should reply <code>OK</code>.
+Test that the modem can receive calls by connecting it to one of the ATA’s phone ports with a phone cable
+and then calling number associated with that port (with your mobile phone).
+When I do this the modem sends the word <code>RING</code> over the serial connection. The
+command to answer a call is <code>ATA</code> (it’s a coincidence that this is the name for
+the device for connecting analog devices to VoIP). The modem will probably send
+some beeps over the phone connection then give up when it doesn’t receive a
+carrier signal. The command to end a call is <code>ATH</code>. It’s not directly relevant to this setup,
+but you can also dial a number from the modem with the command <code>ATDT</code> followed by the number.</p>
+<h2 id="commodore-64-and-commodore-modem-300"><a class="zola-anchor" href="#commodore-64-and-commodore-modem-300" aria-label="Anchor link for: commodore-64-and-commodore-modem-300">Commodore 64 and Commodore Modem 300</a></h2>
+<p>Here’s my Commodore 64:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/c64-top.jpg" alt="Commodore 64 top view showing RCA adapter and SD2IEC peripherals" /></p>
+<p>I’m using a <a href="https://www.c64-wiki.com/wiki/SD2IEC">SD2IEC</a> device (the black
+box at the top right) to run programs from an SD card.</p>
+<p>The Commodore Modem slots into the Commodore 64’s user port. Here’s the modem:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/commodore-modem-front.jpg" alt="Commodore Modem 300 front view showing user port connector" /></p>
+<p>This modem doesn’t have built-in support for generating the <a href="https://en.wikipedia.org/wiki/DTMF_signaling">DTMF touch tones</a> to dial a number.
+Instead, there’s an “Audio In” RCA jack on the back which you can play touch tones into.
+The intended usage was to connect the audio signal coming out of the Commodore 64 itself
+to this jack and then use the Commodore 64’s sound chip to generate touch tones.
+The terminal software I’m using on the Commodore doesn’t have support for generating these tones
+however.</p>
+<p>Instead, I found two ways to initialize a call:</p>
+<ul>
+<li>Generate touch tones on a laptop or mobile phone, with its headphone jack
+attached to the modem’s “Audio In” with a 3.5mm to RCA adapter (using either
+the red or white RCA cable - it doesn’t matter which). I used
+<a href="https://apkpure.com/dtmf-tone-generator-decoder/com.arcoirislabs.dtmfencdec.app">this</a>
+android app to generate the tones.</li>
+<li>Plug an analog phone into the “Phone” jack on the back of the modem, and use the phone to initialize the call.
+Then use terminal software on the Commodore 64 to have the modem take over the call before the other side picks up.</li>
+</ul>
+<p>Read more about initiating a call <a href="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/#initiating-a-call">below</a>.</p>
+<p>Here’s the back of the modem showing the “Audio In” and “Phone” jacks, as well as the “Line” jack which will be used to connect the modem to the ATA.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/commodore-modem-back.jpg" alt="Commodore Modem 300 rear view showing Audio In, Phone, and Line jacks" /></p>
+<p>Also in the above image are the two phone jacks. Connect the one marked “Line” to the ATA, and plug an analog
+phone into the one marked “Phone”. The “Phone” jack is probably so that households with a single landline could
+share it between the modem and phone without needing to physically unplug the phone and plug in the modem every
+time they wanted to use the modem. In this setup the analog phone is used for initializing a call to the PC’s modem,
+and also for resetting the modem at the end of a call.</p>
+<p>The modem has a built-in speaker which lets you hear the dial tone and other phone noises to understand
+what state the line is in. Unfortunately it’s really loud and of poor quality, and there’s no way to turn
+it down or off. After a day of this I decided to make some modifications and added this headphone jack
+to the side, and now I can plug in a speaker with a volume knob. The audio
+quality was also dramatically improved. This headphone jack also makes it possible to record the raw
+audio signal received by the modem, which I wasn’t able to do before.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/commodore-modem-headphones-jack.jpg" alt="Commodore Modem 300 side view showing custom headphone jack" /></p>
+<p>The terminal program I’m using on the Commodore is <a href="https://www.c64-wiki.com/wiki/Novaterm">Novaterm</a>
+which I’m loading off an SD card with the SD2IEC device.
+Here’s the main menu:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/novaterm1.jpg" alt="Main menu of Novaterm program" /></p>
+<p>The configuration to make Novaterm work with the Commodore modem is below.
+On the first configuration page, the <code>Modem type</code> must be set to <code>1660</code>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/novaterm2.jpg" alt="First configuration page of Novaterm program" /></p>
+<p>On the second configuration page, the <code>Serial driver</code> must be <code>User port</code>.
+Also enable <code>Print in ASCII</code> since the Linux side of the connection will assume text is ASCII-encoded.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/novaterm3.jpg" alt="Second configuration page of Novaterm program" /></p>
+<p>Once Novaterm is configured you can save the configuration to the SD card, then
+enter the terminal by selecting <code>Terminal mode</code> from the main menu.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/novaterm4.jpg" alt="Terminal mode of Novaterm program" /></p>
+<p>This is the screen where data can be sent and received via the modem once it’s connected.
+There’s a few other operations we can do from here. Press <code>C= M</code> for a list:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/novaterm-help.jpg" alt="List of commands for the Notaterm terminal" /></p>
+<p>Relevant for us are <code>C= H</code> and <code>C= J</code> which are described as “Hang up phone” and “Phone off hook” respectively.
+Oddly I found that these commands did the opposite of what they say. When I press <code>C= H</code> I hear a dial tone
+from the modem (from the speakers attached to its aftermarket headphone jack), and the attached analog phone powers off.
+When the modem is in this state, playing the touch tones to dial a number into the “Audio In” port initiates a call.
+Pressing <code>C= J</code> ends the current call and causes the analog phone to turn back on. Sometimes <code>C= J</code>
+also causes a hissing static sound to start from the inside the modem. It’s not played through the speakers (nor the internal speaker which I disconnected).
+The hissing can be stopped by picking up the handset of the analog phone.</p>
+<h3 id="initiating-a-call"><a class="zola-anchor" href="#initiating-a-call" aria-label="Anchor link for: initiating-a-call">Initiating a Call</a></h3>
+<p>As described above there are two ways to start a call:</p>
+<h4 id="external-device"><a class="zola-anchor" href="#external-device" aria-label="Anchor link for: external-device">External Device</a></h4>
+<p>To initiate a call by playing touch tones into the “Audio In” jack, attach the device that will generate the tones with a 3.5mm to RCA adapter.
+These adapters usually have two RCA plugs for the left and right audio channel, so just connect one of the plugs to the modem and let the other dangle.
+Press <code>C= H</code> on the modem and you should hear a dial tone through the modem or its speakers.
+Then play the touch tones for the number you want to dial. I found that 100ms tones with 50ms gaps works, but the timing may depend on your ATA.
+You should hear the touch tones play out of the modem’s speakers, and as soon as the first touch tone plays the dial tone should stop.
+If the dial tone persists throughout the touch tones and the call doesn’t connect, try increasing the volume of the device generating the touch tones.
+A few seconds after the final touch tone played, you should hear a ring tone through the modem’s speakers.</p>
+<h4 id="analog-phone"><a class="zola-anchor" href="#analog-phone" aria-label="Anchor link for: analog-phone">Analog Phone</a></h4>
+<p>To initiate a call with the analog phone, press <code>C= J</code> to make sure the phone is powered on.
+Pick up the phone, and you should hear a dial tone through the receiver (it’s just a regular phone at this point).
+Dial the number you want to call, and wait until you hear a ring tone through the receiver.
+Without hanging up the phone, press <code>C= H</code> on the Commodore. The analog phone will immediately go dead,
+and you should now hear the ring tone play through the modem (or attached
+speakers).</p>
+<h2 id="connecting"><a class="zola-anchor" href="#connecting" aria-label="Anchor link for: connecting">Connecting</a></h2>
+<p>We’re finally ready to go online.</p>
+<p>Start a terminal (e.g. <code>picocom</code>) session on the PC, and make sure the modem is
+alive by sending <code>AT</code> and getting a response <code>OK</code>, and make sure the “Terminal
+Ready” light on the modem is on.</p>
+<p>The Commodore and PC modems should be attached to the two phone ports of the ATA.
+Note down which VoIP phone number is associated with each of the ports.
+Then from the Commodore side, <a href="https://gridbugs.github.io/gridbugs.org/dial-up-over-voip-with-a-commodore-modem-from-1985/#initiating-a-call">initiate a call</a>, dialing the number associated with the port which the PC’s modem is plugged into.
+The terminal on the PC should periodically print <code>RING</code> indicating an incoming call.
+Send the command <code>ATA</code> to the modem to answer the call.</p>
+<p>Now the modems should handshake, indicated by some loud beeping from both. When
+the beeping stops, the PC’s modem should print <code>CONNECT</code> to the terminal, and
+on the top status line in Novaterm on the Commodore, the <code>C</code> should light up
+and the timer should start incrementing.</p>
+<p>Finally, on the PC side, adjust the baud rate to 300. Above I explained that both sides of a serial or modem connection must agree on the bit rate.
+I initially assumed that the connection between both modems and the connection between the PC’s modem and the PC could operate at different rates,
+as long as the digital side of the modem matched the PC’s serial port bit rate, and the analog side of the modem matched the other modem’s bit rate.
+I expected the PC’s modem would buffer data from the PC at one rate, and transmit it at a different rate over the phone line.
+Maybe other modems work this way, but mine does not, and I found that out the hard way. The Commodore modem always operates at 300 bits/s, so the PC’s
+serial port must be configured to the same speed. If you’re using <code>picocom</code>, you can change the baud rate with <code>C-a C-b</code> which will prompt for a new rate,
+or you can start a <code>picocom</code> session with
+<code>picocom -b 300 /dev/ttyS0</code>. The digital side of the modem will adjust its rate to match the rate of the PC’s serial port, which it can figure out dynamically because
+it knows all commands will begin with a fixed sequence of bits making up the command prefix <code>AT</code>.</p>
+<p>And now you’re connected! Typing into the <code>picocom</code> terminal will send characters to the Commodore and vice versa.</p>
+<p>Here’s how the entire process looks on the Commodore side including the modem sounds. Note the spurious character received by the Commodore immediately after it connects.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/nWYCyEs-7PY?si=jYRPzeUaX3v5Sp-f" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>The Linux PC side can interact with the remote side by redirecting IO to/from <code>/dev/ttyS0</code>. Keep the serial terminal running
+to maintain the connection, and in a separate terminal run something like <code>echo Hello, World! &gt; /dev/ttyS0</code> to send the text to the remote machine.</p>
+<video autoplay muted loop>
+  <source src="cowsay.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<h2 id="everything-that-went-wrong"><a class="zola-anchor" href="#everything-that-went-wrong" aria-label="Anchor link for: everything-that-went-wrong">Everything that went wrong</a></h2>
+<p>Here’s a list of all the reasons this didn’t work the first time:</p>
+<ul>
+<li>Plugging my ATA into my home network on the far side of a wireless bridge causes my internet to go down intermittently. The room where I keep my Commodore
+is at the opposite end of my apartment to my router, and I don’t want to run an Ethernet cable to connect them. I was using an old router with WDS to connect
+the Ethernet network in the room with the Commodore to the WIFI network from my main router. The ATA worked fine when plugged into my main router, but when
+plugged into the far side of the WDS bridge it would cause my main router to lose connection with my ISP for a few minutes every hour or so. After days of
+investigating I still don’t know why this happened, but I fixed the issue by installing a dedicated WIFI bridge instead of using WDS.</li>
+<li>The Commodore modem can’t generate touch tones. It can still theoretically dial numbers using pulse dialing - the style of dialing used by rotary phones.
+My ATA can be configured to allow pulse dialing, but I still couldn’t make it work. I spent a while trying to find a Commodore terminal which also supported
+generating touch tones on the sound chip, and connecting the Commodore’s audio out to the modem’s audio in, but it still wouldn’t initiate a call, possibly because
+of the quality or volume of the touch tones. Only then did I experiment with using an external device to generate the tones, which worked.</li>
+<li>The NetComm modem only handshakes when its baud rate is set to “auto”. The Hayes AT commands let you change the baud rate of the modem, and I thought
+I could rule out an incorrect baud rate as the problem by forcing it to use 300 baud. Running <code>ATS37=1</code> forces 300 baud, but the consequence was it would no longer
+handshake with the Commodore modem, despite the latter running at 300 baud. Changing the NetComm modem’s baud to auto mode (<code>ATS37=0</code>) allowed the
+handshake to complete. Auto mode is the default setting, and I observed it could handshake before I changed it, but not reliably (due to other issues)
+so I changed it. Only upon changing it back was the modem able to handshake.</li>
+<li>I bought the wrong 2 port ATA. I was originally using a 1 port ATA for the Commodore side, and my router’s built-in ATA for the PC side. It wasn’t working
+due to all the other reasons on this list, so I decided to buy a 2 port ATA of the same model as a video I found with a similar setup to mine to rule out
+the ATA as the problem. I bought a second-hand Cisco ATA 191 without realizing that there are two models of the ATA 191 - a multiplatform model
+which allows configuration through a web UI - and an enterprise model which is locked down. And I bought the wrong one.</li>
+<li>My serial cable was apparently faulty, as the “Terminal Ready” light on the modem didn’t turn on at first. The symptom was that I could send commands
+to the modem, and even have it handshake, but the PC couldn’t send or receive any data via the modem. Fortunately I had a spare which worked.</li>
+<li>I didn’t realize the PC’s serial port needs to match the baud rate of the connection between the two modems. I assumed I could use a faster baud rate
+when sending data from the PC to the modem, and the modem would buffer the data and send data to the other modem at a slower speed. Surely some
+modems must work like this, otherwise the servers providing dial-up services would need to constantly adjust their baud rates to match the caller’s
+modems, and the Hayes AT commands don’t provide a way to find out the current baud rate of the analog side of the modem.</li>
+<li>On the Commodore side, I missed that you had to set the serial driver to “User port”. I’d already set the modem type to 1660, which refers to this
+specific model of modem which can only be connected via the user port so I didn’t look for another setting about the interface between the computer and modem
+at first.</li>
+</ul>
+<p>Only after everything on that list was addressed was any data able to make it across the dial-up connection, however
+everything I tried to send would be received garbled. Bytes received by the PC from the commodore were mostly made up of 1 bits, like <code>OxFF</code> and <code>OxFE</code>.
+Data sent from the PC to the Commodore would be “spread out”, with each byte sent being received as 4 or 5 bytes. But at least there was a consistent mapping
+from character sent to characters received. The problem turned out to be that I had disabled the jitter buffer on the ATA, following the principle of
+“disable all the fancy ATA voice features”. It turns out this feature is important for preventing interruptions to the call caused by routing the call
+over the internet. It adds latency but otherwise doesn’t affect the signal. Once I enabled the jitter buffer I could send and receive data over the dial-up network.</p>
+<h2 id="next-steps"><a class="zola-anchor" href="#next-steps" aria-label="Anchor link for: next-steps">Next Steps</a></h2>
+<p>My eventual goal is to host a dial-up bulletin board system. I think this will require a different modem, as currently I need to change the PC’s
+baud rate to match the dial-up connection in order to send data over it, and there’s no way to determine this automatically.</p>
+<p>Looking around online
+there doesn’t seem to be any maintained dial-up BBS software for Linux. I think my best bet will be to emulate an
+old computer on the Linux machine and connect the serial port to the emulator, then find some BBS software for the emulated machine.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;restoring-my-childhood-family-computer-part-4&#x2F;" aria-label="Previous">
+	  Previous: Restoring my Childhood Family Computer Part 4: Emulation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<span class="disabled-link">Next: (none)</span>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

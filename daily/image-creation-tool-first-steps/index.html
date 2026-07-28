@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Image Creation Tool - First Steps">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/image-creation-tool-first-steps/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/image-creation-tool-first-steps/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-30T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Image Creation Tool - First Steps
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;my-keyboard-backlight-works&#x2F;" aria-label="Previous">
+	  Previous: My keyboard backlight works!
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;creating-and-mounting-a-fat32-partition-in-a-gpt-disk-on-freebsd&#x2F;" aria-label="Next">
+	  Next: Creating and mounting a FAT32 partition in a GPT disk on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Image Creation Tool - First Steps</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-30T00:00:00+00:00">
+    August 30, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I’ve started working on a new personal project: <a href="https://github.com/gridbugs/gpt-fat-disk-image">GPT FAT Disk Image Tools</a>.
+That’s a boring name for a boring (in a good way!) piece of software.
+It’s going to be a modest collection of simple tools for working with images of hard drives
+containing <a href="https://en.wikipedia.org/wiki/GUID_Partition_Table">GPT Partition Tables</a>
+where the first partition is formatted with a <a href="https://en.wikipedia.org/wiki/File_Allocation_Table">FAT Filesystem</a>.</p>
+<p>The problem it solves is the following. When doing x86 OS development, I frequently want to run my code in
+an emulator/VM such as qemu. In order to boot an operating system on an emulator, one must present a
+disk image for the emulator to boot from.
+Modern PCs use a firmware interface named <a href="https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface">UEFI</a>.
+Compared to its predecessor <a href="https://en.wikipedia.org/wiki/BIOS">BIOS</a>, it presents a higher-level of abstraction
+to boot code, and rather than loading and executing code from the
+<a href="https://en.wikipedia.org/wiki/Master_boot_record">Master Boot Record</a>
+of your hard drive, it loads a file from one of a handful of pre-defined locations (such as <code>/EFI/BOOT/BOOTX64.EFI</code>)
+from the first partition of the hard drive. The hard drive must have a GPT partition table, and its first partition
+must be formatted with a FAT filesystem (there appears to be some flexibility as to <em>which</em> FAT is used).</p>
+<p>The process of creating a disk image containing a GPT partition table with a FAT-formatted partition
+is harder than it needs to be.
+The <a href="https://wiki.osdev.org/UEFI">osdev wiki page on UEFI</a>
+gives a list of ways to create a UEFI-compatible disk image,
+organized by OS and whether or not they require root.
+I want my hobby OS to have a <code>Makefile</code> rule than builds a bootable disk image,
+and running build tools as root is dangerous,
+and there’s no reason creating or formatting a disk image should require root.
+I frequently bounce between linux and freebsd, so I need a platform-independent solution.</p>
+<p>GPT and FAT are both fairly simple and well-documented standards.
+So far I can decode GPT and FAT headers, and list the files in the root directory of of FAT12 and FAT16 partitions.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;my-keyboard-backlight-works&#x2F;" aria-label="Previous">
+	  Previous: My keyboard backlight works!
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;creating-and-mounting-a-fat32-partition-in-a-gpt-disk-on-freebsd&#x2F;" aria-label="Next">
+	  Next: Creating and mounting a FAT32 partition in a GPT disk on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

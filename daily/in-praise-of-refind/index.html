@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="In praise of rEFInd">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/in-praise-of-refind/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/in-praise-of-refind/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-05T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+In praise of rEFInd
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;getting-back-into-bouldering&#x2F;" aria-label="Previous">
+	  Previous: Getting back into bouldering
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fat32-fsinfo-and-its-backup-don-t-always-match&#x2F;" aria-label="Next">
+	  Next: FAT32 FSInfo and its backup don&#x27;t always match
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">In praise of rEFInd</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-05T00:00:00+00:00">
+    October 05, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>In a recent update, Windows saw fit to mess with my EFI (boot) partition in such a way
+that my Windows/Linux dual-boot setup no longer functioned. When I turned on my PC, it
+booted straight to Windows, rather than showing the GRUB menu first.
+Poking around in my motherboard’s UEFI BIOS tool, and it appears “Secure Boot” has been
+enabled, and some keys installed. I’m 90% sure that I didn’t set it up that way when I
+built my PC about 5 years ago. The “default” boot image on my EFI partition also appeared
+to have been updated in the last few days. Suspicious.</p>
+<p>I tried setting the “default” boot image (“\EFI\bootx64.efi”) back to the grub image,
+but this had no effect. Not too surprising - not all implementations follow this convention.
+I then disabled secure boot. The only way to do this using my motherboard’s UEFI tool is to
+delete the secure boot keys that Windows update seems to have installed. This made me a little
+nervous, but if I had to pick between having a broken Windows install and a broken Linux install,
+I’d forego Windows - all I use it for is playing games anyway.</p>
+<p>I totally planned on breaking out an Archlinux live USB at this point and re-configuring UEFI,
+but before going down this potential rabbit hole, I tried setting up the <a href="http://www.rodsbooks.com/refind/">rEFInd</a>
+bootloader. It’s a tool that locates all the bootable images on in your EFI partition, and displays
+a graphical menu to choose which one to boot. The <a href="http://www.rodsbooks.com/refind/installing.html#windows">Windows Installation Instructions</a>
+worked perfectly, though the first time I rebooted after installing rEFInd it took me straight to Windows,
+and the second time I forced it to run rEFInd via my motherboard’s UEFI tool. Now it runs rEFInd first.</p>
+<p>A small quality of life feature I’m appreciative of is rEFInd remembers your last choice and selects it upon
+subsequent boots. GRUB may have this setting but I never thought to look for it. This will mean that when Windows
+decides to update and restart next time, it won’t reboot into Linux (the default selection in my GRUB menu), but
+instead boot back into Windows to continue the update.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;getting-back-into-bouldering&#x2F;" aria-label="Previous">
+	  Previous: Getting back into bouldering
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;fat32-fsinfo-and-its-backup-don-t-always-match&#x2F;" aria-label="Next">
+	  Next: FAT32 FSInfo and its backup don&#x27;t always match
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

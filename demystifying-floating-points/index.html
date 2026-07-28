@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Demystifying Floating Points">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/demystifying-floating-points/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/demystifying-floating-points/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2023-01-15T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Demystifying Floating Points
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Demystifying Floating Points</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2023-01-15T00:00:00+00:00">
+    January 15, 2023
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/algorithms" aria-label="tag">algorithms</a>
+  
+</p>
+
+
+  
+
+<p>Floating points are a way of representing numbers based on the idea that the
+larger the magnitude of a number, the less we care about knowing its precise
+value. If you’re anything like me (until recently) you use floating points regularly in your code
+with a rough understanding of what to expect, but don’t understand the specifics
+of what floats can and can’t represent. For example what’s the biggest floating
+point, or the smallest positive floating point? Or how many times can you add
+1.0 to a floating point before <em>something bad</em> happens, and what is that
+<em>something bad</em>? How many floating point values are there between 0 and 1? What
+about between 1 and 2?</p>
+<p>The answer to these questions is, of course, “it depends”, so let’s talk about a
+specific floating point standard, the “binary32” type defined in IEEE 754-2008.
+This is the commonly-found single-precision floating point type, which
+backs the <code>f32</code> type in rust, and usually backs the <code>float</code> type in c
+(though of course technically this is left unspecified).
+From now on this this post, I will refer to this type as simply “float”.</p>
+<p>Here’s what a float can represent:</p>
+<ul>
+<li>all powers of 2 from 2^-126 to 2^127</li>
+<li><strong>for each consecutive pair of powers of 2, there are 8,388,607 (that’s 2^23 - 1)
+additional numbers, evenly spaced apart</strong></li>
+<li>zero</li>
+<li>infinity</li>
+<li>negative versions of all of the above</li>
+</ul>
+<p>The second point is the most important for understanding floating points. <strong>Each
+successive pair of powers of 2 has 2^23 - 1 floating point values evenly spread
+out between them.</strong>
+There are 2^23 - 1 floats between 0.125 and 0.25, between 1 and 2, between 1024
+and 2048, and between 8,388,608 (2^23) and 16,777,216 (2^24). As the numeric
+range between consecutive powers of 2 increases, the number of floats between
+them stays the same at 2^23 - 1; the floats just get more spread out.
+This is the reason that values with lower
+magnitudes can be more precisely represented with floating points.</p>
+<p>Some implications of this:</p>
+<ul>
+<li>in between 1 and 2, consecutive float values are 2^-23 apart from one
+another</li>
+<li>in between 2 and 4, consecutive float values are 2^-22 apart from another</li>
+<li>in between 8,388,608 (2^23) and 16,777,216 (2^24), consecutive float values
+are 1 apart from one another</li>
+<li>for each power of 2, there are 8,388,608 (2^23) floats (1 for the power of 2,
+and 2^23 - 1 between (exclusive) the power of 2 and the next power of 2)</li>
+<li>the number of positive floats less than 1 is 126 x 2^23 = 1,056,964,608
+<ul>
+<li>there are 126 powers of 2 less than 1</li>
+</ul>
+</li>
+<li>the number of positive floats greater than or equal to 1 is 128 x 2^23 = 1,073,741,824
+<ul>
+<li>there are 128 powers of 2 greater than or equal to 1 (including 2^0 = 1)</li>
+</ul>
+</li>
+<li>all floats above 8,388,608 (2^23) are integers</li>
+<li>all floats above 16,777,216 (2^24) are even</li>
+<li>if you attempt to add 1 to 16,777,216 (2^24), the result will be 16,777,216 (2^24)</li>
+</ul>
+<p>Here’s how floats are encoded:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/demystifying-floating-points/bits.svg" alt="diagram: [ Sign (1 bit) | Exponent (8 bits) | Fraction (23 bits) ]" /></p>
+<span id="continue-reading"></span>
+<ul>
+<li>the sign bit determines if a number is positive or negative (0 means positive, 1
+means negative).</li>
+<li>the exponent determines the highest power of 2 less than or equal to the float’s value.
+E.g., if the exponent is 7, the float will be greater than or equal to 2^7,
+and less than 2^8. The exponent is encoded as a “biased integer”. To compute
+its value, treat it as an unsigned 8-bit integer, and subtract 127. The
+literal values 0 and 255 are treated specially to represent floats whose
+values are zero and infinity respectively. Thus the minimum value for the
+exponent is 1 - 127 = -126, and the maximum value is 254 - 127 = 127.</li>
+<li>the fraction determines precisely where the value lies between 2^exponent and
+2^(exponent+1). It’s a 23-bit integer, and thus can have 2^23 different
+values. If it’s 0, then the float is a power of 2 (2^exponent). Otherwise,
+it’s one of the 2^23 - 1 values between the “current” power of 2 (2^exponent)
+and the next one.</li>
+</ul>
+<p>So putting all this together, assuming the literal value of the exponent is inclusively between 1 and
+254, the formula giving the value of a float is:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>(-1)^sign x 2^(exponent - 127) x (1 + (fraction / 2^23))
+</span></code></pre>
+<p>Breaking down each part:</p>
+<ul>
+<li><code>(-1)^sign</code> is 1 if the sign is 0, and -1 if the sign is 1</li>
+<li><code>2^(exponent-127)</code> raises 2 to the power of the exponent after applying the bias of -127</li>
+<li><code>(1 + (fraction / 2^23))</code> linearly interpolate between 1 and 2 based on the
+fraction (which is always between 0 and 2^23 - 1). Since multiplying the
+current power of 2 by 2 will yield the next power of 2, multiplying the
+current power of 2 by a number between 1 and 2 will give a value in between
+the current power of 2 and the next power of 2.</li>
+</ul>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;if-you-use-a-custom-linker-script-_start-is-not-necessarily-the-entry-point&#x2F;" aria-label="Previous">
+	  Previous: If you use a custom linker script, _start might not be your entry point
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;playing-sound-on-the-nes-by-directly-setting-its-dmc-output&#x2F;" aria-label="Next">
+	  Next: Playing sound on the NES by directly setting its DMC output
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

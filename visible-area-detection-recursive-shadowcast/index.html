@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Visible Area Detection with Recursive Shadowcast">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2015-11-16T12:30:01+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Visible Area Detection with Recursive Shadowcast
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Visible Area Detection with Recursive Shadowcast</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2015-11-16T12:30:01+10:00">
+    November 16, 2015
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/algorithms" aria-label="tag">algorithms</a>
+  
+</p>
+
+
+  
+
+<p>Most games employ some form of visible area detection to simulate the fact that
+opaque objects obscure one’s view of whatever is behind them.
+<em>Recursive Shadowcast</em> is one
+of a handful of algorithms that compute visible area in worlds represented
+by 2D grids.
+This makes it suitable for use in roguelikes.
+This post will explain the recursive shadowcast algorithm.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/dcss0.png" alt="Screenshot from Dungeon Crawl Stone Soup demonstrating its visible area detection" /></p>
+<span id="continue-reading"></span><h2 id="visible-area-detection-in-a-2d-grid"><a class="zola-anchor" href="#visible-area-detection-in-a-2d-grid" aria-label="Anchor link for: visible-area-detection-in-a-2d-grid">Visible Area Detection in a 2D Grid</a></h2>
+<p>Before diving into the details, let’s get a feel for 2D grid-based visible area
+detection. Below is an environment that will be used throughout this post. White
+cells are empty and black cells are opaque walls. The scene is viewed from the cell
+containing the red cross.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example0.png" alt="example0.png" /></p>
+<p>The yellow-shaded area in the image below is visible from the centre of the
+observer’s cell.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example1.png" alt="example1.png" /></p>
+<p>Note that some cells are partially inside the visible area.
+To simplify explanations, these cells will be considered to be completely
+visible.</p>
+<p>The visible floor cells are shown below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example2.png" alt="example2.png" /></p>
+<p>If at least one edge of a wall cell is visible, it
+is considered visible. Visible wall cells are shown below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example3.png" alt="example3.png" /></p>
+<h2 id="recursive-shadowcast"><a class="zola-anchor" href="#recursive-shadowcast" aria-label="Anchor link for: recursive-shadowcast">Recursive Shadowcast</a></h2>
+<p>Recursive Shadowcast takes the following input:</p>
+<ul>
+<li>a 2D grid of cells, where each cell is either transparent or opaque</li>
+<li>a coordinate of a cell in this grid from which the scene is viewed</li>
+</ul>
+<p>It identifies which cells in the grid are visible when viewed from the specified
+position.</p>
+<h3 id="octants"><a class="zola-anchor" href="#octants" aria-label="Anchor link for: octants">Octants</a></h3>
+<p>Recursive shadowcast considers the space to be made up of 8 octants, centred
+at the observer. Each coloured segment in the image below is a single
+octant. The visible area is computed independently on each octant.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example4.png" alt="example4.png" /></p>
+<p>If a cell lies on the border of 2 octants, it is considered to be in both. This
+implies that some cells are in 2 octants. It would be trivial to keep track of
+which cells have been visited, and thus prevent visiting the same cell twice
+while processing two different octants if necessary.</p>
+<p>To clarify the point above, shaded in blue below are all the cells in a single
+octant.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example5.png" alt="example5.png" /></p>
+<p>Note also that the cell containing the observer isn’t part of any octant.
+Generally, the cell containing the observer is always visible, regardless of the
+opacity of the cells around them.</p>
+<h3 id="example-octant"><a class="zola-anchor" href="#example-octant" aria-label="Anchor link for: example-octant">Example Octant</a></h3>
+<p>The simplest way to explain this algorithm is to jump right in with an example.
+We’ll first consider this octant.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example6.png" alt="example6.png" /></p>
+<p>As we compute the visible area in this octant, we’ll be keeping track of a few
+variables:</p>
+<ul>
+<li><strong>depth</strong> is the vertical distance of a cell (or row of cells) from the eye.
+Computation always starts with depth = 1.</li>
+<li><strong>min slope</strong> is the gradient of the left-most edge of our vision (within this
+octant)</li>
+<li><strong>max slope</strong> is the gradient of the right-most edge of our vision (within this
+octant)</li>
+</ul>
+<p>For this octant, gradient values are ratios dx/dy relative to the eye’s
+position. That is, multiplying a gradient value by some distance above the eye,
+will give a corresponding distance to the right of the eye on the slope defined
+by the gradient. Thus, as in the image below, a gradient of 0 defines a line
+going straight up, and a gradient of 1 defines a line at 45 degrees up and to
+the right.</p>
+<p>It’s important to point out that the eye is considered to be in the centre of
+its cell. That is, if the eye is in cell at coordinates (2, 3), the actual
+absolute position of the eye would be (2.5, 3.5) (assuming (0, 0) is the
+coordinate of the top-left corner of the grid).</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example7.png" alt="example7.png" /></p>
+<p>We’ll scan the current depth from west to east. Each cell that is visited is
+considered to be visible. If an opaque cell is
+encountered, recurse, incrementing the depth, and adjusting the min and max
+slope such that the opaque cell obscures vision at the next depth level. This
+process is documented more concretely in the following pseudocode.</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth, min_slope, max_slope) {
+</span><span>
+</span><span>  first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>  previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">null</span><span>;
+</span><span>
+</span><span>  for each cell </span><span style="color:#183691;">&quot;current_cell&quot; </span><span>at depth </span><span style="color:#183691;">&quot;current_depth&quot;
+</span><span>                        between </span><span style="color:#183691;">&quot;min_slope&quot; </span><span>and </span><span style="color:#183691;">&quot;max_slope&quot;
+</span><span>                        from west to east {
+</span><span>
+</span><span>    mark current_cell </span><span style="font-weight:bold;color:#a71d5d;">as </span><span>visible;
+</span><span>   
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>not first {
+</span><span> 
+</span><span>      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is opaque and previous_cell is transparent {
+</span><span>
+</span><span>        # first opaque cell after at least one transparent cell
+</span><span>A:      next_max_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                            northwest corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>, min_slope, next_max_slope);
+</span><span>      }
+</span><span>      
+</span><span>      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is transparent and previous_cell is opaque {
+</span><span>
+</span><span>        # first transparent cell after at least one opaque cell
+</span><span>B:      min_slope </span><span style="font-weight:bold;color:#a71d5d;">=  </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                            southwest corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>      }
+</span><span>
+</span><span>    } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>      first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>    }
+</span><span>
+</span><span>    previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_cell;
+</span><span>  }
+</span><span>
+</span><span>  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>previous_cell is transparent {
+</span><span>
+</span><span>    # see through last group </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>transparent cells </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>row
+</span><span>C:  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>, min_slope, max_slope);
+</span><span>  }
+</span><span>    
+</span><span>}
+</span></code></pre>
+<p>The interesting parts of the code are labelled with A, B and C. We’ll visit each
+case as we work through the example octant.</p>
+<p>Initially, the function is called with arguments: <code>computeVisibleArea(1, 0, 1)</code>.</p>
+<p>The scan at depth 1 (below) is simple as there are no opaque cells. The only case in the
+code above that we encounter here is case C. After scanning each cell,
+<code>previous_cell</code> refers to the right-most cell at this depth (since we scan from
+west to east), which is transparent. Thus we recurse to depth 2, leaving the
+<code>min_slope</code> and <code>max_slope</code> arguments unchanged as they are passed to the
+recursive call.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example8.png" alt="example8.png" /></p>
+<p>Depth 2 is the same as depth 1 in that none of the cells are visible, so we will
+skip it and move straight on to depth 3, which is much more interesting. Unlike
+the previous depths, there are 2 recursive calls made on depth 3 (represented by
+the green and blue pairs of lines in the image below).</p>
+<p>Moving west to east, when the second cell at this depth is visited, the code
+above will hit case A, as an opaque cell is visited after a transparent cell.
+The value of <code>next_max_slope</code> for this case is the gradient of the right-most
+green line. Note that this line passes through the eye and the northwest corner
+of the second cell. The left-most green line has a gradient of <code>min_slope</code> (0 in this
+case) which was passed to this function as an argument. These two gradients are
+passed to the recursive call, along with an incremented depth (4).</p>
+<p>The third cell visited at depth 3 causes the code to hit case B, as a
+transparent cell is visited after an opaque cell. In this case, no recursive
+call is made, but the value of <code>min_slope</code> is adjusted to be the gradient of the
+left-most blue line. Note that this line passes through the eye and the
+southwest corner of the third cell.</p>
+<p>Finally, the fourth cell at this depth causes the code to hit case A again,
+meaning a new <code>next_max_gradient</code> is calculated (the right-most blue line) and
+the code makes a second recursive call for this depth. Note again, that the
+right-most blue line passes through the eye, and the northwest corner of the
+opaque cell.</p>
+<p>Unlike the previous depths, case C is not reached, as the last cell visited at
+this depth is not transparent.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example9.png" alt="example9.png" /></p>
+<p>Depth 4 is reached by 2 separate recursive calls. It’s important to note here
+that all cells even partially inside the area between a pair of coloured lines
+be considered in the corresponding scan (hence the shading in the image below).
+The green instance is simple as there are no opaque cells. The blue instance
+will hit case A, though note that <code>next_max_slope</code> (the dotted line below) will
+be less than (ie. to the left of) <code>min_slope</code>. This means no cells could be
+between then. Thus the blue instance stops here.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example10.png" alt="example10.png" /></p>
+<p>The final case to consider in this example is the very last recursion of the
+green instance. Shown below, this case is unique as no cells in the scan
+are transparent. Stepping through the code, we see that each cell is marked as
+visible (as normal), but neither case A, nor C are hit, meaning no recursion is
+made, and execution stops.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example11.png" alt="example11.png" /></p>
+<p>The shaded cells in the image below are all the cells marked as visible in this
+octant using recursive shadowcast.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example12.png" alt="example12.png" /></p>
+<h2 id="generalizing-to-all-octants"><a class="zola-anchor" href="#generalizing-to-all-octants" aria-label="Anchor link for: generalizing-to-all-octants">Generalizing to all Octants</a></h2>
+<p>The solution presented in the previous section is specific to the example octant.
+The following features of the algorithm are specific to that
+octant:</p>
+<ul>
+<li>As <code>depth</code> increases, we move north.</li>
+<li>We scan west to east.</li>
+<li><code>min_slope</code> starts at 0.</li>
+<li><code>max_slope</code> starts at 1.</li>
+<li>When visiting an opaque cell after a transparent cell, the <strong>northwest</strong> corner of
+the opaque cell is used to find <code>next_max_slope</code> for the recursive call.</li>
+<li>When visiting a transparent cell after an opaque cell, the <strong>southwest</strong> corner of the transparent cell
+is used to find the new value of <code>min_slope</code>.</li>
+</ul>
+<p>Let’s see how these characteristics change in different octants. Note that this
+is just one of many possible ways to represent the differences between octants.
+These are in no way canonical.</p>
+<p>The image below shows the direction to move in the grid as the <code>depth</code>
+increases. In the north-most octants we move north, in the east-most we move
+east, and so on.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example13.png" alt="example13.png" /></p>
+<p class="label">Depth Direction</p>
+<p>Closely relate to this is the scan direction. It can be derived from the depth
+direction: if you stand facing the depth direction for an octant, the scan
+direction for that octant will be from your left, to your right.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example16.png" alt="example16.png" /></p>
+<p class="label">Scan Direction</p>
+<p>Tied into the above two characteristics is the initial values of <code>min_slope</code> and
+<code>max_slope</code>. For any pair of octants sharing a common depth direction (or scan
+direction), if you stand facing the depth direction, the octant to your left
+would have slopes ranging from -1 to 0, and the octant to your right from 0 to 1.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example15.png" alt="example15.png" /></p>
+<p class="label">Initial values for <code>min_slope</code> and
+<code>max_slope</code></p>
+<p>When scanning cells in the octant’s scan direction, if an opaque cell is visited after
+a transparent cell, we compute a new maximum depth (<code>next_max_depth</code>) to pass to a recursive call
+based on one of the corners of the opaque cell. In the previous example, that
+was the northwest corner.
+Similarly, when visiting a transparent cell after an opaque cell, the current <code>min_slope</code> is adjusted
+based on one of its corners. This is the southwest corner in the example.
+Which corners to choose in this cases is octant-dependent, and is shown in the
+diagram below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/example14.png" alt="example14.png" /></p>
+<p class="label">Cell corners to use for finding slopes</p>
+<p>Many of these characteristics are related in some way, and knowledge of some can
+be used to derive others. Despite this, for simplicity, when computing the
+visible area for a given octant, let’s just pass all the characteristics as
+arguments:</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth, min_slope, max_slope,
+</span><span>                   depth_direction, scan_direction,
+</span><span>                   opaque_corner, transparent_corner) {
+</span><span>
+</span><span>  first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>  previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">null</span><span>;
+</span><span>
+</span><span>  for each cell </span><span style="color:#183691;">&quot;current_cell&quot; </span><span>at depth </span><span style="color:#183691;">&quot;current_depth&quot;
+</span><span>                        between </span><span style="color:#183691;">&quot;min_slope&quot; </span><span>and </span><span style="color:#183691;">&quot;max_slope&quot;
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#183691;">&quot;scan_direction&quot; </span><span>{
+</span><span>
+</span><span>    mark current_cell </span><span style="font-weight:bold;color:#a71d5d;">as </span><span>visible;
+</span><span>   
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>not first {
+</span><span> 
+</span><span>      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is opaque and previous_cell is transparent {
+</span><span>
+</span><span>        # first opaque cell after at least one transparent cell
+</span><span>A:      next_max_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                          </span><span style="color:#183691;">&quot;opaque_corner&quot; </span><span>corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>, min_slope, next_max_slope,
+</span><span>                           depth_direction, scan_direction,
+</span><span>                           opaque_corner, transparent_corner);
+</span><span>      }
+</span><span>      
+</span><span>      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is transparent and previous_cell is opaque {
+</span><span>
+</span><span>        # first transparent cell after at least one opaque cell
+</span><span>B:      min_slope </span><span style="font-weight:bold;color:#a71d5d;">=  </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                        </span><span style="color:#183691;">&quot;transparent_corner&quot; </span><span>corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>      }
+</span><span>
+</span><span>    } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>      first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>    }
+</span><span>
+</span><span>    previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_cell;
+</span><span>  }
+</span><span>
+</span><span>  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>previous_cell is transparent {
+</span><span>
+</span><span>    # see through last group </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>transparent cells </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>row
+</span><span>C:  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>, min_slope, max_slope,
+</span><span>                       depth_direction, scan_direction,
+</span><span>                       opaque_corner, transparent_corner);
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<h2 id="iterative-shadowcast"><a class="zola-anchor" href="#iterative-shadowcast" aria-label="Anchor link for: iterative-shadowcast">Iterative Shadowcast</a></h2>
+<p>Passing these characteristics as arguments to the recursive function is
+repetitive, since within an octant they never change, and recursive calls never
+go between octants. An alternative way of structuring this function that removes
+the need to pass them around, is to replace the recursion with iteration.</p>
+<p>We’ll need a data structure representing state once represented by a recursive
+call. The arguments that could change with each recursive call are <code>depth</code>,
+<code>min_slope</code> and <code>max_slope</code>. Thus, our structure will look like:</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#a71d5d;">class </span><span>StackFrame {
+</span><span>  depth;
+</span><span>  min_slope;
+</span><span>  max_slope;
+</span><span>
+</span><span>  </span><span style="font-weight:bold;color:#a71d5d;">constructor</span><span>(depth, min_slope, max_slope) {
+</span><span>    this.depth </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>depth;
+</span><span>    this.min_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>min_slope;
+</span><span>    this.max_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>max_slope;
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>Using this, and an assumed Stack data structure, the code becomes:</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(initial_min_slope, initial_max_slope,
+</span><span>                   depth_direction, scan_direction,
+</span><span>                   opaque_corner, transparent_corner) {
+</span><span>
+</span><span>  # Make this a global variable or equivalent to remove the
+</span><span>  # overhead </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>constructing it each time this is called.
+</span><span>  stack </span><span style="font-weight:bold;color:#a71d5d;">= new </span><span>Stack();
+</span><span>
+</span><span>  initial_frame </span><span style="font-weight:bold;color:#a71d5d;">= new </span><span>StackFrame(</span><span style="color:#0086b3;">1</span><span>, initial_min_slope,
+</span><span>                                    initial_max_slope);
+</span><span>
+</span><span>  stack.</span><span style="color:#62a35c;">push</span><span>(initial_frame);
+</span><span>
+</span><span>  </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>stack is not empty {
+</span><span>
+</span><span>    current_frame </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>stack.</span><span style="color:#62a35c;">pop</span><span>();
+</span><span>    current_depth </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_frame.depth;
+</span><span>    min_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_frame.min_slope;
+</span><span>    max_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_frame.max_slope;
+</span><span>
+</span><span>    first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>    previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">null</span><span>;
+</span><span>
+</span><span>    for each cell </span><span style="color:#183691;">&quot;current_cell&quot; </span><span>at depth </span><span style="color:#183691;">&quot;current_depth&quot;
+</span><span>                          between </span><span style="color:#183691;">&quot;min_slope&quot; </span><span>and </span><span style="color:#183691;">&quot;max_slope&quot;
+</span><span>                          </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#183691;">&quot;scan_direction&quot; </span><span>{
+</span><span>
+</span><span>      mark current_cell </span><span style="font-weight:bold;color:#a71d5d;">as </span><span>visible;
+</span><span>     
+</span><span>      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>not first {
+</span><span>   
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is opaque and
+</span><span>            previous_cell is transparent {
+</span><span>
+</span><span>          # opaque cell after at a transparent cell
+</span><span>A:        next_max_slope </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                            </span><span style="color:#183691;">&quot;opaque_corner&quot; </span><span>corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>          next_frame </span><span style="font-weight:bold;color:#a71d5d;">= new </span><span>StackFrame(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                                      min_slope, next_max_slope);
+</span><span>
+</span><span>          stack.</span><span style="color:#62a35c;">push</span><span>(next_frame);
+</span><span>        }
+</span><span>        
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>current_cell is transparent
+</span><span>            and previous_cell is opaque {
+</span><span>
+</span><span>          # transparent cell after at opaque cell
+</span><span>B:        min_slope </span><span style="font-weight:bold;color:#a71d5d;">=  </span><span>gradient </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>line passing through eye and
+</span><span>                        </span><span style="color:#183691;">&quot;transparent_corner&quot; </span><span>corner </span><span style="font-weight:bold;color:#a71d5d;">of </span><span style="color:#183691;">&quot;current_cell&quot;</span><span>;
+</span><span>
+</span><span>        }
+</span><span>
+</span><span>      } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>        first </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>      }
+</span><span>
+</span><span>      previous_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>current_cell;
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>previous_cell is transparent {
+</span><span>
+</span><span>      # see through last group </span><span style="font-weight:bold;color:#a71d5d;">of </span><span>transparent cells </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>row
+</span><span>C:    next_frame </span><span style="font-weight:bold;color:#a71d5d;">= new </span><span>StackFrame(current_depth</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                                  min_slope, max_slope);
+</span><span>      stack.</span><span style="color:#62a35c;">push</span><span>(next_frame);
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>All the recursive calls were replaced with creating a new object with the
+information that would have been passed to the recursive call, and pushing it
+onto a stack. Keep iterating until the stack is empty, removing the most
+recently pushed data each time. This will change the order in which cells are
+visited. In the recursive version, when a recursive call was made, the current
+scan would be put on hold while the scan at the next depth was performed, which
+may itself have made a recursive call, etc, etc. In the iterative version, while
+doing a scan, any would-be recursive calls have their arguments pushed onto a
+stack. Once the scan is finished, the same set of next-depth scans will occur as
+in the recursive version, but in the reverse order. Take some time to convince
+yourself that despite the new order, the same cells are visited, and thus the
+same cells are classified as visible.</p>
+<p>Another minor change is the removal of the <code>depth</code> argument. This is no longer
+needed because the function’s arguments are now just initial values, and the
+depth always starts at 1.</p>
+<p>Putting it all together, we need to call <code>computeVisibleArea</code> once for each
+octant, giving it the relevant arguments for that octant. The following function
+does this, starting with the octant in the example above, going around
+clockwise.</p>
+<pre data-lang="javascript" style="background-color:#ffffff;color:#323232;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="font-weight:bold;color:#795da3;">computeTotalVisibleArea</span><span>() {
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>,  North, East, NorthWest, SouthWest);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>, East, South, NorthWest, NorthEast);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>,  East, South, NorthEast, NorthWest);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>, South, West, NorthEast, SouthEast);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>,  South, West, SouthEast, NorthEast);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>, West, North, SouthEast, SouthWest);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">1</span><span>,  West, North, SouthWest, SouthEast);
+</span><span>  </span><span style="font-weight:bold;color:#795da3;">computeVisibleArea</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>, North, East, SouthWest, NorthWest);
+</span><span>}
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;cellular-automata-cave-generation&#x2F;" aria-label="Previous">
+	  Previous: Cellular Automata Cave Generation
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;encoding-rules-for-turn-based-games&#x2F;" aria-label="Next">
+	  Next: Encoding Rules for Turn-Based Games
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

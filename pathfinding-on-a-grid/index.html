@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Pathfinding on a Grid">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-02-15T21:43:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Pathfinding on a Grid
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Pathfinding on a Grid</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-02-15T21:43:00+10:00">
+    February 15, 2018
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/algorithms" aria-label="tag">algorithms</a>
+  
+</p>
+
+
+  
+
+<p>In this post I describe how to achieve sensible pathfinding of multiple
+NPCs in a turn-based, grid-based setting.
+When multiple NPCs are moving around on the same map, they can get in each
+other’s way, which causes unusual-looking behaviour unless properly handled.
+This post builds up a pathfinding technique, identifying, and addressing,
+unusual behaviour caused by multiple NPCs interfering with each other.</p>
+<p>I’ll make the
+following assumptions:</p>
+<ul>
+<li>there is a single player</li>
+<li>the goal of each NPC is to become adjacent to the player</li>
+<li>NPCs can’t move through one another or the player</li>
+<li>on their turn, the player, and each NPC can move 1 or 0 squares in a cardinal direction</li>
+<li>the map is a 2d grid of squares, each of which is permanently either
+traversable or non-traversable</li>
+<li>the cost of moving between a pair of adjacent, traversable squares is 1 (ie. the grid is
+uniform)</li>
+</ul>
+<p>The approach I describe won’t rely too heavily on any of these assumptions.
+I’m stating them here so as to remove any ambiguity in explanations.
+Generalising the pathfinding technique to rely on fewer assumptions is left as
+an exercise to the reader.</p>
+<p>A note on diagrams: The player will be denoted with a <code>@</code>. Each NPC will be
+referred to by a letter. White cells are traversable. Grey cells are
+non-traversable.</p>
+<h2 id="initial-approach-follow-a-dijkstra-map"><a class="zola-anchor" href="#initial-approach-follow-a-dijkstra-map" aria-label="Anchor link for: initial-approach-follow-a-dijkstra-map">Initial Approach: Follow a Dijkstra Map</a></h2>
+<p>The first approach will be to generate a map which stores, for each cell, the
+distance from that cell to the player. These distances are shown as the numbers
+in the top-left corner of each traversable cell in the diagrams below.
+The data structure storing these distances (generally a 2d array of numbers) is
+sometimes called a “Dijkstra Map”.
+<a href="http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps">Here</a>
+is an article elaborating on dijkstra maps.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/a.png" alt="a.png" /></p>
+<p>A benefit of using a dijkstra map, rather than searching for a path for each NPC,
+is that the dijkstra map only needs to be recomputed each time the player moves.
+To determine which way an NPC should move, we need only consider the neighbours
+of that NPC’s cell in the dijkstra map, choosing the one with the lowest score.
+This scales well as the number of NPCs increases, as there is only a small
+amount of work that must be done for each NPC.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/b.png" alt="b.png" /></p>
+<p>The example above shows a single step for <code>X</code> and <code>Y</code>, where each moved to its
+lowest-valued neighbour.
+Note that <code>Y</code> chose arbitrarily between 2 cells equidistant from the player.</p>
+<h2 id="gaps-forming-between-npcs"><a class="zola-anchor" href="#gaps-forming-between-npcs" aria-label="Anchor link for: gaps-forming-between-npcs">Gaps forming between NPCs</a></h2>
+<p>Here’s the first problem with the current approach. Consider the following
+arrangement:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/c.png" alt="c.png" /></p>
+<p>When <code>X</code> moves:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/d.png" alt="d.png" /></p>
+<p>And then <code>Y</code> moves:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/e.png" alt="e.png" /></p>
+<p>Everything seems fine, but what if <code>Y</code> had moved first? Since NPCs can’t move
+through each other, the best choice for <code>Y</code> is to stay where it is, as any
+single legal move would only increase its distance from the player.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/c.png" alt="c.png" /></p>
+<p>On <code>X</code>’s
+turn, <code>X</code> would still move towards the player, creating a gap between <code>X</code> and
+<code>Y</code>, which looks unusual:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/d.png" alt="d.png" /></p>
+<p>To prevent gaps from forming, we need to make sure that
+NPCs move in increasing order of their distance to the player (that is,
+the closest NPC to the player moves first, then the second closest, and so on). Since we generate
+a dijkstra map, it’s easy to determine how far each NPC is from the player.
+Simply sorting NPCs by the value of their cell in the dijkstra map is enough to
+produce a turn order which avoids this problem.</p>
+<h2 id="npcs-getting-in-each-other-s-way"><a class="zola-anchor" href="#npcs-getting-in-each-other-s-way" aria-label="Anchor link for: npcs-getting-in-each-other-s-way">NPCs getting in each other’s way</a></h2>
+<p>Let’s look at some cases where NPCs interfere with the movement of other NPCs.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/e.png" alt="e.png" /></p>
+<p>On <code>X</code>’s next turn, it will remain next to the player - there’s nothing it can
+do to get closer to the player, so there’s no need to move. (In a typical roguelike it
+would probably attack the player at this point.) What does <code>Y</code> do? None of
+<code>Y</code>’s traversable neighbours are lower-valued in the dijkstra map than <code>Y</code>’s
+current cell, so it will stay put, despite it being possible to eventually get
+closer to the <code>@</code>, by first moving north, into a higher-valued cell.</p>
+<p>In the next example, assume <code>X</code> moves before <code>Y</code>:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/g.png" alt="g.png" /></p>
+<p><code>X</code> will move east, occupying <code>Y</code>’s west neighbour. On <code>Y</code>’s turn, its
+valid moves are to move east, into a higher-valued cell than its present cell,
+or to do nothing. If <code>Y</code>’s goal is to get to the player in as few turns as
+possible, its best course of action is to wait where it is for one turn,
+assuming <code>X</code> will proceed south and make room for <code>Y</code> to continue moving towards
+the player. <code>Y</code>’s alternative - moving east, and proceeding down the east edge
+of the map - will take longer.</p>
+<p>What if there’s a gap in the wall closer to <code>Y</code>. Assume <code>X</code> moves first again:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/n.png" alt="n.png" /></p>
+<p>Here, it might make sense for <code>Y</code> to move east on its turn rather than waiting a
+turn before moving west. It may look more natural for <code>Y</code> to follow a longer
+path, than wait for the shorter one to free up, though the decision
+seems to depend on how much longer the longer path is.</p>
+<p>Assume it’s <code>Z</code>’s turn. What should it do?</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/o.png" alt="o.png" /></p>
+<p>Here there’s no path to the player, but rather than giving up, <code>Z</code> should
+probably still try to get as close to the player as it can.
+It seems like it should move east, south, south, on its next 3 turns,
+assuming nothing else moves.</p>
+<p>After making the first move it finds itself here:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/p.png" alt="p.png" /></p>
+<p>Looking at its immediate neighbours, it seems like <code>Z</code> could now go either
+south, or west - the neighbours in both directions are the same distance from
+the player. It is of
+course preferable for <code>Z</code> to move south.</p>
+<p>This last case is important, as it shows that
+the presence of multiple NPCs means that it’s never
+sufficient for an NPC to act purely on its neighbouring cells in the game grid
+and dijkstra map.</p>
+<p>A solution which addresses all these cases, is for each NPC, on is turn, to
+examine all the cells reachable within a certain number of turns (3 turns will
+suffice for all the examples here), and take the first step along the shortest
+path to the cell it just examined with the lowest value in the dijkstra map.
+If all the cells examined have a higher value than the NPC’s current cell, it
+doesn’t move at all.</p>
+<p>It’s worth noting that this won’t necessarily get every NPC as close
+to the player as possible.</p>
+<p>Will <code>Z</code> go east or west, looking for the best cell up to 3 moves away?</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/pathfinding-on-a-grid/r.png" alt="r.png" /></p>
+<p>It could go either way! If it had looked 4 moves away, it would have
+noticed that going west gives the potential to eventually be 1 move from the
+player, while going east, the closest it can get is 2 away. Note however, that in
+this example, <code>W</code> will move first (it’s closer to the player than <code>Z</code>), and <code>W</code>
+is close enough to notice that going west is better, so it will go west, getting
+out of <code>Z</code>’s way and allowing <code>Z</code> to move forward.</p>
+<p>To improve an NPC’s decision making, you can increase the number of cells it
+examines before moving.
+The specific number depends on the nature of the game and
+the individual NPC. In typical games, where NPCs die and the player moves
+around, sub-optimal-but-still-pretty-good decision-making by NPCs won’t have a
+noticeable effect on gameplay.</p>
+<h2 id="summary"><a class="zola-anchor" href="#summary" aria-label="Anchor link for: summary">Summary</a></h2>
+<p>Before any NPCs move, if the player has moved since the dijkstra map was last
+computed, recompute the dijkstra map based on the player’s current position.
+Now, produce a list of NPCs sorted by the
+value of their cells in the dijkstra map, in increasing order.
+NPCs will take their turns in this order.
+On each NPC’s turn, examine all the cells within a certain number of moves from
+the NPC, without allowing moves through other NPCs.
+Of the cells examined, identify the one whose value in the dijkstra map
+is lowest. If no cell has a lower value than the NPC’s current cell,
+the NPC doesn’t move that turn. Otherwise, the NPC takes the first
+step along the shortest path between its
+current cell and this cell. This causes NPCs to move towards the player in a
+sensible way, without the influence of other NPCs causing unusual-looking
+behaviour.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;modifying-entity-component-system-for-turn-based-games&#x2F;" aria-label="Previous">
+	  Previous: Modifying Entity Component System for Turn-Based Games
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;2018-recap&#x2F;" aria-label="Next">
+	  Next: 2018 Recap
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

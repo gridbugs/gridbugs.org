@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Roguelike Lighting Demo">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2016-12-20T09:31:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Lighting Demo
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Roguelike Lighting Demo</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2016-12-20T09:31:00+10:00">
+    December 20, 2016
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/lighting" aria-label="tag">lighting</a>
+  
+</p>
+
+
+  
+
+<p>This is a demonstration of some lighting techniques I’ve been experimenting
+with. It was originally intended to be an entire game, but I’ve abandoned it to
+work on other projects.</p>
+<ul>
+<li><a href="https://games.gridbugs.org/roguelike-lighting-demo">Run in browser</a>
+<ul>
+<li>Use arrow or vi keys to move. Press “f” followed by a direction key to fire a
+burst of plasma.</li>
+</ul>
+</li>
+<li><a href="https://github.com/gridbugs/roguelike-lighting-demo">Source code on github</a></li>
+</ul>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/screenshot0.png" alt="screenshot0.png" /></p>
+<span id="continue-reading"></span><h2 id="lighting-the-edges-of-cells"><a class="zola-anchor" href="#lighting-the-edges-of-cells" aria-label="Anchor link for: lighting-the-edges-of-cells">Lighting the edges of cells</a></h2>
+<p>Determining lit areas is the same problem as determining visible areas. I reuse
+my existing vision system <a href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">described here</a>.
+A slight modification was required to handle the following complication.</p>
+<p>In grid based games, when computing visible area, each cell is typically either
+completely visible or completely obscured. This is not sufficient when computing
+lit area. Consider the case where there is a wall between the player and some
+light source. The wall is lit on the opposite side to the player, but the player
+should see an unlit wall.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/screenshot1.png" alt="screenshot1.png" /></p>
+<p class="label">View from inside a well-lit room. The yellow "£" is the light
+source.</p>
+<p>Since the direction from which a cell is lit now matters, the amount of light
+reaching each side of each cell must be tracked, rather than just determining
+whether or not a cell is lit. When an observer sees a cell, the vision system
+detects which sides of the cell they can see. The cell is drawn with a
+brightness based on the visible side with the most light reaching it.</p>
+<p>Note that this only applies to opaque cells.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/screenshot2.png" alt="screenshot2.png" /></p>
+<p class="label">View from outside the same room shown above.</p>
+<p>In order to correctly light the cells in the corners of rooms, the amount of
+light reaching the corners of cells is also tracked.</p>
+<h2 id="areas-unlit-by-certain-lights"><a class="zola-anchor" href="#areas-unlit-by-certain-lights" aria-label="Anchor link for: areas-unlit-by-certain-lights">Areas unlit by certain lights</a></h2>
+<p>The demo includes a lighthouse with a spinning light on top. The walls of the
+lighthouse and its interior are unlit by the light on top. In practice,
+the entity providing the lighthouse’s light is in the centre of the
+lighthouse, and there is only one “level”. The effect of only certain areas
+being lit by certain lights is achieved by something I call light channels.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/screenshot4.png" alt="screenshot4.png" /></p>
+<p class="label">The wall of the lighthouse is not illuminated by the
+lighthouse's light.</p>
+<p>A light channel is an integer. Each light source declares a collection of channels
+which it illuminates, and each entity with a tile declares a collection of
+channels which it can be illuminated by. A light source illuminates a tile if
+there is at least one channel in common between the light source and the tile.
+In practice this is implemented using bitfields.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/screenshot5.png" alt="screenshot5.png" /></p>
+<p class="label">The interior of the lighthouse is illuminated by the player's
+light only.</p>
+<p>Most entities with tiles, and most light sources, use all light channels. The
+lighthouse light uses only channel 0, and the lighthouse walls and floor use
+only channel 1. Thus, walls and floor of the lighthouse are not illuminated by
+the lighthouse light, but are still illuminated by other lights.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;skeleton-crew&#x2F;" aria-label="Previous">
+	  Previous: Skeleton Crew
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;howl&#x2F;" aria-label="Next">
+	  Next: Howl
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="What exactly is a &quot;Functional Programming Language&quot;">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/what-exactly-is-a-functional-programming-language/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/what-exactly-is-a-functional-programming-language/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-24T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+What exactly is a &quot;Functional Programming Language&quot;
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;is-it-a-good-idea-or-are-you-just-proud-to-understand-it&#x2F;" aria-label="Previous">
+	  Previous: Is it a good idea, or are you just proud to understand it?
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;crunch&#x2F;" aria-label="Next">
+	  Next: Crunch
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">What exactly is a &quot;Functional Programming Language&quot;</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-24T00:00:00+00:00">
+    September 24, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I don’t believe the term “functional” is a meaningful description of a programming language.
+It’s hard to come up with a definition of the term that includes all the languages that
+brand themselves as “functional” that wouldn’t include <em>all</em> modern programming languages.</p>
+<p>In a so called functional language, you’ll certainly find closures and first class functions,
+but name a general purpose language from the last 30 years that doesn’t have these features.
+It’s likely you be <em>encouraged</em> to avoid mutable state, but rare are the languages that
+<em>prevent</em> mutation (and these are the <em>purely</em> functional languages - a term which is well-defined)
+The standard library will probably come with a collection of persistent, immutable
+data structures, but any language can have such a library.</p>
+<p>Recursion will likely be the
+<em>preferred</em> (or perhaps only) form of iteration, and if you’re lucky the language implementation
+(or even the language <em>spec</em> if you’re extra lucky) will employ tail-call optimisation so
+you don’t (necessarily!) blow up your stack when calling functions recursively.</p>
+<p>Algebraic data types, pattern matching, and expressive type systems all frequently make appearances
+in functional languages. Lisp is a notable exception which has none of these.
+It doesn’t seem prudent to conflate these terms with functional programming though.</p>
+<p>Perhaps “functional” is a useful word for describing a design space attractor. In practice, it
+may turn out that all the features listed here go well together. Maybe the term was more meaningful
+back in a time when the programming language ecosystem was less diverse, and the functional/imperative dichotomy
+was stronger. Has the success of functional languages of the past, and their subsequent influence
+on the design of new languages, ultimately led to the term losing all meaning?</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;is-it-a-good-idea-or-are-you-just-proud-to-understand-it&#x2F;" aria-label="Previous">
+	  Previous: Is it a good idea, or are you just proud to understand it?
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;crunch&#x2F;" aria-label="Next">
+	  Next: Crunch
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

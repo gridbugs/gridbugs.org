@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2020: Day 4">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2020-day4/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2020-day4/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-03-03T21:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2020-day4/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2020: Day 4
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-day3&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2020: Day 3
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-day5&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2020: Day 5
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2020: Day 4</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-03-03T21:00:00+10:00">
+    March 03, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Lots of work on mechanics today. All the attack and defense abilities are implemented,
+and most enemies do something interesting when attacked. Also, it’s possible (but not
+advisable!) to walk on the green sludge found around the sewer. Most enemies are also
+vulnerable to the sludge, which can be used to the player’s advantage.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2020-day4/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>This video shows off some abilities being used to herd enemies and push them into
+toxic sludge.</p>
+<video autoplay muted loop>
+  <source src="gameplay.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>I spent some time today fixing pathfinding bugs.
+Areas which enemies can traverse, but would rather avoid, required rethinking the
+game’s AI a little. Also, the AI system previously assumed that the player will
+only move on their turn, which is violated by defensive teleports (a teleport
+ability that activates when the player is attacked).</p>
+<p>Tomorrow I need to fix some problems with turn order. NPCs skip their turn after
+an animation (such as repelling enemies from the player), and as apparent in
+the video above, if enemies are pushed into sludge, they don’t take damage until
+the end of their next turn.</p>
+<p>Also on the cards for tomorrow is upgrades for the player character, and implementing
+the abilities at the bottom of the UI (such as “Skip Atk”).</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-day3&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2020: Day 3
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2020-day5&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2020: Day 5
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

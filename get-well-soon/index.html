@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Get Well Soon">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/get-well-soon/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/get-well-soon/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-03-10T22:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Get Well Soon
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Get Well Soon</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-03-10T22:00:00+10:00">
+    March 10, 2019
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/7drl" aria-label="tag">7drl</a>
+  
+</p>
+
+
+  
+
+<p>Get Well Soon is a turn-based tactical dungeon crawler where all abilities are cards.
+Maintain your deck as you fight through 6 procedurally-generated levels to
+reach the bottom of the dungeon and reclaim what you have lost.</p>
+<p>It is my entry in the 7 Day Roguelike game jam for 2019.</p>
+<p>Play or download Get Well Soon on <a href="https://gridbugs.itch.io/get-well-soon">its itch.io page</a>.</p>
+<p>View the <a href="https://github.com/gridbugs/gws/tree/7drl">source code on github</a>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/get-well-soon/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span><h2 id="recap"><a class="zola-anchor" href="#recap" aria-label="Anchor link for: recap">Recap</a></h2>
+<h3 id="sunday-to-saturday"><a class="zola-anchor" href="#sunday-to-saturday" aria-label="Anchor link for: sunday-to-saturday">Sunday to Saturday</a></h3>
+<p>I started the jam on a Sunday and finished the following Saturday, working full
+time Monday to Friday, and working on the game in the mornings before work, and
+evenings, each day of the week. All previous years I’ve finished on Friday
+instead. By finishing on a weekend, I was able to spend an entire day polishing
+and adding content. I planned for this, focusing on engine and UI features
+during the week. The most significant benefit was I was able to spend a long
+time on Saturday play-testing the mostly-finished game, and tweaking balance,
+which greatly improved the quality of the game.</p>
+<h3 id="wave-function-collapse"><a class="zola-anchor" href="#wave-function-collapse" aria-label="Anchor link for: wave-function-collapse">Wave Function Collapse</a></h3>
+<p>I use <a href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/">WFC</a> to generate terrain, and then do a pass
+over the output to add items and characters. Coaxing WFC to generate
+interesting levels requires carefully restricting it from placing certain tiles
+in certain locations. I spent much of the day before starting the 7drl messing
+about with WFC to learn techniques for constraining the output of WFC, and fixed
+a bug that caused restrictions to not always be enforced. I want to do more work
+on my WFC library to make it easier to specify the types of restrictions I
+frequently find myself making.</p>
+<h3 id="no-entity-component-system"><a class="zola-anchor" href="#no-entity-component-system" aria-label="Anchor link for: no-entity-component-system">No Entity Component System</a></h3>
+<p>I went in without a pre-made ECS library, unlike previous years. I wanted to see
+if ECS is really necessary. For the most part I didn’t miss it. The one feature
+I missed (and re-implemented) from my ECS library of previous years, was a grid
+keeping track of how many entities with a certain property (NCP, player, trap,
+solid, etc) are currently in each cell. This makes it easy to check if (say) a
+given cell is solid, without having to enumerate all the entities. The ECS code
+generation library I used to use would generate the code for keeping these
+counts in sync, but this year I had to remember to add code for increasing and
+decreasing the counts when creating, moving, and destroying entities. I might
+make a code-generation library for just maintaining a grid of property counts.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;meters-below-the-ground&#x2F;" aria-label="Previous">
+	  Previous: Meters Below the Ground
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;slime99&#x2F;" aria-label="Next">
+	  Next: slime99
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

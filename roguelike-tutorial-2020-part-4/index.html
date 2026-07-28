@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 4 - Field of View">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-07-02T22:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 4 - Field of View
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-3&#x2F;" aria-label="Previous">
+	  Previous: Part 3 - Generating a Dungeon
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-5&#x2F;" aria-label="Next">
+	  Next: Part 5 - Placing NPCs
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 4 - Field of View
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-07-02T22:00:00+10:00">
+    July 02, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll implement visible area detection, so players can only see what their
+character can see, and what they remember seeing.</p>
+<p>By the end of this part, the game will look like this:
+<img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/screenshot-end.png" alt="screenshot-end.png" /></p>
+<span id="continue-reading"></span>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-4/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-3-end">part-3-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/#separate-world-representation-from-game-state">Separate World Representation from Game State</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/#add-field-of-view">Add Field of View</a></li>
+</ul>
+<h2 id="separate-world-representation-from-game-state"><a class="zola-anchor" href="#separate-world-representation-from-game-state" aria-label="Anchor link for: separate-world-representation-from-game-state">Separate World Representation from Game State</a></h2>
+<p>Before adding field-of-view, let’s move some fields of <code>GameState</code> into a new struct called <code>World</code>.
+Splitting large structs into a deeper hierarchy of small structs with specific purposes is good practice
+in general, and in rust in particular it can help keep the borrow-checker off our backs.</p>
+<p>In a new file <code>src/world.rs</code>, define a type <code>World</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>entity_allocator: EntityAllocator,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>components: Components,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>spatial_table: SpatialTable,
+</span><span>}
+</span></code></pre>
+<p>Move all the types and methods relating to world representation from <code>src/game.rs</code> into <code>src/world.rs</code>.
+When you’re done, <code>GameState</code> should be a thin wrapper around the new <code>World</code> type (we’ll add more to it shortly).
+All that’s left of <code>src/game.rs</code> will be:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::{Location, Populate, Tile, World};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::Size;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>direction::CardinalDirection;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>entity_table::Entity;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand::SeedableRng;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>rand_isaac::Isaac64Rng;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>EntityToRender {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>tile: Tile,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>location: Location,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    world: World,
+</span><span>    player_entity: Entity,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> world </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>World::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> rng </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Isaac64Rng::from_entropy();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate { player_entity } </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ world, player_entity }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">maybe_move_player</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, direction: CardinalDirection) {
+</span><span>        self.world.</span><span style="color:#62a35c;">maybe_move_character</span><span>(self.player_entity, direction);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">entities_to_render</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>self) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a + </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = EntityToRender&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_component </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.world.components.tile;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> spatial_table </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.world.spatial_table;
+</span><span>        tile_component.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">filter_map</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>(entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>tile)</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>location </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> spatial_table.</span><span style="color:#62a35c;">location_of</span><span>(entity)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>;
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(EntityToRender { tile, location })
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Here’s how the code should look after this refactor: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4.0">part-4.0</a></p>
+<p>In particular, note the new file <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/blob/part-4.0/src/world.rs">src/world.rs</a>.</p>
+<h2 id="add-field-of-view"><a class="zola-anchor" href="#add-field-of-view" aria-label="Anchor link for: add-field-of-view">Add Field of View</a></h2>
+<p>Now for the interesting part. We’ll be adding visible-area-detection using an implementation of the “Recursive Shadowcast” algorithm.
+For a detailed description of this algorithm, see <a href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">this post on gridbugs</a>
+or <a href="http://www.roguebasin.com/index.php?title=FOV_using_recursive_shadowcasting">this one on roguebasin</a>.
+Grab a crate which contains an implementation of the field-of-view algorithm:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">shadowcast </span><span>= </span><span style="color:#183691;">&quot;0.8&quot;
+</span></code></pre>
+<p>The <code>shadowcast</code> crate doesn’t assume anything about how the world is represented.
+In order to compute the visible area,
+it needs to know some things about the world. In particular, this trait must be implemented:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub trait </span><span>InputGrid {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// type containing the world state
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Grid;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// type representing the opacity at a point of the world
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Opacity;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// the dimensions of the world
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">size</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Grid) -&gt; Size;
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// query the opacity of the world at a particular coordinate
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">get_opacity</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Grid, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Opacity;
+</span><span>}
+</span></code></pre>
+<p>Let’s implement this trait for our game! Make a new file <code>src/visibility.rs</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// visibility.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::world::World;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>coord_2d::{Coord, Size};
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Visibility;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>shadowcast::InputGrid </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>Visibility {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Grid </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> World;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Opacity </span><span style="font-weight:bold;color:#a71d5d;">= u8</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">size</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Grid) -&gt; Size {
+</span><span>        world.</span><span style="color:#62a35c;">size</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">get_opacity</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Grid, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Opacity {
+</span><span>        world.</span><span style="color:#62a35c;">opacity_at</span><span>(coord)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>Visibility</code> type has no state, and serves only as a named implementation of the <code>InputGrid</code> trait.
+Note that the <code>size</code> and <code>opacity_at</code> methods of <code>World</code> don’t exist yet. Let’s write them now.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// world.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">size</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Size {
+</span><span>        self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>()
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">opacity_at</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">u8 </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span>self
+</span><span>            .spatial_table
+</span><span>            .</span><span style="color:#62a35c;">layers_at_checked</span><span>(coord)
+</span><span>            .feature
+</span><span>            .</span><span style="color:#62a35c;">is_some</span><span>()
+</span><span>        {
+</span><span>            </span><span style="color:#0086b3;">255
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="color:#0086b3;">0
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>For now, if a cell contains a feature it is fully opaque, and otherwise it is fully transparent.</p>
+<p>Now we need a way to represent what the player can currently see, and what they have seen in the past.
+Represent this with a grid of cells. Every so often (perhaps once per turn), we’ll iterate over all the
+cells that the player can currently see, and mark the cells in this grid as “currently visible”.
+To avoid needing to visit all the other cells, and mark them as “not currently visible”, we’ll employ
+the following technique:</p>
+<p>Keep a counter which is incremented each time the visible area is updated.
+Each cell of the grid will store the value that the counter had the last time
+that cell was visible. A cell is currently visible if its value is the same as the
+current counter value. A cell was previously visible if its value is above 0 (as the counter is initialized to 1).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// visibility.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>grid_2d::Grid;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>VisibilityGrid {
+</span><span>    grid: Grid&lt;VisibilityCell&gt;,
+</span><span>    count: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>VisibilityGrid {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            grid: Grid::new_default(size),
+</span><span>            count: </span><span style="color:#0086b3;">1</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">cell_visibility</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, coord: Coord) -&gt; CellVisibility {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(cell) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.grid.</span><span style="color:#62a35c;">get</span><span>(coord) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> cell.last_seen </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>self.count {
+</span><span>                CellVisibility::Currently
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else if</span><span> cell.last_seen </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>                CellVisibility::Never
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                CellVisibility::Previously
+</span><span>            }
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            CellVisibility::Never
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>VisibilityCell {
+</span><span>    last_seen: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Default </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>VisibilityCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">default</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{ last_seen: </span><span style="color:#0086b3;">0 </span><span>}
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">pub enum </span><span>CellVisibility {
+</span><span>    Currently,
+</span><span>    Previously,
+</span><span>    Never,
+</span><span>}
+</span></code></pre>
+<p>Now we need a way to update this grid by visiting all visible cells:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// visibility.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">VISION_DISTANCE_SQUARED</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">u32 = </span><span style="color:#0086b3;">100</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">VISION_DISTANCE</span><span>: shadowcast::vision_distance::Circle </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>    shadowcast::vision_distance::Circle::new_squared(</span><span style="color:#0086b3;">VISION_DISTANCE_SQUARED</span><span>);
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>VisibilityGrid {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update</span><span>(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        player_coord: Coord,
+</span><span>        world: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>World,
+</span><span>        shadowcast_context: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>shadowcast::Context&lt;</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>&gt;,
+</span><span>    ) {
+</span><span>        self.count </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> count </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.count;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= &amp;mut </span><span>self.grid;
+</span><span>        shadowcast_context.</span><span style="color:#62a35c;">for_each_visible</span><span>(
+</span><span>            player_coord,       </span><span style="font-style:italic;color:#969896;">// centre of vision
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>Visibility,        </span><span style="font-style:italic;color:#969896;">// implementation of InputGrid
+</span><span>            world,              </span><span style="font-style:italic;color:#969896;">// world representation (InputGrid::World)
+</span><span>            </span><span style="color:#0086b3;">VISION_DISTANCE</span><span>,    </span><span style="font-style:italic;color:#969896;">// shape and size of visible area
+</span><span>            </span><span style="color:#0086b3;">255</span><span>,                </span><span style="font-style:italic;color:#969896;">// max opacity value (InputGrid::Opacity)
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">|</span><span>coord, _visible_directions, _visibility</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord);
+</span><span>                cell.last_seen </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> count;
+</span><span>            },
+</span><span>        );
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Computing visible area involves populating some heap-allocated data structures
+(see the <a href="https://github.com/gridbugs/shadowcast/blob/master/src/shadowcast.rs">implementation of shadowcast</a>
+for details).
+To prevent needing to allocate and free these structures each time the visible area is updated,
+all these data structures are contained in a <code>shadowcast::Context</code>, allowing the memory to be re-used
+each time. Its type parameter corresponds to <code>InputGrid::Opacity</code>.</p>
+<p>Add a <code>VisibilityGrid</code> and <code>shadowcast::Context&lt;u8&gt;</code> to <code>GameState</code>, and add a method to ‘GameState’
+for updating the visible area.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::visibility::{CellVisibility, VisibilityGrid};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    world: World,
+</span><span>    player_entity: Entity,
+</span><span>    shadowcast_context: shadowcast::Context&lt;</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span>&gt;,
+</span><span>    visibility_grid: VisibilityGrid,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> world </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>World::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> rng </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Isaac64Rng::from_entropy();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate { player_entity } </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">populate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> shadowcast_context </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>shadowcast::Context::default();
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> visibility_grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>VisibilityGrid::new(screen_size);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self </span><span>{
+</span><span>            world,
+</span><span>            player_entity,
+</span><span>            shadowcast_context,
+</span><span>            visibility_grid,
+</span><span>        };
+</span><span>        game_state.</span><span style="color:#62a35c;">update_visibility</span><span>();
+</span><span>        game_state
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">update_visibility</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> player_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.spatial_table.</span><span style="color:#62a35c;">coord_of</span><span>(self.player_entity).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>        self.visibility_grid
+</span><span>            .</span><span style="color:#62a35c;">update</span><span>(player_coord, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.world, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.shadowcast_context);
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Note the call to <code>game_state.update_visibility()</code> within <code>GameState::new</code>. This is so when the game starts,
+the initially-visible area is marked as visible.</p>
+<p>In order to tell the rendering logic whether a cell is currently, previously, or never visible, update
+<code>EntityToRender</code> to contain a <code>CellVisibility</code>, and update <code>entities_to_render</code> to set the new field:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>EntityToRender {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>tile: Tile,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>location: Location,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub </span><span>visibility: CellVisibility,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">entities_to_render</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a </span><span>self) -&gt; impl </span><span style="font-weight:bold;color:#a71d5d;">&#39;a + </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item = EntityToRender&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_component </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.world.components.tile;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> spatial_table </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.world.spatial_table;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> visibility_grid </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span>self.visibility_grid;
+</span><span>        tile_component.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">filter_map</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">move |</span><span>(entity, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>tile)</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>location </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> spatial_table.</span><span style="color:#62a35c;">location_of</span><span>(entity)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span>;
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> visibility </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> visibility_grid.</span><span style="color:#62a35c;">cell_visibility</span><span>(location.coord);
+</span><span>            </span><span style="color:#0086b3;">Some</span><span>(EntityToRender {
+</span><span>                tile,
+</span><span>                location,
+</span><span>                visibility,
+</span><span>            })
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Update the rendering logic to draw cells differently depending on their visibility.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">use crate</span><span>::visibility::CellVisibility;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">currently_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>        Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>)),
+</span><span>        Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new(</span><span style="color:#0086b3;">63</span><span>, </span><span style="color:#0086b3;">127</span><span>, </span><span style="color:#0086b3;">127</span><span>)),
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">previously_visible_view_cell_of_tile</span><span>(tile: Tile) -&gt; ViewCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> tile {
+</span><span>        Tile::Player </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;@&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>        Tile::Floor </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;.&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>        Tile::Wall </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new()
+</span><span>            .</span><span style="color:#62a35c;">with_character</span><span>(</span><span style="color:#183691;">&#39;#&#39;</span><span>)
+</span><span>            .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">63</span><span>))
+</span><span>            .</span><span style="color:#62a35c;">with_background</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>)),
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> entity_to_render </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.game_state.</span><span style="color:#62a35c;">entities_to_render</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> view_cell </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.visibility {
+</span><span>                CellVisibility::Currently </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="color:#62a35c;">currently_visible_view_cell_of_tile</span><span>(entity_to_render.tile)
+</span><span>                }
+</span><span>                CellVisibility::Previously </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                    </span><span style="color:#62a35c;">previously_visible_view_cell_of_tile</span><span>(entity_to_render.tile)
+</span><span>                }
+</span><span>                CellVisibility::Never </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>ViewCell::new(),
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> depth </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entity_to_render.location.layer {
+</span><span>                </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">=&gt; -</span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Floor) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">0</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Feature) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">Some</span><span>(Layer::Character) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">2</span><span>,
+</span><span>            };
+</span><span>            frame.</span><span style="color:#62a35c;">set_cell_relative</span><span>(
+</span><span>                entity_to_render.location.coord,
+</span><span>                depth,
+</span><span>                view_cell,
+</span><span>                context,
+</span><span>            );
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And finally update <code>AppData::handle_innput</code> to call <code>update_visibility()</code> after handling an input event:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        self.game_state.</span><span style="color:#62a35c;">update_visibility</span><span>();
+</span><span>    }
+</span><span>
+</span><span>}
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-4/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-4.1">part-4.1</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-5/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-3&#x2F;" aria-label="Previous">
+	  Previous: Part 3 - Generating a Dungeon
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-5&#x2F;" aria-label="Next">
+	  Next: Part 5 - Placing NPCs
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

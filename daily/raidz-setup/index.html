@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Raidz setup">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/raidz-setup/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/raidz-setup/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-22T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Raidz setup
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-stacktraces-are-unknown-on-freebsd&#x2F;" aria-label="Previous">
+	  Previous: Rust stacktraces are &lt;unknown&gt; on FreeBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;the-latest-rust-release-broke-backtraces-on-freebsd&#x2F;" aria-label="Next">
+	  Next: The latest rust release broke backtraces on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Raidz setup</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-22T00:00:00+00:00">
+    October 22, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I set up a raidz zpool on 3 4TB external hard drives.
+This is exactly the <a href="https://www.freebsd.org/doc/handbook/zfs-quickstart.html">ZFS example in the FreeBSD handbook</a>,
+with the minor variation that one of the disks is <em>slightly</em> smaller
+than the other 2, so <code>-f</code> must be specified when creating the zpool.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool create storage raidz da1 da2 da3
+</span><span>invalid vdev specification
+</span><span>use &#39;-f&#39; to override the following errors:
+</span><span>raidz contains devices of different sizes
+</span><span># zpool create -f storage raidz da1 da2 da3
+</span></code></pre>
+<p>This will be used in a media center. Create a new filesystem for storing media:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zfs create storage/media
+</span></code></pre>
+<p>I’m trying out the compression feature of ZFS. I doubt it will do much in this case as
+all the files I’ll be storing in this filesystem will be already compressed, but I’m
+interested to see how much of a difference it makes anyway.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zfs set compression=on storage/media
+</span></code></pre>
+<p>The 7TB below (instead of 8TB) is due to the unusual way hard drive sizes are specified.
+4TB is more like 3.5TB. One disk size worth of storage is taken up with redundancy, which
+is why the total size of the pool is twice that of a single disk (rather than 3 times).
+Were one of the disks to fail, no data would be lost and the pool would continue to function
+as normal.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># df -h storage/media
+</span><span>Filesystem       Size    Used   Avail Capacity  Mounted on
+</span><span>storage/media    7.0T     92G    6.9T     1%    /storage/media
+</span></code></pre>
+<p>The zpool hierarchy showing the 3 disks:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool status storage
+</span><span>  pool: storage
+</span><span> state: ONLINE
+</span><span>  scan: none requested
+</span><span>config:
+</span><span>
+</span><span>        NAME        STATE     READ WRITE CKSUM
+</span><span>        storage     ONLINE       0     0     0
+</span><span>          raidz1-0  ONLINE       0     0     0
+</span><span>            da1     ONLINE       0     0     0
+</span><span>            da2     ONLINE       0     0     0
+</span><span>            da3     ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-stacktraces-are-unknown-on-freebsd&#x2F;" aria-label="Previous">
+	  Previous: Rust stacktraces are &lt;unknown&gt; on FreeBSD
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;the-latest-rust-release-broke-backtraces-on-freebsd&#x2F;" aria-label="Next">
+	  Next: The latest rust release broke backtraces on FreeBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

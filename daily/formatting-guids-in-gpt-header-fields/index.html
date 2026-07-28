@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Formatting GUIDs in GPT header fields">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/formatting-guids-in-gpt-header-fields/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/formatting-guids-in-gpt-header-fields/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-12T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Formatting GUIDs in GPT header fields
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;encoding-disk-headers-into-disk-images&#x2F;" aria-label="Previous">
+	  Previous: Encoding disk headers into disk images
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;i-broke-some-things&#x2F;" aria-label="Next">
+	  Next: I broke some things
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Formatting GUIDs in GPT header fields</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-12T00:00:00+00:00">
+    October 12, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>“GPT” stands for “GUID Partition Table”, and “GUID” stands for “Globally-Unique IDentifier”.
+A GUID is a number generated according to the GUID specification, which is a method for
+generating numbers such that it is very unlikely that any two thus generated numbers will
+be the same.</p>
+<p>GPT uses GUIDs to identify disks, partitions, and partition <em>types</em>.</p>
+<p>One normally writes a GUID as several dash-separated hexidecimal numbers.
+An example GUID is <code>C12A7328-F81F-11D2-BA4B-00A0C93EC93B</code>. This particular
+GUID is special, in that it indicates an “EFI System Partition” partition type.
+This is the partition type that my tool will create, as it’s aimed at generating
+UEFI-bootable disk images.</p>
+<p>Looking at an example UEFI-bootable disk, the <em>numeric</em> value for its partition type
+is <code>0x3bc93ec9a0004bba11d2f81fc12a7328</code>. Looking closely at this number and the EFI GUID
+<code>C12A7328-F81F-11D2-BA4B-00A0C93EC93B</code>, every byte (pair of hex digits) is present. The
+order of fields is reversed, and the order of bytes within <em>some</em> fields is reversed.
+I need to do some more digging to find out the general rule for encoding GUIDs in GPT
+headers, though I suspect the pattern observable from this one example will suffice.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;encoding-disk-headers-into-disk-images&#x2F;" aria-label="Previous">
+	  Previous: Encoding disk headers into disk images
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;i-broke-some-things&#x2F;" aria-label="Next">
+	  Next: I broke some things
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

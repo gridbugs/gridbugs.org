@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Another Roguelike Lighting Demo">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2017-12-10T17:37:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Another Roguelike Lighting Demo
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Another Roguelike Lighting Demo</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2017-12-10T17:37:00+10:00">
+    December 10, 2017
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/lighting" aria-label="tag">lighting</a>
+  
+</p>
+
+
+  
+
+<p>In keeping with my habit of making game engines rather than entire games, here’s
+a demo that was originally meant to be a game, but I got sidetracked by making
+it pretty and lost momentum.
+<a href="https://gridbugs.github.io/gridbugs.org/post-mortem-of-abandoned-game/">This has happened before.</a> It’s just another
+step on the path to enlightenment. This post describes some of the new things I
+tried.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span>
+<p>View the <a href="https://github.com/gridbugs/lighting-experiment">source on github</a>.</p>
+<h2 id="graphics-hardware"><a class="zola-anchor" href="#graphics-hardware" aria-label="Anchor link for: graphics-hardware">Graphics Hardware</a></h2>
+<p>I used the crate <a href="https://github.com/gfx-rs/gfx">gfx</a> to access graphics hardware.
+It’s a bindless wrapper around several different graphics backends.
+I used the opengl backend, which means I could write shaders in the opengl
+shader language.</p>
+<h3 id="instanced-rendering"><a class="zola-anchor" href="#instanced-rendering" aria-label="Anchor link for: instanced-rendering">Instanced Rendering</a></h3>
+<p>The renderer keeps a single rectangle in the vertex/index buffers.
+Each entity in the game has an entry in an “instance buffer”, which
+stores information relevant for drawing that object (e.g. position, size, sprite
+sheet index, depth). The graphics hardware renders the geometry in the
+vertex/index buffers once for each entry in the index buffer.
+In grid-based games, and many 2D games in general, instanced rendering makes it
+convenient to update the rendering properties of a game entity, as all that
+needs to be updated is an entry in the index buffer.</p>
+<h2 id="dynamic-lighting"><a class="zola-anchor" href="#dynamic-lighting" aria-label="Anchor link for: dynamic-lighting">Dynamic Lighting</a></h2>
+<p>I’ve experimented with
+<a href="https://gridbugs.github.io/gridbugs.org/roguelike-lighting-demo/">dynamic lighting in roguelikes</a> before.
+What’s new here is the lighting is implemented in a shader, and the effect is
+applied to individual pixels rather than cells. I use
+<a href="https://gridbugs.github.io/gridbugs.org/visible-area-detection-recursive-shadowcast/">recursive shadowcast</a>,
+to do visible/lit area detection. My recursive shadowcast implementation writes
+its results directly into video memory, so the shaders can use this information
+to know which cells need to be lit in which way.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/screenshot-green.png" alt="screenshot-green.png" /></p>
+<p>I extended recursive shadowcast to mark the edges and corners of cells as
+visible. This is
+necessary as walls can be lit by different lights from different sides, but it
+only makes sense to show the player the effects of lights illuminating the sides
+they can see. This is demonstrated in the above/below images.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/another-roguelike-lighting-demo/screenshot-red.png" alt="screenshot-red.png" /></p>
+<h2 id="real-time-game-loop"><a class="zola-anchor" href="#real-time-game-loop" aria-label="Anchor link for: real-time-game-loop">Real Time Game Loop</a></h2>
+<p>The roguelike engines I’ve made in the past have blocked waiting for input when
+it was the player’s turn. This is more efficient than a polling game loop, but
+it makes it cumbersome to implement real-time effects like animation. I’m
+experimenting with a polling game loop, which makes it easy to do real time
+animations.</p>
+<video autoplay muted loop>
+  <source src="gameplay.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<h2 id="what-s-next"><a class="zola-anchor" href="#what-s-next" aria-label="Anchor link for: what-s-next">What’s Next</a></h2>
+<p>In an attempt to actually finish a game, I’m applying some restrictions to my
+next project:</p>
+<h3 id="terminal-ui"><a class="zola-anchor" href="#terminal-ui" aria-label="Anchor link for: terminal-ui">Terminal UI</a></h3>
+<p>At least at first. I really enjoy writing shaders and designing renderers. So
+much so that when given the option, I tend to focus too much on that, and not
+enough on making something actually fun and complete. To prevent this, I’m going
+to resrict myself to making a game that runs in a terminal.
+If I can complete a game that
+I think is fun and worth pursuing further, then I’ll consider adding graphics.</p>
+<p>I’ve been working on
+a <a href="https://crates.io/crates/prototty">rust library for making terminal UIs</a>. (Yes I know
+there are already many of these!). My goal is to make it as cheap as possible to
+make a game idea playable. A concern I have with graphics, is if I implement a
+game idea, spending time and effort to make the graphics nice from the start, if
+the idea turns out not to be fun, I’ll have a hard time deciding to throw it
+out and try something else, since I will have already invested so much effort.
+This may cause me to continue working on bad ideas that I should have abandoned
+earlier.</p>
+<h3 id="only-4-buttons"><a class="zola-anchor" href="#only-4-buttons" aria-label="Anchor link for: only-4-buttons">Only 4 Buttons</a></h3>
+<p>To <del>prevent</del> reduce feature creep, I’m forcing myself to design a game that
+has only four inputs. It’s turned out thus far to be an interesting design
+challenge, and I’m looking forward to implementing and play-testing some of my
+ideas.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;apocalypse-post&#x2F;" aria-label="Previous">
+	  Previous: Apocalypse Post
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;meters-below-the-ground&#x2F;" aria-label="Next">
+	  Next: Meters Below the Ground
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

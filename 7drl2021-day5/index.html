@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2021: Weapons">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2021-03-10T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/weapons.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2021: Weapons
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Upgrades
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: Enemies, Message Log, Space Gradient
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2021: Weapons</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2021-03-10T00:00:00+00:00">
+    March 10, 2021
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I added weapons.
+This screenshot shows the game’s arsenal.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/weapons.png" alt="weapons.png" /></p>
+<p>Other than art, most of the work was setting up interactions like displaying a prompt before picking up a new weapon
+that would replace the weapon in its destination weapon slot.</p>
+<span id="continue-reading"></span>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/replace.png" alt="replace.png" /></p>
+<p>And here’s how it looks when weapons are equipped with some upgrades that modify their stats.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/equipped.png" alt="equipped.png" /></p>
+<p>One such weapon is the railgun, which has high PEN and is guaranteed to breach the hull.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/railgun-before.png" alt="railgun-before.png" /></p>
+<p>Firing the railgun to the right to show off the lighting and destructible terrain.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/railgun-during.png" alt="railgun-during.png" /></p>
+<p>Immediately after firing, most of the ship is now exposed to vacuum and decompresses.
+Open doors in the path of the projectile were not impacted.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/railgun-after.png" alt="railgun-after.png" /></p>
+<p>Moving closer to inspect the damage. Some credits were sucked into the void.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2021-day5/railgun-damage.png" alt="railgun-damage.png" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2021: Upgrades
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2021-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2021: Enemies, Message Log, Space Gradient
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

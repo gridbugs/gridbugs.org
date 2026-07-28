@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2019: Character Progression">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2019-day5/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2019-day5/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-03-07T23:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2019: Character Progression
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2019: Card Gameplay
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: More Enemies, More Upgrades, More Cards
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2019: Character Progression</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-03-07T23:00:00+10:00">
+    March 07, 2019
+  </time>
+  
+</p>
+
+
+  
+
+<p>I added the first of three planned upgrade items tonight: the Cleansing Flame.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day5/progression.png" alt="progression.png" /></p>
+<p>In deck-building games, removing cards from your deck can improve your
+deck as a whole, by increasing the odds of the remaining cards being drawn
+at a critical moment. The Cleansing Flame upgrade lets you remove cards from your deck, at the
+cost of health.</p>
+<span id="continue-reading"></span>
+<p>At the moment you can only remove cards which you have played on the current floor.
+This is interesting as it forces you to play your undesirable cards at least once.
+My concern is that forcing players to use their cards before burning them will
+disincentivise burning any cards. I’ll playtest, and if this turns out to be the case
+I’ll extend it to include wasted cards or even cards in the deck.</p>
+<h2 id="wasted-cards"><a class="zola-anchor" href="#wasted-cards" aria-label="Anchor link for: wasted-cards">Wasted Cards?</a></h2>
+<p>The current card system works as follows: (copied from the game’s help file!):</p>
+<p>On your turn, move, wait, or play a card.</p>
+<p>Moving and waiting cost 1 power. Each card has a power cost.</p>
+<p>Playing a card moves it to the “spent” pile.</p>
+<p>When your power reaches 0, all the cards in your hand are moved into the “waste” pile, and you draw a fresh hand from the deck. Your power is reset to its maximum.</p>
+<p>Certain actions may permanently remove a card from play, adding it to the “burnt” pile.</p>
+<p>When you descend to the next level of the dungeon, the hand, and spent and waste piles are shuffled back into the deck, but the burnt pile remains out of play.</p>
+<h2 id="emergent-behaviour"><a class="zola-anchor" href="#emergent-behaviour" aria-label="Anchor link for: emergent-behaviour">Emergent Behaviour</a></h2>
+<p>The fact that moving costs power has an interesting consequence that I didn’t
+appreciate until I actually played the game.  When the power level drops below
+the cost of the more expensive cards in your hand (e.g. Blink in the screenshot
+below), you might want to quickly use through your remaining power so you can
+draw a fresh hand and reset to full power. But you can’t heal while you’re at
+full health, and you can’t bump into thin air. If there’s a possibility of
+combat in the near future, you want to fight sooner rather than later, since
+your power will drop even lower, and you might not be able to play your combat
+cards. The player has an incentive to be aggressive.</p>
+<p>Another strategy I found myself employing is fighting until my power got to 20,
+and then blinking away to draw a fresh hand and reset the power.</p>
+<h2 id="cards-are-food"><a class="zola-anchor" href="#cards-are-food" aria-label="Anchor link for: cards-are-food">Cards are Food!</a></h2>
+<p>When your deck runs out, that’s it. You can’t play any more cards until you get
+to the stairs to the next level. Nothing explicitly bad happens to you when
+you run out of cards, but it does make surviving in the dungeon much harder.
+This motivates forward progress, much like the food clock in most traditional roguelikes,
+but without the need to scrounge around for food; just get to the stairs and your cards
+will come back!</p>
+<p>It’s also probably not worth it for players
+to kill all the enemies on a floor - only the ones which threaten them or
+get in their way. There’s no reason to grind enemies, and if you try, you’ll
+probably run out of cards.</p>
+<h2 id="end-of-day-screenshot"><a class="zola-anchor" href="#end-of-day-screenshot" aria-label="Anchor link for: end-of-day-screenshot">End of Day Screenshot</a></h2>
+<p>The yellow psi characters are Cleansing Flames.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-day5/eod.png" alt="eod.png" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day4&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2019: Card Gameplay
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day6&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: More Enemies, More Upgrades, More Cards
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

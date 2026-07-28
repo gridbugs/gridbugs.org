@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Quality of life in command-line argument parsing">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/quality-of-life-in-command-line-argument-parsing/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/quality-of-life-in-command-line-argument-parsing/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-13T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Quality of life in command-line argument parsing
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-my-first-command-line-arguments&#x2F;" aria-label="Previous">
+	  Previous: Parsing my first command-line arguments
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;renamed-args-af-to-meap&#x2F;" aria-label="Next">
+	  Next: Renamed &quot;args_af&quot; to &quot;meap&quot;
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Quality of life in command-line argument parsing</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-13T00:00:00+00:00">
+    September 13, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I added a quality-of-life macro to <a href="https://github.com/gridbugs/args-af">args_af</a>
+to make it easier to specify arguments:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>Args {
+</span><span>    optional_int: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">i32</span><span>&gt;,
+</span><span>    string: String,
+</span><span>    flag: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Args {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parse</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        (args_af::args_map</span><span style="font-weight:bold;color:#a71d5d;">! </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>{
+</span><span>                optional_int </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">opt_opt</span><span>(</span><span style="color:#183691;">&#39;i&#39;</span><span>);
+</span><span>                string </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">pos_req</span><span>(</span><span style="color:#183691;">&quot;STRING&quot;</span><span>);
+</span><span>                flag </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">flag</span><span>(</span><span style="color:#183691;">&#39;f&#39;</span><span>);
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>                    optional_int,
+</span><span>                    string,
+</span><span>                    flag,
+</span><span>                }
+</span><span>            }
+</span><span>        })
+</span><span>        .</span><span style="color:#62a35c;">parse_env</span><span>()
+</span><span>        .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>…which generates code like:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Args {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">parse</span><span>() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="color:#62a35c;">opt_opt</span><span>(</span><span style="color:#183691;">&#39;i&#39;</span><span>).</span><span style="color:#62a35c;">both</span><span>(</span><span style="color:#62a35c;">pos_req</span><span>(</span><span style="color:#183691;">&quot;STRING&quot;</span><span>)).</span><span style="color:#62a35c;">both</span><span>(</span><span style="color:#62a35c;">flag</span><span>(</span><span style="color:#183691;">&#39;f&#39;</span><span>))
+</span><span>        .</span><span style="color:#62a35c;">map</span><span>(|((optional_int, string), flag)</span><span style="font-weight:bold;color:#a71d5d;">| </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>                optional_int,
+</span><span>                string,
+</span><span>                flag,
+</span><span>            }
+</span><span>        })
+</span><span>        .</span><span style="color:#62a35c;">parse_env</span><span>()
+</span><span>        .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Note the chained calls to <code>both</code>, and the destructured nested pairs in the argument list
+to the mapped function. The benefit of the <code>args_map</code> macro is it lets you associate the
+specification of each argument with the variable it will be assigned to. Also it removes
+the need to explicitly unpack the nested tuple created by repeated calls to <code>both</code>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;parsing-my-first-command-line-arguments&#x2F;" aria-label="Previous">
+	  Previous: Parsing my first command-line arguments
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;renamed-args-af-to-meap&#x2F;" aria-label="Next">
+	  Next: Renamed &quot;args_af&quot; to &quot;meap&quot;
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

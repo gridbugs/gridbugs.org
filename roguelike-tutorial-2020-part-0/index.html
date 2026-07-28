@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 0 - Setting Up">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-06-12T20:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 0 - Setting Up
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<span class="disabled-link">Previous: (none)</span>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-1&#x2F;" aria-label="Next">
+	  Next: Part 1 - Drawing and Moving the Player
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 0 - Setting Up
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-06-12T20:00:00+10:00">
+    June 12, 2020
+  </time>
+  
+</p>
+
+
+<p>This is the first of a series of posts where I follow the
+<a href="http://rogueliketutorials.com/">python tcod roguelike tutorial</a>
+but instead of programming in python using the
+<a href="https://github.com/libtcod/libtcod">tcod</a> library, I’ll be programming
+in rust using the <a href="https://github.com/gridbugs/chargrid">chargrid</a>
+library, which I’ve been developing for about 3 years.</p>
+<p>This is part of an event where the <a href="https://old.reddit.com/r/roguelikedev/wiki/python_tutorial_series">roguelikedev subreddit does the complete
+roguelike tutorial</a>
+over the course of several weeks.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/logo.png" alt="logo.png" /></p>
+<h2 id="installation"><a class="zola-anchor" href="#installation" aria-label="Anchor link for: installation">Installation</a></h2>
+<p>To follow this tutorial you will need a rust compiler. Follow the instructions <a href="https://www.rust-lang.org/tools/install">here</a>.</p>
+<h2 id="new-rust-project"><a class="zola-anchor" href="#new-rust-project" aria-label="Anchor link for: new-rust-project">New Rust Project</a></h2>
+<p>After rust is installed you’ll have a command named <code>cargo</code>. Use it to create a new rust project:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ cargo new --bin chargrid-roguelike-tutorial-2020
+</span></code></pre>
+<p>This command creates a directory structure:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>├── Cargo.toml   # manifest - we&#39;ll mainly update it to add dependencies
+</span><span>└── src          # all the project&#39;s source code will live under this directory
+</span><span>    └── main.rs  # entry point for the program
+</span></code></pre>
+<p>From within the “chargrid-roguelike-tutorial-2020” directory, run:</p>
+<pre data-lang="bash" style="background-color:#ffffff;color:#323232;" class="language-bash "><code class="language-bash" data-lang="bash"><span>cargo run
+</span></code></pre>
+<p>This will compile and run the program. The output should be something like:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>   Compiling chargrid-roguelike-tutorial-2020 v0.1.0
+</span><span>    Finished dev [unoptimized + debuginfo] target(s) in 0.16s
+</span><span>     Running `target/debug/chargrid-roguelike-tutorial-2020`
+</span><span>Hello, world!
+</span><span>
+</span></code></pre>
+<h2 id="get-fonts"><a class="zola-anchor" href="#get-fonts" aria-label="Anchor link for: get-fonts">Get Fonts</a></h2>
+<p>We’ll be making a traditional roguelike, and that means text-only graphics.
+You’ll need a font. Chargrid requires a pair of fonts - one for regular text and a second for bold.
+Download ttf files for a pair of fonts. They must be monospace (all characters are the same width).</p>
+<p>Two suitable fonts can be downloaded here:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/PxPlus_IBM_CGAthin.ttf">IBM PxPlus Regular TTF</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-0/PxPlus_IBM_CGA.ttf">IBM PxPlus Bold TTF</a></li>
+</ul>
+<p>Once you have your fonts, make a “fonts” directory inside your “src” directory and place the
+fonts there.</p>
+<p>Your source tree should now look like this:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>├── Cargo.toml
+</span><span>└── src
+</span><span>    ├── fonts
+</span><span>    │   ├── PxPlus_IBM_CGAthin.ttf
+</span><span>    │   └── PxPlus_IBM_CGA.ttf
+</span><span>    └── main.rs
+</span></code></pre>
+<h2 id="get-dependencies"><a class="zola-anchor" href="#get-dependencies" aria-label="Anchor link for: get-dependencies">Get Dependencies</a></h2>
+<h3 id="linker"><a class="zola-anchor" href="#linker" aria-label="Anchor link for: linker">Linker</a></h3>
+<p>You’ll need a linker in order to build the code. Some Linux distributions provide a meta package of
+common build tools which will contain a linker.</p>
+<h4 id="ubuntu"><a class="zola-anchor" href="#ubuntu" aria-label="Anchor link for: ubuntu">Ubuntu</a></h4>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># apt install build-essential
+</span></code></pre>
+<h4 id="arch-linux"><a class="zola-anchor" href="#arch-linux" aria-label="Anchor link for: arch-linux">Arch Linux</a></h4>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># pacman -S base-devel
+</span></code></pre>
+<p>Worst case, installing <code>gcc</code> or <code>clang</code> will ensure you have a linker installed as well.</p>
+<h3 id="libx11-linux-only"><a class="zola-anchor" href="#libx11-linux-only" aria-label="Anchor link for: libx11-linux-only">libx11 (Linux only)</a></h3>
+<p>The code in this tutorial has a compile-time dependency on libx11.</p>
+<h4 id="ubuntu-1"><a class="zola-anchor" href="#ubuntu-1" aria-label="Anchor link for: ubuntu-1">Ubuntu</a></h4>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># apt install libx11-dev
+</span></code></pre>
+<h4 id="arch-linux-1"><a class="zola-anchor" href="#arch-linux-1" aria-label="Anchor link for: arch-linux-1">Arch Linux</a></h4>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># pacman -S libx11
+</span></code></pre>
+<h2 id="reference-implementation"><a class="zola-anchor" href="#reference-implementation" aria-label="Anchor link for: reference-implementation">Reference Implementation</a></h2>
+<p>If you get stuck, or something in these tutorials doesn’t make sense, take a look at the git repo at
+<a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020">https://github.com/gridbugs/chargrid-roguelike-tutorial-2020</a>.
+For each part and subsection of this tutorial, there is a corresponding branch showing the state of the repo
+at that stage of the tutorial. This makes it easy to show the changes introduced in each part of the tutorial.</p>
+<p>For example to show the change to <code>src/main.rs</code> between part 0.0 and 1.0, clone the repo and run:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>git diff part-0.0 part-1.0 src/main.rs
+</span></code></pre>
+<pre data-lang="diff" style="background-color:#ffffff;color:#323232;" class="language-diff "><code class="language-diff" data-lang="diff"><span>diff --git a/src/main.rs b/src/main.rs
+</span><span>index e7a11a9..b19bcfb 100644
+</span><span style="background-color:#ffecec;font-weight:bold;font-style:italic;color:#bd2c00;">---</span><span style="font-style:italic;color:#969896;"> a/src/main.rs
+</span><span style="background-color:#eaffea;font-weight:bold;font-style:italic;color:#55a532;">+++</span><span style="font-style:italic;color:#969896;"> b/src/main.rs
+</span><span style="font-weight:bold;font-style:italic;color:#969896;">@@ -1,3 +1,60 @@
+</span><span> fn main() {
+</span><span style="background-color:#ffecec;color:#323232;">-    println!(&quot;Hello, world!&quot;);
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">    use chargrid_graphical::{Config, Context, Dimensions, FontBytes};
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">    const CELL_SIZE_PX: f64 = 24.;
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">    let context = Context::new(Config {
+</span><span>...
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-0.0">part-0.0</a></p>
+<h2 id="code-snippets"><a class="zola-anchor" href="#code-snippets" aria-label="Anchor link for: code-snippets">Code Snippets</a></h2>
+<p>Throughout this tutorial there will be many code snippets!
+In fact all the code that makes up the reference implementation will be present at some point in the tutorial.
+As we progress through building this roguelike, there will be times when we update existing code.
+Whenever code changes, the new version of the code will be shown, with (hopefully!) enough context for the reader
+to understand the old code that it’s replacing and update their implementation accordingly.</p>
+<p>If it’s not clear, consult the reference implementation to see exactly what changes between each section of each part.</p>
+<p>There may be points in the middle of sections (between headings) where the code doesn’t compile, however at each heading
+in each part, the code will be in a compiling state. Each heading corresponds to a particular <code>part-x.y</code> branch
+in the reference implementation repository, and each such branch should always be in a compilable state.</p>
+<h2 id="ready-to-begin"><a class="zola-anchor" href="#ready-to-begin" aria-label="Anchor link for: ready-to-begin">Ready to begin?</a></h2>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-1/">Click here for part 1 of the tutorial!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<span class="disabled-link">Previous: (none)</span>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-1&#x2F;" aria-label="Next">
+	  Next: Part 1 - Drawing and Moving the Player
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

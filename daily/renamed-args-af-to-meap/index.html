@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Renamed &quot;args_af&quot; to &quot;meap&quot;">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/renamed-args-af-to-meap/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/renamed-args-af-to-meap/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-09-14T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Renamed &quot;args_af&quot; to &quot;meap&quot;
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;quality-of-life-in-command-line-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Quality of life in command-line argument parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-phone-and-an-arduous-journey-bootstrapping-lineageos&#x2F;" aria-label="Next">
+	  Next: New phone, and an arduous journey bootstrapping LineageOS
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Renamed &quot;args_af&quot; to &quot;meap&quot;</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-09-14T00:00:00+00:00">
+    September 14, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I renamed my <a href="https://github.com/gridbugs/meap">work-in-progress command-line argument parsing library</a>
+from “args_af” to “meap”. Meap stands for <strong>M</strong>inimal <strong>E</strong>xtensible <strong>A</strong>rgument <strong>P</strong>arser.
+It’s minimal in the sense that it has no external dependencies and CLOCs in at a little over
+1000 lines of rust. It’s extensible in the sense that the <code>Parser</code> trait defined in the library
+can be implemented by types from 3rd party code to create custom combinators.
+A second trait, <code>SingleArgParser</code>, can be used to implement custom basic arguments.</p>
+<p>The main reason for the rename is the “AF” in “args_af” stood for “Applicative Functor”, which
+is a term often found in “functional programming” literature to describe types which a function
+of multiple arguments may be (essentially) mapped. An argument parser is an applicative functor because it’s
+possible to take a pair of separate parsers and combine them into a single parser which yields
+a pair of values (<code>both</code>), AND it’s possible to take a parser yielding values of some type, and a
+function from that type to some other type, and combine them into a new parser which yields
+values of the new type (<code>map</code>). To technically qualify as an applicative functor there would need
+to be a way to take a value and build from it a parser that yields that value (<code>pure</code> in the literature),
+but there doesn’t seem to be any point in actually including this function in meap.
+The <code>apply</code> function that’s normally used to define applicative functors is left out as it can
+be implement in terms of <code>pure</code>, <code>map</code>, and <code>both</code>, and is frankly less useful in this domain.</p>
+<p>While the fact that an argument parser is an applicative functor is an interesting observation,
+it’s of little practical use to anyone who just wants to parse arguments.
+I expect may programmers have never encountered the term before, and
+<em>I’d</em> sure feel uncomfortable using a library with an unfamiliar acronym in its name.</p>
+<p>I also initially found it hilarious to say that my library was “Args AF!”, but it got old
+pretty fast and some potential users may find it off-putting.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;quality-of-life-in-command-line-argument-parsing&#x2F;" aria-label="Previous">
+	  Previous: Quality of life in command-line argument parsing
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-phone-and-an-arduous-journey-bootstrapping-lineageos&#x2F;" aria-label="Next">
+	  Next: New phone, and an arduous journey bootstrapping LineageOS
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

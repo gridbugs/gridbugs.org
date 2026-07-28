@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2019: Planning and Preparation">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2019-plan/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2019-plan/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-03-03T09:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2019: Planning and Preparation
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-success&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Success
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: Procgen and Basic Pathfinding
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2019: Planning and Preparation</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-03-03T09:00:00+10:00">
+    March 03, 2019
+  </time>
+  
+</p>
+
+
+  
+
+<p>I’m about to start working on my 7drl project for 2019: Get Well Soon.
+It will be a deck-building, but otherwise traditional roguelike, in the sense that
+the world is square grid, gameplay is turn-based, levels are procedurally generated
+and you have to restart if you lose. All character abilities will be
+activated by playing cards. The character can be upgraded by adding and removing
+cards from the deck.</p>
+<span id="continue-reading"></span>
+<p>Aesthetically, most of the abilities will be focused on ice. I’ve been thinking
+a lot about abilities which obstruct enemies rather than outright attacking them,
+and ice has some nice affordances in this respect (it blocks your path or freezes
+you but melts over time, it can be sharp, it’s slippery, it’s less effective
+in hot areas).</p>
+<p>I’m making some chances to my normal approach. I’m working on this from Sunday to Saturday,
+rather than Saturday to Friday as I’ve done before. I work roughly 9-5 on weekdays, and I
+want to see what difference a free day at the end of the week will make. Also, the title
+isn’t a pun!</p>
+<p>As always, I won’t be starting with zero code. I’ve been working on yet <strong>another</strong>
+lighting demo called <a href="https://github.com/gridbugs/cherenkov">Cherenkov</a>,
+which I have long term plans to turn into a game. I’m going to keep the prototty
+boilerplate, build scripts, continuous deployment (travis-ci and appveyor) configs,
+and lighting system. Actually that’s about the entire project so far. It doesn’t
+even have physics - you can happily walk through walls or out of the map!</p>
+<p>Here’s a screenshot.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2019-plan/cherenkov.png" alt="cherenkov.png" /></p>
+<p>In the week leading up to the 7drl I did a lot of testing of the various “roguelike engine component”
+libraries which I maintain, since I’m not interested in debugging low-level engine components during
+the 7drl (but I’m sure I will still have to!). The 2 major bugs which I found with this testing:</p>
+<ul>
+<li>The prototty renderer for opengl would draw the foreground of cells a different size to the background
+of cells on hidpi screens (lucky I tested on my laptop!).</li>
+<li>My wave function collapse library provides a way to query the tile index which gets assigned to
+tiles starting at given pixels of the input image. When you include rotations and reflections,
+some BUT NOT ALL of the rotated/reflected tile indices were present in the result of this query.</li>
+</ul>
+<p>Rough list of features I want to add:</p>
+<ul>
+<li>terrain generation with WFC
+<ul>
+<li>stretch goal is multiple distinct generators for different stages of the game</li>
+</ul>
+</li>
+<li>deck building mechanics
+<ul>
+<li>there’s a turn counter, and when it gets to 0 you discard your hand and draw a new hand</li>
+<li>each card has a cost to play and reduces the turn counter by that much</li>
+<li>if your deck runs out, you can’t take any actions (but can still move), so
+better find the next level entrance quickly!</li>
+<li>bufs are cards that you burn after playing and have a positive effect</li>
+<li>debufs are cards that do nothing (but take up space) or have a negative effect</li>
+<li>late in the game, a low-level ability card being forced into your deck should feel
+like a debuf, since it’s not very useful against late-game enemies and it reduces the
+chance of drawing a good card</li>
+<li>upgrades take the form of adding OR removing cards from your deck
+<ul>
+<li>still need to work out a way of delivering upgrades</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>content and gameplay
+<ul>
+<li>find different (anti)synergies between different sets of cards
+<ul>
+<li>without this, strategic planning has little value (ie. choosing which cards go in your deck).</li>
+</ul>
+</li>
+<li>find (anti)synergies between enemies and terrain, and ways for players to
+exploit these
+<ul>
+<li>without this, tactical pnalling has little value (ie. choosing which ability to use in a specific
+scenario, where to stand, who to attack first, where to place traps).</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-success&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: Success
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2019-day1&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2019: Procgen and Basic Pathfinding
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

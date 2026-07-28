@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Alice the Caml">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/alice-the-caml/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/alice-the-caml/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2025-08-26T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Alice the Caml
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Alice the Caml</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2025-08-26T00:00:00+00:00">
+    August 26, 2025
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/ocaml" aria-label="tag">ocaml</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/alice" aria-label="tag">alice</a>
+  
+</p>
+
+
+  
+
+<p><a href="https://github.com/alicecaml/alice">Alice</a> is an experimental OCaml build
+system emphasizing accessibility. It’s still very much a work in progress and
+nowhere near ready for regular use. Currently it can build multi-file OCaml
+projects to executables and libraries. Its UI is inspired by cargo.</p>
+<p>I’m one of the core Dune developers for my day job. Dune is a mature and widely
+used OCaml build system which it difficult to make large structural changes to
+its UI and packaging philosophy. Alice is an experiment exploring the design
+space of OCaml build systems when these constraints are lifted.</p>
+<p>Here’s a tiny demo:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ alice new hello
+</span><span>$ cd hello
+</span><span>$ cat src/main.ml
+</span><span>let () = print_endline &quot;Hello, World!&quot;
+</span><span>$ alice run
+</span><span>Hello, World!
+</span></code></pre>
+<p>It has incremental builds though they are currently sequential. It generates a
+build graph which could be executed in parallel but this is future work. Running
+<code>alice dot</code> prints a graphviz file representing the build graph.</p>
+<p>It uses my <a href="https://github.com/gridbugs/climate">climate</a> library for its CLI
+and so contains an inbuilt mechanism for generating bash completion scripts.</p>
+<p>It doesn’t assume anything about your OCaml compiler setup. You can install the
+compiler with opam or nix or your system package manager or manually build it from
+source if you like. However it does come with a mechanism for downloading a
+precompiled OCaml toolchain and some other tools (an LSP server and code
+formatter), avoiding the need for users to build the compiler from source which
+can be time-consuming. Precompiled toolchains are available for Linux x86_64,
+MacOS x86_64/aarch64 and Windows x86_64, though I haven’t yet ported Alice to
+Windows. Alice deviates from opam in that the compiler and development tools are
+not considered to be packages.</p>
+<p>There’s currently no packaging story and packages cannot yet depend on one
+another. It would be nice to one day support depending on opam packages but this
+is not going to be the default package format and opam compatibility isn’t a
+major priority for the project. Instead I’ll design a packaging system
+prioritizing ease of publishing and maintenance with as low cognitive load as
+possible, and then see how opam compatibility can fit into that picture.</p>
+<p>The name comes from an <a href="https://www.youtube.com/watch?v=XM7Jnetdf0I">Australian children’s
+song</a>.</p>
+<p>My next two goals for the project are Windows support and basic package
+management.</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ alice --help
+</span><span>Alice is a build system for OCaml projects.
+</span><span>
+</span><span>Usage: alice [COMMAND]
+</span><span>       alice [OPTION]…
+</span><span>
+</span><span>Options:
+</span><span>  -h, --help  Show this help message.
+</span><span>
+</span><span>Commands:
+</span><span>  build, b  Build a project.
+</span><span>  clean, c  Delete all generated build artifacts.
+</span><span>  dot       Print graphviz source describing build artifact dependencies.
+</span><span>  new       Create a new alice project.
+</span><span>  tools     Manage tools for building and developing OCaml projects.
+</span><span>  run, r    Build a project and run its executable.
+</span><span>  help      Print documentation for a subcommand.
+</span><span>  internal  Internal commands.
+</span></code></pre>
+<p>Read more on <a href="https://www.alicecaml.org">Alice’s website</a>!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;scope-creep&#x2F;" aria-label="Previous">
+	  Previous: Scope Creep
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<span class="disabled-link">Next: (none)</span>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

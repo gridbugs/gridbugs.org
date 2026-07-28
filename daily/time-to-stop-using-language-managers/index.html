@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Time to stop using language managers">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/time-to-stop-using-language-managers/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/time-to-stop-using-language-managers/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-09T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Time to stop using language managers
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;roguelike-tutorial-levelling-up-the-player-character&#x2F;" aria-label="Previous">
+	  Previous: Roguelike Tutorial - Levelling up the player character
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-on-openbsd&#x2F;" aria-label="Next">
+	  Next: Rust on OpenBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Time to stop using language managers</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-08-09T00:00:00+00:00">
+    August 09, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>A few days ago I listed some problems I need to solve before I consider switching to OpenBSD in earnest.
+Getting nodejs to compile with <a href="https://github.com/nvm-sh/nvm">the nodejs version manager</a> was one such problem.
+NVM is a tool for managing the concurrent installation of multiple different versions of nodejs.
+When possible it downloads binary distributions of nodejs, but in uncommon environments such as OpenBSD
+it builds nodejs from source.</p>
+<p>Without modifications to its source code, nodejs does not build on OpenBSD.
+Last night I figured out how to get nodejs to build.
+There’s a couple of places where it assumes that FreeBSD is the only BSD.
+Only after getting it working did it occur to
+me to just look in the <a href="https://github.com/openbsd/ports/tree/master/lang/node">ports tree</a>
+which contains the patches necessary to get nodejs to build on OpenBSD.</p>
+<p>I don’t want to let language vendors dictate my choice of operating system.
+The port maintainers go to the trouble of patching language implementations for OpenBSD,
+and I don’t want to duplicate their efforts. If I’m not going to use nvm I may as well just use
+the binary nodejs package for OpenBSD.</p>
+<p>That leaves the question of what to do about projects
+that depend on old versions old nodejs. I only have a handful of these (<a href="https://github.com/gridbugs/roguelike-lighting-demo/">such as this one</a>),
+and I’m not actively working on any of them. It would just be nice if they continued to compile.
+That said, I don’t expect to need to build them very often, so going out of my way to make the process easy
+by using a version manager is not worth it. <em>If</em> I ever need to build these projects again,
+I can just compile the correct version of nodejs myself (possibly using patches from the ports tree as a reference),
+or just run a different OS in a virtual machine.</p>
+<p>I also use <a href="http://rvm.io/">the ruby version manager</a> to manage installations of ruby.
+The only reason I started using this was to get around some long forgotten problem I had
+years ago installing ruby with apt on ubuntu.
+The only purpose I have for ruby is this website. It’s very simple and easy to keep up to date, so
+managing multiple ruby versions is not something I need. The ruby packages in FreeBSD and OpenBSD both
+work perfectly fine, so bye bye rvm.</p>
+<p>Finally there’s <a href="https://rustup.rs/">rustup</a>. This one’s a little harder to live without.
+On OpenBSD this decision is made for me, as the rust project doesn’t have binaries available
+anyway. The problem is that people who use rust (myself included) get really excited about
+new language features, and start using them in their projects right away.
+OpenBSD has binary rust packages available, but at the time of writing they’re several
+versions out of date (at the time of writing 1.42 compared to 1.45).
+The rust language server <a href="https://github.com/rust-analyzer/rust-analyzer">rust-analyser</a>
+requires 1.43 of the compiler. I also occasionally rely on the ability to switch back and
+forth between the stable and nightly versions of the rust compiler to enable experimental features.</p>
+<p>I’ll stop using nvm and rvm which will greatly simplify my setup. I’ll continue to use rustup, and look forward to it becoming
+available on OpenBSD.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;roguelike-tutorial-levelling-up-the-player-character&#x2F;" aria-label="Previous">
+	  Previous: Roguelike Tutorial - Levelling up the player character
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;rust-on-openbsd&#x2F;" aria-label="Next">
+	  Next: Rust on OpenBSD
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Programming Languages Make Terrible Game Engines">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/programming-languages-make-terrible-game-engines/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/programming-languages-make-terrible-game-engines/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2017-03-25T14:26:01+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Programming Languages Make Terrible Game Engines
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Programming Languages Make Terrible Game Engines</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2017-03-25T14:26:01+10:00">
+    March 25, 2017
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  
+</p>
+
+
+  
+
+<p>This is the first of a series of posts I’m writing to explain the
+inner workings of the game engine I used for my 7DRL: <a href="https://gridbugs.itch.io/apocalypse-post">Apocalypse
+Post</a>. It motivates one of the
+problems I set out to solve with the engine - how to represent the types of game
+entities.</p>
+<h2 id="edit"><a class="zola-anchor" href="#edit" aria-label="Anchor link for: edit">Edit</a></h2>
+<p>In the <a href="https://www.reddit.com/r/roguelikedev/comments/61elh1/programming_languages_make_terrible_game_engines/">discussion</a>
+about this post, it was pointed out that the object-oriented examples below are
+examples of bad object-oriented design. I agree with this, and I’m not trying to argue that
+it’s impossible to design a good game engine using object-oriented programming.
+The examples illustrate how someone new to building game engines might attempt
+to use class inheritance to describe the types of game entities. The article
+demonstrates the problems with this approach, and suggests a non-object-oriented
+alternative.</p>
+<h2 id="you-want-types"><a class="zola-anchor" href="#you-want-types" aria-label="Anchor link for: you-want-types">You want types</a></h2>
+<p>You’re making a game engine, and you want a way to categorize entities in your
+game, so the engine knows what operations it can perform on an entity.
+You want a way to express the fact that <strong>Weapons</strong> can be fired, <strong>Characters</strong> can act,
+<strong>Equipment</strong> can be equipped, and so on.</p>
+<h2 id="your-programming-language-has-types"><a class="zola-anchor" href="#your-programming-language-has-types" aria-label="Anchor link for: your-programming-language-has-types">Your programming language <em>has</em> types!</a></h2>
+<p>Preface: Don’t do this!</p>
+<p><em>Aha</em>, you say, <em>I just need to create abstract classes for <strong>Weapon</strong>, <strong>Character</strong>,
+<strong>Equipment</strong>, and inherit them for concrete classes representing game entities</em>.</p>
+<pre data-lang="java" style="background-color:#ffffff;color:#323232;" class="language-java "><code class="language-java" data-lang="java"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">GameEntity </span><span>{ ... }
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Weapon </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">damage</span><span>(); }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Character </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span>{ </span><span style="color:#0086b3;">Action </span><span style="font-weight:bold;color:#795da3;">act</span><span>(); }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Equipment </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">equip</span><span>(</span><span style="color:#0086b3;">Character</span><span>); }
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Sword </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">Weapon </span><span>{ ... }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Human </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">Character </span><span>{ ... }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Zombie </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">Character </span><span>{ ... }
+</span></code></pre>
+<p>But hang on, swords can also be equipped, we need multiple inheritance:</p>
+<pre data-lang="java" style="background-color:#ffffff;color:#323232;" class="language-java "><code class="language-java" data-lang="java"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">GameEntity </span><span>{ ... }
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">interface </span><span style="color:#0086b3;">Weapon </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">damage</span><span>(); }
+</span><span style="font-weight:bold;color:#a71d5d;">interface </span><span style="color:#0086b3;">Character </span><span>{ </span><span style="color:#0086b3;">Action </span><span style="font-weight:bold;color:#795da3;">act</span><span>(); }
+</span><span style="font-weight:bold;color:#a71d5d;">interface </span><span style="color:#0086b3;">Equipment </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">equip</span><span>(</span><span style="color:#0086b3;">Character</span><span>); }
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Sword </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span style="font-weight:bold;color:#a71d5d;">implements </span><span style="color:#0086b3;">Weapon</span><span>, </span><span style="color:#0086b3;">Equipable </span><span>{ ... }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Human </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span style="font-weight:bold;color:#a71d5d;">implements </span><span style="color:#0086b3;">Character </span><span>{ ... }
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Zombie </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity </span><span style="font-weight:bold;color:#a71d5d;">implements </span><span style="color:#0086b3;">Character </span><span>{ ... }
+</span></code></pre>
+<p>When a human is bitten by a zombie, they should turn into a zombie. Wait <strong>turn
+into</strong>?</p>
+<p>Perhaps we can do something like:</p>
+<pre data-lang="java" style="background-color:#ffffff;color:#323232;" class="language-java "><code class="language-java" data-lang="java"><span style="font-weight:bold;color:#a71d5d;">interface </span><span style="color:#0086b3;">TurnsIntoZombie </span><span>{ </span><span style="color:#0086b3;">Zombie </span><span style="font-weight:bold;color:#795da3;">turn_into</span><span>(); }
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">Human </span><span style="font-weight:bold;color:#a71d5d;">extends </span><span style="color:#0086b3;">GameEntity
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">implements </span><span style="color:#0086b3;">Character</span><span>, </span><span style="color:#0086b3;">TurnsIntoZombie </span><span>{ ... }
+</span></code></pre>
+<p>This raises some questions:</p>
+<ul>
+<li>What does <code>turn_into</code> actually do? It needs to take a bunch the fields from
+the <strong>Human</strong>, (equipment, physical stats), and create a new <strong>Zombie</strong> with
+those fields, since it would be nice if the re-animated human in some ways
+resembled their former self. Somehow we also need to make the original
+<strong>Human</strong> object unusable, and ensure that there are no references to it that
+might still try to treat the copied fields as if they were part of a human.</li>
+<li>There will probably be other types of character besides humans and zombies,
+and some may implement <strong>TurnsIntoZombie</strong>.
+This implies that whenever <em>something</em> is bitten by a zombie, we need to
+check (at runtime) whether it turns into a zombie. Alternatively,
+<code>turn_into</code> could be moved into the <strong>Character</strong> interface, and do nothing for
+characters that shouldn’t become zombies (should it return <code>null</code>?).</li>
+</ul>
+<p>How should game entities be stored? One can imagine using a collection of
+<strong>GameEntity</strong>.
+The major problem is that the type information is lost from the
+entities in the array, and upon pulling something out of the array, we need to
+check what it is, and then cast it appropriately. An alternative may be to use a
+separate collection of entities for each entity type. Entities may belong to
+multiple types (e.g. a <strong>Sword</strong> is both <strong>Equipable</strong> and a <strong>Weapon</strong>), so
+each may appear in several collections, and we would then have to manage the fact
+that if an item is destroyed, it must be removed from all the lists that contain
+it.</p>
+<h2 id="programming-language-types-map-poorly-to-game-entities"><a class="zola-anchor" href="#programming-language-types-map-poorly-to-game-entities" aria-label="Anchor link for: programming-language-types-map-poorly-to-game-entities">Programming language types map poorly to game entities</a></h2>
+<p>The cracks are starting to show:</p>
+<ul>
+<li>Programming language types are static, in the sense that an object’s type
+does not change. In games you want the types of game entities to be mutable.</li>
+<li>You’re forced to use multiple inheritance if you want entities to fit into
+multiple categories. Not all languages support this, and it comes with
+its own set of problems.</li>
+<li>You’re forced to check types at runtime. There’s nothing wrong with checking
+types at runtime, but if you’re going to do it, why tie yourself to your
+programming language’s type system?</li>
+</ul>
+<h2 id="composition-over-inheritance"><a class="zola-anchor" href="#composition-over-inheritance" aria-label="Anchor link for: composition-over-inheritance">Composition over Inheritance!</a></h2>
+<p>The big problem with mapping language types onto game entities is that language
+types are often concerned with describing what an object <strong>is</strong>, whereas game
+entities are best described in terms of what an object <strong>has</strong>.</p>
+<p>Here’s how one might describe the example above, without trying to fit game
+entities into language types. I’m switching from java to rust because I no
+longer need to give examples of object-oriented programming (phew!).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>GameEntity {
+</span><span>    weapon_damage: </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>&gt;,
+</span><span>    actor_state: </span><span style="color:#0086b3;">Option</span><span>&lt;ActorState&gt;, </span><span style="font-style:italic;color:#969896;">// defined below
+</span><span>    human: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>    zombie: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// collection of keys into entity_table (below)
+</span><span>    equipment: </span><span style="color:#0086b3;">Option</span><span>&lt;HashSet&lt;</span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>&gt;&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>GameState {
+</span><span>    entity_table: HashMap&lt;</span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, GameEntity&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>ActorState { ... }
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ActorState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_human_state</span><span>() -&gt; ActorState { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_zombie_state</span><span>() -&gt; ActorState { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) -&gt; Action { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_sword</span><span>(damage: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>) -&gt; GameEntity {
+</span><span>    GameEntity {
+</span><span>        weapon_damage: </span><span style="color:#0086b3;">Some</span><span>(damage),
+</span><span>        actor_state: </span><span style="color:#0086b3;">None</span><span>, </span><span style="font-style:italic;color:#969896;">// a sword cannot act
+</span><span>        human: </span><span style="color:#0086b3;">false</span><span>,
+</span><span>        zombie: </span><span style="color:#0086b3;">false</span><span>,
+</span><span>        equipment: </span><span style="color:#0086b3;">None</span><span>,
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_human</span><span>() -&gt; GameEntity {
+</span><span>    GameEntity {
+</span><span>        weapon_damage: </span><span style="color:#0086b3;">None</span><span>,
+</span><span>        actor_state: </span><span style="color:#0086b3;">Some</span><span>(ActorState::new_human_state()),
+</span><span>        human: </span><span style="color:#0086b3;">true</span><span>,
+</span><span>        zombie: </span><span style="color:#0086b3;">false</span><span>,
+</span><span>        equipment: </span><span style="color:#0086b3;">Some</span><span>(HashSet::new()),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Every entity in the game is a <code>GameEntity</code>. A <code>GameEntity</code> is a collection of
+properties that an entity might have, and the categorization of the entity is
+based on which properties have values, and what those values are. Each field is
+either an <code>Option</code> which may contain some data, or a <code>bool</code> denoting the
+existence of a property with no associated data.</p>
+<p>Note that there are more efficient ways to represent entities than structs of
+<code>Options</code> and <code>bools</code>. I’ll cover this in a later article.</p>
+<p>Changing the type of an entity is now as simple as changing some of its fields:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">become_zombie</span><span>(entity: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> GameEntity) {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// replace human ai with zombie ai
+</span><span>    entity.actor_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(ActorState::new_zombie_state());
+</span><span>
+</span><span>    entity.human </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>    entity.zombie </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>}
+</span></code></pre>
+<p>The price one pays for this dynamism is there is much more flexibility possible,
+not all of it desirable. What would happen if <code>become_zombie</code> was called on a
+sword? The programmer must now think about these extra possibilities and
+explicitly check for them, rather than the language doing this checking at
+compile time. I argue that this is a reasonable trade-off, as you no longer need
+to worry about the engine not being flexible enough to express a behaviour
+you <em>do</em> want.</p>
+<h2 id="so-far-so-good"><a class="zola-anchor" href="#so-far-so-good" aria-label="Anchor link for: so-far-so-good">So far so good</a></h2>
+<p>The first few game engines I developed used a class hierarchy to represent game
+entities, and I was plagued by situations that I couldn’t
+represent. Since switching to this approach, I’m yet to encounter such a
+situation.</p>
+<h2 id="further-reading"><a class="zola-anchor" href="#further-reading" aria-label="Anchor link for: further-reading">Further Reading</a></h2>
+<p>Representing entities by their constituent parts is how data is represented in
+an <a href="https://en.wikipedia.org/wiki/Entity%E2%80%93component%E2%80%93system">Entity Component
+System</a>.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;even-separation-algorithm&#x2F;" aria-label="Previous">
+	  Previous: Even Separation Algorithm
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;modifying-entity-component-system-for-turn-based-games&#x2F;" aria-label="Next">
+	  Next: Modifying Entity Component System for Turn-Based Games
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

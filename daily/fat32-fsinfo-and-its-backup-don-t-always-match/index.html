@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="FAT32 FSInfo and its backup don&#x27;t always match">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/fat32-fsinfo-and-its-backup-don-t-always-match/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/fat32-fsinfo-and-its-backup-don-t-always-match/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-06T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+FAT32 FSInfo and its backup don&#x27;t always match
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;in-praise-of-refind&#x2F;" aria-label="Previous">
+	  Previous: In praise of rEFInd
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;migrated-browser-games-to-nearlyfreespeech&#x2F;" aria-label="Next">
+	  Next: Migrated browser games to nearlyfreespeech
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">FAT32 FSInfo and its backup don&#x27;t always match</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-06T00:00:00+00:00">
+    October 06, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>FAT32 defines a section named FSInfo at the start of the partition where the number of free
+clusters, and the index of the next free clusters, are stored.
+The spec stresses that this section is meant as a hint only, and implementations
+must not rely on this information being accurate.
+A second section contains a backup of FSInfo.</p>
+<p>To learn more about FAT32, I formatted a partition on a USB stick on Linux using <code>mkfs.vfat</code>
+and then <code>dd</code>’d the disk into a file. I did the same thing with another USB stick on FreeBSD
+using <code>newfs_msdos</code>, and the FSInfo and backup FSInfo sections contain different values.
+They are otherwise valid FSInfo sections; all the signatures are valid. But the data fields
+differ.</p>
+<p>I’ve updated my disk image parsing tool to not care if the FSInfo sections don’t match.
+I’m hoping this doesn’t mean that I’ve overlooked an important detail in the FAT32 spec.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;in-praise-of-refind&#x2F;" aria-label="Previous">
+	  Previous: In praise of rEFInd
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;migrated-browser-games-to-nearlyfreespeech&#x2F;" aria-label="Next">
+	  Next: Migrated browser games to nearlyfreespeech
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

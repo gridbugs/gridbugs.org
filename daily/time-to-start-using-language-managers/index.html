@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Time to start using language managers?">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/time-to-start-using-language-managers/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/time-to-start-using-language-managers/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-17T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Time to start using language managers?
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;unsafely-removing-disks-in-a-zfs-pool&#x2F;" aria-label="Previous">
+	  Previous: Unsafely removing disks in a ZFS pool
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-url-and-title-formats-for-daily-posts&#x2F;" aria-label="Next">
+	  Next: New URL and title formats for daily posts
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Time to start using language managers?</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-17T00:00:00+00:00">
+    October 17, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>A few months ago I <a href="https://gridbugs.github.io/gridbugs.org/daily/time-to-stop-using-language-managers/">swore off the nodejs and ruby version managers</a>,
+claiming that the language ports should suffice. This was spurred by a bad experience trying to
+build nodejs from source on openbsd, when I spent an evening hacking the nodejs source to get it
+to build before it dawned on me that I was repeating the work of the port maintainers.</p>
+<p>Tonight I installed the ruby version manager again because the only version of ruby and gem I could
+find in the FreeBSD ports collection was 2.6. Ports for later versions of the ruby interpreter exist,
+but not the corresponding version of the gem package manager.</p>
+<p>Several months ago when I renounced my use of version managers, I was suspicious of RVM in
+particular because it was using <code>sudo</code> to install dependencies as root by default when installing
+rubies. This specific realization lead to me uninstalling <code>sudo</code> outright. Frustratingly, there
+doesn’t seem to be a way to get a list of the dependencies I need so I can install them manually.
+No by default I get a fairly unhelpful error when trying to install ruby:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ rvm install ruby-3 --disable-binary
+</span><span>Checking requirements for qR.
+</span><span>Requirements support for qR is not implemented yet,
+</span><span>report a bug here =&gt; https://github.com/rvm/rvm/issues
+</span><span>Requirements installation failed with status: 1.
+</span></code></pre>
+<p>(<code>--disable-binary</code> forces it to build ruby from source, which is necessary as there are no
+binary distributions for FreeBSD.)</p>
+<p>Pass <code>--debug</code> for extra verbosity:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ rvm install ruby-3 --disable-binary --debug
+</span><span>Warning: No &#39;sudo&#39; found.
+</span><span>Warning: No &#39;sudo&#39; found.
+</span><span>ruby-3.0.0-preview1 - install
+</span><span>ruby-3.0.0-preview1 - #already removed src/ruby-3.0.0-preview1
+</span><span>ruby-3.0.0-preview1 - #already removed rubies/ruby-3.0.0-preview1
+</span><span>Free disk space 194019MB, required 440MB.
+</span><span>__rvm_setup_compile_environment_setup ruby-3.0.0-preview1
+</span><span>rvm_autolibs_flag=fail
+</span><span>__rvm_setup_compile_environment_movable_early ruby-3.0.0-preview1
+</span><span>__rvm_setup_compile_environment_system_early ruby-3.0.0-preview1
+</span><span>__rvm_setup_compile_environment_requirements ruby-3.0.0-preview1
+</span><span>Checking requirements for qR.
+</span><span>Requirements support for qR is not implemented yet,
+</span><span>report a bug here =&gt; https://github.com/rvm/rvm/issues
+</span><span>Requirements installation failed with status: 1.
+</span><span>__rvm_rm_rf already gone: /home/steve/.rvm/tmp/55505*
+</span></code></pre>
+<p>The lack of <code>sudo</code> is mentioned so it may be related to the failure.</p>
+<p>Consulting the log message mentioned in the error:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>...
+</span><span>Downloading bundled gem files...
+</span><span>executable host ruby is required. use --with-baseruby option.
+</span><span>*** Error code 1
+</span></code></pre>
+<p>So we need a native ruby in order to install ruby through RVM.</p>
+<p>As root, I ran:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># pkg install ruby
+</span></code></pre>
+<p>Then to toll RVM to stop trying to install dependencies, run</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ rvm autolibs disable
+</span></code></pre>
+<p>Now run this command again:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>$ rvm install ruby-3 --disable-binary
+</span></code></pre>
+<p>…and ruby should now be installed!</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;unsafely-removing-disks-in-a-zfs-pool&#x2F;" aria-label="Previous">
+	  Previous: Unsafely removing disks in a ZFS pool
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-url-and-title-formats-for-daily-posts&#x2F;" aria-label="Next">
+	  Next: New URL and title formats for daily posts
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

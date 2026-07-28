@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Fixing zpool after FreeBSD fresh install on ZFS mirror">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/daily/fixing-zpool-after-freebsd-fresh-install-on-zfs-mirror/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/daily/fixing-zpool-after-freebsd-fresh-install-on-zfs-mirror/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-10-19T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Fixing zpool after FreeBSD fresh install on ZFS mirror
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/daily/">daily posts</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-url-and-title-formats-for-daily-posts&#x2F;" aria-label="Previous">
+	  Previous: New URL and title formats for daily posts
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;train-game&#x2F;" aria-label="Next">
+	  Next: Train Game
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">Fixing zpool after FreeBSD fresh install on ZFS mirror</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-10-19T00:00:00+00:00">
+    October 19, 2020
+  </time>
+  
+</p>
+
+
+  
+
+<p>I bought some new SSDs to install FreeBSD on a media server I’m setting up.
+During install, I elected to install the OS on a ZFS mirror, using a pair
+of SSDs. Upon booting up, I checked the zpool status:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool status
+</span><span>  pool: zroot
+</span><span> state: ONLINE
+</span><span>status: One or more devices could not be used because the label is missing or
+</span><span>        invalid.  Sufficient replicas exist for the pool to continue
+</span><span>        functioning in a degraded state.
+</span><span>action: Replace the device using &#39;zpool replace&#39;.
+</span><span>   see: http://illumos.org/msg/ZFS-8000-4J
+</span><span>  scan: scrub repaired 0 in 0 days 00:00:09 with 0 errors on Mon Oct 19 20:13:49 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME                    STATE     READ WRITE CKSUM
+</span><span>        zroot                   ONLINE       0     0     0
+</span><span>          mirror-0              ONLINE       0     0     0
+</span><span>            ada0p4              ONLINE       0     0     0
+</span><span>            213823451083858949  UNAVAIL      0     0     0  was /dev/ada1p4
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+<p>Strange. Stranger still:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool list
+</span><span>NAME    SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP  HEALTH  ALTROOT
+</span><span>zroot   230G  2.60G   227G        -         -     0%     1%  1.00x  ONLINE  -
+</span></code></pre>
+<p>Ignoring that apparent inconsistency…</p>
+<p>First I tried taking the disk offline, then bringing it back oniline:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool offline zroot ada1p4
+</span><span># zpool online zroot ada1p4
+</span><span>warning: device &#39;ada1p4&#39; onlined, but remains in faulted state
+</span><span>use &#39;zpool replace&#39; to replace devices that are no longer present
+</span></code></pre>
+<p>Then according to the instruction, I tried <code>replace</code>-ing the drive:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool replace zroot 213823451083858949 /dev/ada1p4
+</span><span>invalid vdev specification
+</span><span>use &#39;-f&#39; to override the following errors:
+</span><span>/dev/ada1p4 is part of active pool &#39;zroot&#39;
+</span></code></pre>
+<p>This didn’t help clarify the situation. Next I tried detaching and re-attaching the disk from the pool:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool detach zroot 213823451083858949
+</span><span># zpool status
+</span><span>  pool: zroot
+</span><span> state: ONLINE
+</span><span>  scan: scrub repaired 0 in 0 days 00:00:11 with 0 errors on Mon Oct 19 21:06:06 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME        STATE     READ WRITE CKSUM
+</span><span>        zroot       ONLINE       0     0     0
+</span><span>          ada0p4    ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span><span># zpool attach zroot ada0p4 /dev/ada1
+</span><span>cannot attach /dev/ada1 to ada0p4: no such pool or dataset
+</span></code></pre>
+<p>I wish that last error message clarified which out of <code>zroot</code>, <code>/dev/ada1</code> and <code>ada0p4</code> it was referring
+to by <code>no such pool or dataset</code>. Changing either argument to an obviously garbage value produced a
+different error message.</p>
+<p>Eventually I found a <a href="https://dan.langille.org/2019/10/15/creating-a-mirror-from-your-zroot/">blog post</a>
+by someone trying to do something similar to me, and a <a href="https://forums.freebsd.org/threads/zpool-attach-no-such-pool-or-dataset.68292/#post-407102">forum post</a>
+that suggested “using the full path (/dev/gpt/&lt;label&gt;)” which worked:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool attach zroot ada0p4 /dev/gpt/zfs1
+</span><span>Make sure to wait until resilver is done before rebooting.
+</span><span>
+</span><span>If you boot from pool &#39;zroot&#39;, you may need to update
+</span><span>boot code on newly attached disk &#39;/dev/gpt/zfs1&#39;.
+</span><span>
+</span><span>Assuming you use GPT partitioning and &#39;da0&#39; is your new boot disk
+</span><span>you may use the following command:
+</span><span>
+</span><span>        gpart bootcode -b /boot/pmbr -p /boot/gptzfsboot -i 1 da0
+</span></code></pre>
+<p>And for good measure:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># gpart bootcode -b /boot/pmbr -p /boot/gptzfsboot -i 1 ada1
+</span><span>partcode written to ada1p1
+</span><span>bootcode written to ada1
+</span></code></pre>
+<p>And now things look ok:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span># zpool status
+</span><span>  pool: zroot
+</span><span> state: ONLINE
+</span><span>  scan: resilvered 2.60G in 0 days 00:00:12 with 0 errors on Mon Oct 19 21:28:10 2020
+</span><span>config:
+</span><span>
+</span><span>        NAME          STATE     READ WRITE CKSUM
+</span><span>        zroot         ONLINE       0     0     0
+</span><span>          mirror-0    ONLINE       0     0     0
+</span><span>            ada0p4    ONLINE       0     0     0
+</span><span>            gpt/zfs1  ONLINE       0     0     0
+</span><span>
+</span><span>errors: No known data errors
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;new-url-and-title-formats-for-daily-posts&#x2F;" aria-label="Previous">
+	  Previous: New URL and title formats for daily posts
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;daily&#x2F;train-game&#x2F;" aria-label="Next">
+	  Next: Train Game
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

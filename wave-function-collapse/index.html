@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Procedural Generation with Wave Function Collapse">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2019-02-21T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Procedural Generation with Wave Function Collapse
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Procedural Generation with Wave Function Collapse</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2019-02-21T00:00:00+00:00">
+    February 21, 2019
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/algorithms" aria-label="tag">algorithms</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/procgen" aria-label="tag">procgen</a>
+  
+</p>
+
+
+  
+
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/flower-banner-scaled.png" alt="flower-banner-scaled.png" /></p>
+<div style="color:gray;font-style:italic">
+<p>(Edit 2022-05-03: I found out that the Wave Function Collapse algorithm was heavily inspired by
+an existing algorithm called “Model Synthesis”. I’ve added a <a href="#model-synthesis">section</a> to
+further reading with links to the author’s website for more information.)</p>
+</div>
+<p>Wave Function Collapse is a procedural generation algorithm which produces
+images by arranging a collection of tiles according to rules about which tiles
+may be adjacent to each other tile, and relatively how frequently each tile should appear.
+The algorithm maintains, for each pixel of the output image, a probability
+distribution of the tiles which may be placed there. It repeatedly chooses a
+pixel to “collapse” - choosing a tile to use for that pixel based on its
+distribution. WFC gets its name from
+<a href="https://en.wikipedia.org/wiki/Wave_function_collapse">quantum physics</a>.</p>
+<p>The goal of this post is to build an intuition for how and why the WFC algorithm works.</p>
+<span id="continue-reading"></span>
+<p>I will break WFC into two separate algorithms and explain them separately. Each
+is interesting in its own right, and the interface between them is simple.</p>
+<h2 id="core-interface"><a class="zola-anchor" href="#core-interface" aria-label="Anchor link for: core-interface">Core Interface</a></h2>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_core</span><span>(
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_rules: FrequencyHints,
+</span><span>    output_size: (u32, u32),
+</span><span>) -&gt; Grid2D&lt;TileIndex&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span></code></pre>
+<p>This is the low-level part of the algorithm which solves the problem of
+arranging tiles into a grid according to some specified rules. I’ll give a
+“black box” description of the core here, and explain how it works internally
+<a href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/#core-internals">below</a>.</p>
+<h3 id="adjacency-rules"><a class="zola-anchor" href="#adjacency-rules" aria-label="Anchor link for: adjacency-rules">Adjacency Rules</a></h3>
+<p>The “core” receives a set of <strong>adjacency rules</strong> describing which tiles may
+appear next to other tiles in each cardinal direction.  Some example rules are “Tile 6
+may appear in the cell ABOVE a cell containing tile 4”, and “Tile 7 map appear in
+the cell to the LEFT of a cell containing tile 3.</p>
+<h3 id="frequency-hints"><a class="zola-anchor" href="#frequency-hints" aria-label="Anchor link for: frequency-hints">Frequency Hints</a></h3>
+<p>It also receives a set of
+<strong>frequency hints</strong>, which is a mapping from each tile to a number indicating
+how frequently the tile should appear in the output, relative to other tiles.
+If tile 4 maps to 6, and tile 5 maps to 2, then tile 4 should appear 3 times as
+frequently than tile 5.</p>
+<h3 id="tile-index"><a class="zola-anchor" href="#tile-index" aria-label="Anchor link for: tile-index">Tile Index</a></h3>
+<p>The core doesn’t actually get to see the tiles
+themselves.  Rather, tiles are referred to by integers ranging from 0 to the
+number of tiles minus 1, which I’ll refer to as <strong>tile indices</strong>. The
+<strong>adjacency rules</strong> and <strong>frequency hints</strong> are all specified in terms of
+<strong>tile index</strong>.</p>
+<h3 id="output"><a class="zola-anchor" href="#output" aria-label="Anchor link for: output">Output</a></h3>
+<p>The algorithm
+populates a grid with <strong>tile indices</strong> in a way which <em>completely</em> respects
+<strong>adjacency rules</strong>, and <em>probabilistically</em> respects <strong>frequency hints</strong>.
+Every pair of adjacent tiles will be explicitly allowed by the <strong>adjacency rules</strong>,
+and the relative frequencies of tiles in the output will usually be about the same as
+in the <strong>frequency hints</strong>.</p>
+<h2 id="image-processor"><a class="zola-anchor" href="#image-processor" aria-label="Anchor link for: image-processor">Image Processor</a></h2>
+<p>This is the “glue” between the core algorithm, and an input and output image.
+Typically WFC is used to generate output images which are “similar” to input
+images. There’s no requirement that the output image be the same dimensions
+as the input image.
+Specifically, similar means that for some <strong>tile size</strong>:</p>
+<ul>
+<li>every <strong>tile-sized</strong> square of pixels in the output image appears somewhere in the
+input image</li>
+<li>the relative frequencies of <strong>tile-sized</strong> squares of pixels in the output
+image is roughly the same as in the input image</li>
+</ul>
+<p>In other words, the output image will have the same local features as the
+input image, but the global structure may be different.</p>
+<p>Note that there are some alternative applications of WFC besides generating
+similar images, such as arranging hand-crafted tiles with user-specified
+<strong>adjacency rules</strong> and <strong>frequency hints</strong>. These applications would still use
+the same core algorithm, but the <strong>image processor</strong> would be different.</p>
+<h3 id="pre-processing"><a class="zola-anchor" href="#pre-processing" aria-label="Anchor link for: pre-processing">Pre Processing</a></h3>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_pre_process_image</span><span>(
+</span><span>    input_image: Image,
+</span><span>    tile_size: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>,     </span><span style="font-style:italic;color:#969896;">/* often 2 or 3 */
+</span><span>) -&gt; (AdjacencyRules, FrequencyHints, HashMap&lt;TileIndex, Colour&gt;) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span></code></pre>
+<p>The goal of this step is to generate <strong>adjacency rules</strong> and <strong>frequency hints</strong>
+which will be passed as input to the core algorithm.</p>
+<p>First, we need to know what the different tiles are.
+Given an <strong>input image</strong> and <strong>tile size</strong>, enumerate all the <strong>tile-sized</strong>
+squares of pixels from the <strong>input image</strong>, <em>including</em> those squares whose
+top-left pixel occurs within <strong>tile size</strong> of the right and bottom edges,
+wrapping around to the other side of the input image in such cases.</p>
+<p>Consider this 4x4 pixel input image:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/process-example.png" alt="process-example.png" /></p>
+<p>With a <strong>tile size</strong> of 3, the first 3 tiles created by looking at squares of
+pixels with their top-left corners along the top row of pixels:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sample1.png" alt="sample1.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sample2.png" alt="sample2.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sample3.png" alt="sample3.png" /></p>
+<p>In the 3rd tile, we sampled off the edge of the image. In such cases, wrap
+around to the other side of the image. Effectively pretend that the image
+repeats forever in all directions.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sample3-infinite.png" alt="sample3-infinite.png" /></p>
+<p>Continuing in this fashion, enumerate all the tiles. In this example there are
+16, and all are unique.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/all-tiles.png" alt="all-tiles.png" /></p>
+<p>Assign each tile a <strong>tile index</strong>. In the example, we would use numbers from 0
+to 15 as indices. <strong>Frequency hints</strong> and <strong>adjacency rules</strong> will be given in
+terms of <strong>tile indices</strong>, rather than tiles themselves.</p>
+<p>The next few sections will explain how to construct <strong>frequency hints</strong> and
+<strong>adjacency rules</strong> so the core algorithm generates images which are similar to
+the input.</p>
+<p>Here’s an image which is similar to the example image, generated using WFC:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/grid-output.png" alt="grid-output.png" /></p>
+<h4 id="reflection-and-rotation"><a class="zola-anchor" href="#reflection-and-rotation" aria-label="Anchor link for: reflection-and-rotation">Reflection and Rotation</a></h4>
+<p>When generating tiles from an <strong>input image</strong>, you may want to include tiles which
+aren’t necessarily present in the <strong>input image</strong>, but which are the rotation or
+reflection of tiles from the <strong>input image</strong>.</p>
+<p>We need a new example image to demonstrate this, as each rotation and reflection
+of each tile is also in the tile set. Let’s use the following <strong>input image</strong>:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water-example.png" alt="water-example.png" /></p>
+<p>With a <strong>tile size</strong> of 3, the top-left tile we extract will be:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water1.png" alt="water1.png" /></p>
+<p>All rotations and reflections of this tile:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water1.png" alt="water1.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water2.png" alt="water2.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water3.png" alt="water3.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water4.png" alt="water4.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water5.png" alt="water5.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water6.png" alt="water6.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water7.png" alt="water7.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water8.png" alt="water8.png" /></p>
+<p>Repeat this for all the tiles extracted from the image.</p>
+<p>To include these tiles in the output, proceed with the rest of the algorithm as
+normal, with these added to the tile set as fully qualified tiles, with their
+own unique <strong>tile indices</strong>.</p>
+<p>A similar image to the input <em>without</em> rotations or reflections included:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water-orig-orientation.png" alt="water-orig-orientation.png" /></p>
+<p>Here’s an output with all rotations and reflections included:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/water-all-orientations.png" alt="water-all-orientations.png" /></p>
+<p>The banner at the top of this page was generated from the following image including all
+rotations and reflections:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/flowers.png" alt="flowers.png" /></p>
+<p>Here’s a miniature version:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/small-flower-banner.png" alt="small-flower-banner.png" /></p>
+<p>Notice that the ground is missing? Since the input image is wrapped, there are
+no tiles in which the ground ends or changes direction. This means
+that if the ground is present in the output, it must form a solid line from one
+side of the output to the other. This is a fairly restrictive constraint, so in
+<em>most</em> output, there is no ground at all. It’s possible for the output to deviate from the
+<strong>frequency hints</strong> if the structure of the image means there is no way to place
+a tile without violating the <strong>adjacency rules</strong>.</p>
+<p>There <em>is</em> a small chance of the output containing ground:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/ground-flower-banner1.png" alt="ground-flower-banner1.png" /></p>
+<p>It’s not on the bottom of the screen, because the input image is wrapped.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/flower-tiled.png" alt="flower-tiled.png" /></p>
+<p>Since this was generated with rotations and reflections included, there’s
+nothing to stop the ground from being vertical.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/ground-flower-banner2.png" alt="ground-flower-banner2.png" /></p>
+<h4 id="frequency-hints-1"><a class="zola-anchor" href="#frequency-hints-1" aria-label="Anchor link for: frequency-hints-1">Frequency Hints</a></h4>
+<p>The number of occurrences of each tile in the input image is counted, and
+mappings from a tile’s index to its count make up the <strong>frequency hints</strong>.</p>
+<p>Let’s modify the first example image:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tall-grid-input.png" alt="tall-grid-input.png" /></p>
+<p>The set of unique 3x3 tiles in this <strong>input image</strong> will be the same as the
+first example, however where in the first example each tile appeared exactly
+once, here some patterns appear several times.</p>
+<p>The following tiles appear 5 times in this image:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tile1.png" alt="tile1.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tile2.png" alt="tile2.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tile3.png" alt="tile3.png" />
+<img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tile4.png" alt="tile4.png" /></p>
+<p>The remaining tiles still just appear once.</p>
+<p>The relative frequency the above 4 tiles will be 5, and the hint for the other
+tiles will be 1. This means that the above 4 tiles are 5 times as likely to
+appear in a given position as the other tiles.</p>
+<p>How do you think this will change the output?</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/tall-grid.png" alt="tall-grid.png" /></p>
+<p>Increasing the odds of vertical lines appearing means there will likely be more vertical
+lines. This manifests as the grid cells in the image generally being taller than
+they are wide.</p>
+<h4 id="adjacency-rules-1"><a class="zola-anchor" href="#adjacency-rules-1" aria-label="Anchor link for: adjacency-rules-1">Adjacency Rules</a></h4>
+<p>The core will produce a grid of <strong>tile indices</strong> where each index corresponds to a single pixel in
+the output image.
+For a given <strong>tile index</strong> in a cell of this grid, the output pixel
+corresponding to the cell, will be given the colour of the tile corresponding to
+the <strong>tile index</strong>.
+Only the colour of the top-left pixel of the tile will be used.
+Keep that in mind for this section:
+<em>for every tile placed, only a <strong>single pixel</strong> of the tile (its top-left pixel) is
+actually added to the output image.</em> As the core assigns pixel indices to grid
+cells, we can say that the core assigns
+the top-left corners of tiles to output image pixels.</p>
+<p>Remember that the goal of the <strong>image processor</strong> is to produce an output image
+where every <strong>tile-sized</strong> square of pixels occurs in the input image.
+In order to meet this goal, we must ensure that whenever the core assigns the
+top-left pixel of a tile to a pixel of the output image, the rest of the pixels
+of the tile end up in the right places as well. This is best explained with an
+example. Here’s a zoomed-in section of the banner:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/adjacent-example1.png" alt="adjacent-example1.png" /></p>
+<p>Consider the 3x3 pixel square with a red border.
+It occurs in the input image (rotated anticlockwise 90 degrees, below the
+bottom-right flower).
+Let’s assume it gets <strong>tile index</strong> 7.
+The core algorithm decided that the grid cell corresponding to the top-left
+pixel in the red square, should contain <strong>tile index</strong> 7.
+Even though <strong>tile index</strong> 7 refers to the whole 3x3 tile (but only the <strong>image
+processor</strong> knows this),
+choosing <strong>tile index</strong> 7 for this cell resulted in only the top-left pixel of
+the output image being populated.</p>
+<p>But somehow the rest of the red square ended up looking like the tile with
+<strong>tile index</strong> 7 as well. But why? Every time a <strong>tile index</strong> is assigned to a cell,
+we want a way to make sure that the entire tile’s pixels - not just its top-left
+pixel - end up in the right output pixels, relative to the tile’s placement.
+Since each tile placement just contributes the tile’s top-left pixel, we need to
+make sure that whenever a tile is placed within <strong>tile size</strong> pixels of an
+already-placed tile’s top-left pixel, that the newly placed
+tile’s pixels don’t conflict with the pixels of the already-placed tile.</p>
+<p>A convenient fiction to help picture this, is to imagine that whenever
+the core places a tile in a cell, each pixel in the <strong>tile-sized</strong> square of pixels whose top-left corner is that cell,
+is coloured to match the corresponding pixel of the tile, but only the top-left cell
+is marked as “populated”. Unpopulated (but possibly coloured) cells can have
+tiles placed in them, <em>as long as all cells in the square filled by the new tile
+are either not yet coloured, or contain the same colour as the corresponding pixel of the
+new tile</em>.</p>
+<p>Let’s generate <strong>adjacency rules</strong> to force the core to never place two tiles
+in positions where their overlapping pixels conflict.
+Recall that an <strong>adjacency rule</strong> is of the form: “<strong>Tile index</strong> <strong>A</strong> may appear in the
+cell 1 space in <strong>DIRECTION</strong> from a cell containing <strong>tile index</strong> <strong>B</strong>”.
+The rules should only permit <strong>A</strong> to be placed adjacent to <strong>B</strong> in
+<strong>DIRECTION</strong> if doing so would not cause a conflict.
+All non-conflicting
+adjacencies should be allowed.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> adjacency_rules </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>AdjacencyRules::new();
+</span><span style="font-weight:bold;color:#a71d5d;">for</span><span> a </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> all_tiles {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> b </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> all_tiles {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> direction </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>[</span><span style="color:#0086b3;">LEFT</span><span>, </span><span style="color:#0086b3;">RIGHT</span><span>, </span><span style="color:#0086b3;">UP</span><span>, </span><span style="color:#0086b3;">DOWN</span><span>] {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#62a35c;">compatible</span><span>(a, b, direction) {
+</span><span>                adjacency_rules.</span><span style="color:#62a35c;">allow</span><span>(a, b, direction);
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The <code>compatible(a: Tile, b: Tile, direction: Direction) -&gt; bool</code> function returns true if and only if overlapping
+<code>a</code> with <code>b</code>, if <code>b</code> is offset by 1 pixel in <code>direction</code>, the overlapping parts
+of the two tiles are identical.</p>
+<p>In the example below, <code>compatible(A, B, RIGHT) == true</code>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/compatible-example.png" alt="compatible-example.png" /></p>
+<p>In this example tiles are 3x3, but these <strong>adjacency rules</strong> only ensure that
+adjacent tiles are compatible. It’s possible for a pair of tiles which are 2
+pixels apart to overlap. <strong>What prevents them from conflicting?</strong></p>
+<p>Consider this example:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/2-gap-overlap.png" alt="2-gap-overlap.png" /></p>
+<p>The <strong><span style="color=red">red</span></strong> and <strong><span style="color=blue">blue</span></strong>  squares surround tile placements which are 2 pixels apart.
+They aren’t adjacent, so the <strong>adjacency rules</strong> don’t explicitly forbid the <strong><span style="color=red">red</span></strong>
+tile’s pixels and <strong><span style="color=blue">blue</span></strong>  tile’s pixels from being different in the intersecting
+area.</p>
+<p>However, the existence of the <strong>black</strong> square, which is adjacent to both the red
+and blue squares, means that the red and blue tile placements won’t conflict.</p>
+<p>Because they are adjacent, the <strong><span style="color:red">red</span>/black</strong>
+intersection and the
+<strong><span style="color:blue">blue</span>/black</strong> intersection are conflict-free. That is, the colours of pixels in the intersecting
+parts of the tiles are the same in both tiles.
+<strong><span style="color:red">Red</span>/<span style="color:blue">blue</span></strong> is contained in both <strong><span style="color:red">red</span>/black</strong>
+and <strong><span style="color:blue">blue</span>/black</strong>.
+Since the pixel colours in the <strong><span style="color:red">red</span>/<span style="color:blue">blue</span></strong> region of <strong><span style="color:red">red</span></strong> are the same as the pixel colours
+in the corresponding region of <strong>black</strong>, and the pixel colours in the <strong><span style="color:red">red</span>/<span style="color:blue">blue</span></strong> region of
+<strong>black</strong> are the same as the pixel colours in the corresponding region of
+<strong><span style="color:blue">blue</span></strong>,
+the pixel colours in the <strong><span style="color:red">red</span>/<span style="color:blue">blue</span></strong> region of <strong><span style="color:red">red</span></strong> are the same is the pixel colours of the corresponding region of
+<strong><span style="color:blue">blue</span></strong>. That is, <strong><span style="color:red">red</span>/<span style="color:blue">blue</span></strong> is conflict free.</p>
+<h4 id="tile-colour-mappings"><a class="zola-anchor" href="#tile-colour-mappings" aria-label="Anchor link for: tile-colour-mappings">Tile/Colour Mappings</a></h4>
+<p>After preprocessing, the <strong>frequency hints</strong> and <strong>adjacency rules</strong> will be passed to the core algorithm,
+and it will return a grid of <strong>tile indices</strong>. To produce the output image, we will need to know which <strong>tile index</strong>
+refers to which colour. To help with this, the preprocessor outputs a map from <strong>tile index</strong> to the colour
+of the top-left pixel of the corresponding tile.</p>
+<h3 id="post-processing"><a class="zola-anchor" href="#post-processing" aria-label="Anchor link for: post-processing">Post Processing</a></h3>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_post_process_image</span><span>(
+</span><span>    tile_index_grid: Grid2D&lt;TileIndex&gt;,
+</span><span>    top_left_pixel_of_each_tile: HashMap&lt;TileIndex, Colour&gt;,
+</span><span>) -&gt; Image { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span></code></pre>
+<p>The final step is trivial. Take the grid of <strong>tile indices</strong> produced by running the core algorithm on the <strong>adjacency rules</strong> and
+<strong>frequency hints</strong> from the preprocessor, and the top-left pixel colour map, also returned by the preprocessor,
+and create an output image of the same dimensions as the grid.
+For each <strong>tile index</strong> in the grid, set the corresponding pixel colour in the output image to be
+the colour associated with that <strong>tile index</strong> in the top-left pixel colour map.</p>
+<h3 id="putting-it-all-together"><a class="zola-anchor" href="#putting-it-all-together" aria-label="Anchor link for: putting-it-all-together">Putting it all together</a></h3>
+<p>Composing these pieces gives the full WFC algorithm.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_image</span><span>(image: Image, tile_size: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>, output_size: (u32, u32)) -&gt; Image {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(adjacency_rules, frequency_hints, top_left_pixel_of_each_tile) </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>        </span><span style="color:#62a35c;">wfc_pre_process_image</span><span>(image, tile_size);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_index_grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">wfc_core</span><span>(adjacency_rules, frequency_hints, output_size);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#62a35c;">wfc_post_process_image</span><span>(tile_index_grid, top_left_pixel_of_each_tile);
+</span><span>}
+</span></code></pre>
+<h2 id="core-internals"><a class="zola-anchor" href="#core-internals" aria-label="Anchor link for: core-internals">Core Internals</a></h2>
+<p>My goal for this section is to impart a deep understanding of how and <em>why</em> the core
+algorithm works. This is the guide I wish I had during my implementation of WFC.
+Maybe it can help you through yours!</p>
+<h3 id="sudoku"><a class="zola-anchor" href="#sudoku" aria-label="Anchor link for: sudoku">Sudoku</a></h3>
+<p>Imagine you’re solving a sudoku.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sudoku.png" alt="sudoku.png" /></p>
+<p>Your goal is to place a number from 1-9 in each empty cell, such that each
+row, column, and 3x3 square, contains each number from 1-9 exactly once.</p>
+<p>Suppose you’re not super-confident in your sudoku-solving abilities, and your
+pencil comes equipped with an eraser. You could cheat, by writing in each cell
+(in tiny writing) all the possible values for that cell. Once all the cells are
+enumerated in this fashion, hopefully there will be some cells with a single
+possible value. For each of these cells, you erase the tiny pencil number, and
+rewrite the number in permanent marker, “locking in” your solution for that
+cell.</p>
+<p>After locking in a cell, you want to update your enumerated possibilities for
+other cells in the same row, column, and 3x3 square, erasing all instances of
+the number you just locked in. You hope that by doing this, you’ll eliminate enough
+possibilities that the next choice becomes obvious, and so on until you’ve
+solved the entire sudoku in the least fun way possible! (This algorithm doesn’t
+actually work in all cases, so you may occasionally have to employ some actual thought!)</p>
+<p>Now, imagine you wanted to solve an empty sudoku in the same way as just
+described:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/sudoku-empty.png" alt="sudoku-empty.png" /></p>
+<p>Your goal is still to end up with the numbers from 1-9 in every row, column,
+and 3x3, but this time you’re searching for one of a large number of possible
+solutions. You start by writing in tiny pencil digits, the numbers from 1-9 in
+each cell. Now you have a conundrum! Which cell do you lock in first? What
+number to you write first?</p>
+<p>Say you make your first choice arbitrarily, and write a big 3 in pen in the
+top-left corner. Now you can propagate the effect of this choice by
+scanning along the top-most row, left-most column, and
+top-left 3x3 square, and erasing all the 3s.</p>
+<p>What next?</p>
+<p>If you keep choosing arbitrarily, it’s very likely that at some point, you’ll
+lock in a number, propagate the effect, and end up erasing the last
+penciled-in
+number in a cell. That would be bad, as then there would be no way to complete
+the soduku!</p>
+<p>Maybe you’re ok with screwing up occasionally, as long as there’s a reasonable
+chance that you’ll end up with a valid solution each time. Then if you get into
+a bad state (ie. a cell with no possibilities), you can just give up and start
+over.</p>
+<p>Intuitively, when choosing which cell to lock in next, you might want to always
+choose the cell with the <em>fewest remaining possibilities</em>. If there are several
+cells tied for the fewest remaining possibilities, choose arbitrarily between
+them.</p>
+<p>Concretely, your strategy is to repeat the following until all cells are locked
+in:</p>
+<ol>
+<li>Choose a cell at random, considering only the cells with the fewest possible values.</li>
+<li>Choose a random value to lock in for that cell, considering only the possible
+values for that cell.</li>
+<li>Propagate the effects of locking in the cell, removing the locked-in value
+from the possibilities of cells sharing the cell’s row, column, and 3x3
+square.</li>
+<li>If during propagation, you removed the final possibility of a cell, give up
+and start again.</li>
+</ol>
+<p>The core WFC algorithm looks very similar to this. In place of the rules of sudoku,
+there are the <strong>adjacency rules</strong>. The <strong>frequency hints</strong> mean that when
+choosing a value to lock in, you no longer make a uniformly random choice, but
+instead choose from a <em>probability distribution</em> of the possible <strong>tile indices</strong>,
+weighted by <strong>frequency hints</strong>. The fact that some tiles are more likely to
+appear than others means the choice of which cell to lock in next is a little more complicated
+than just choosing from the cells with the fewest possibilities. Finally,
+we’re going to be more clever about propagation than in the sudoku example; you
+don’t have to wait until a cell is locked in to eliminate possibilities from
+surrounding cells.</p>
+<h3 id="rough-sketch"><a class="zola-anchor" href="#rough-sketch" aria-label="Anchor link for: rough-sketch">Rough Sketch</a></h3>
+<p>Here’s a rough outline of the types and methods that the core will use.
+I’ll fill in details as they become relevant. In the spirit of Wave Function
+Collapse, “collapsing” a cell will refer to locking-in the choice of which tile
+index will go in the cell.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// Tile indices are just integers
+</span><span style="font-weight:bold;color:#a71d5d;">type </span><span>TileIndex </span><span style="font-weight:bold;color:#a71d5d;">= usize</span><span>;
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// corresponds to a cell in the output grid
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// possible[tile_index] == true means tile_index may be chosen for this cell.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Initially, every element of this vector is `true`.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// There is one element for each unique tile index.
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreState {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// corresponds to the output grid
+</span><span>    grid: Grid2D&lt;CoreCell&gt;,
+</span><span>    </span><span style="font-style:italic;color:#969896;">// initialised to the number of cells in `grid`
+</span><span>    remaining_uncollapsed_cells: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    </span><span style="font-style:italic;color:#969896;">// arguments passed from image processor
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_hints: FrequencyHints,
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// return the coordinate of the next cell to collapse
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_next_cell</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; Coord2D { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// collapse the cell at a given coordinate
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">collapse_cell_at</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord2D) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// remove possibilities based on collapsed cell
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">propagate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// roughly the same as the empty sudoku solver
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">run</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>self.remaining_uncollapsed_cells </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> next_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">choose_next_cell</span><span>();
+</span><span>            self.</span><span style="color:#62a35c;">collapse_cell_at</span><span>(next_coord);
+</span><span>            self.</span><span style="color:#62a35c;">propagate</span><span>();
+</span><span>            self.remaining_uncollapsed_cells </span><span style="font-weight:bold;color:#a71d5d;">-= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The remainder of this chapter will flesh out the details of <code>choose_next_cell</code>,
+<code>collapse_cell_at</code>, and <code>propagate</code>.</p>
+<h3 id="choosing-the-next-cell-to-collapse"><a class="zola-anchor" href="#choosing-the-next-cell-to-collapse" aria-label="Anchor link for: choosing-the-next-cell-to-collapse">Choosing the Next Cell to Collapse</a></h3>
+<p>In the sudoku example, we just chose randomly between the cells with the fewest
+valid choices, to reduce the odds of removing all possibilities from a cell.
+The intuition behind this is to lock in one of the cells with the
+least uncertainty. In information theory, this uncertainty is known as
+<a href="https://en.wikipedia.org/wiki/Entropy_(information_theory)">entropy</a>. The goal
+of this step is to choose randomly between the cells whose entropy is lowest.
+The <code>possible</code> field of <code>CoreCell</code> can tell us which tiles are allowed in a
+given cell, and the <code>FrequencyHints</code> can tell us how likely a given tile is to
+appear in any cell.</p>
+<h4 id="entropy-primer"><a class="zola-anchor" href="#entropy-primer" aria-label="Anchor link for: entropy-primer">Entropy Primer</a></h4>
+<p>If you have an unknown value with <code>n</code> possibilities: <code>x1</code>, <code>x2</code>, …, <code>xn</code>,
+and the probability of a given value x, represented as a number between 0 and 1, is expressed as <code>P(x)</code>, then the
+entropy of your unknown value is:</p>
+<p><code>- P(x1)*log(P(x1))  -  P(x2)*log(P(x2))  -  ...  -  P(xn)*log(P(xn))</code></p>
+<p>…where the base of the logarithm is arbitrary. Let’s use 2 as our base.</p>
+<p>To help build an intuition for this, first note that <code>P(x)</code> for all
+possibilities will be between 0 and 1, and the sum:</p>
+<p><code>P(x1) + P(x2) + ... + P(xn)</code></p>
+<p>…is equal to 1. This is because <code>x1</code>…<code>xn</code> covers all possible outcomes, and one of the
+outcomes will end up happening.</p>
+<p>Each term in the entropy equation is negated. This is because <code>P(x)</code> is between
+0 and 1, and regardless of the base, the logarithm of values between (exclusive)
+0 and 1 is negative. Here’s a graph of log base 2:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/log2.png" alt="log2.png" /></p>
+<p>Since each term contains <code>log(P(x))</code>, which is always negative, we negate each
+term to make the resulting entropy positive, as otherwise it would always be
+negative.</p>
+<h4 id="a-special-case"><a class="zola-anchor" href="#a-special-case" aria-label="Anchor link for: a-special-case">A special case</a></h4>
+<p>We can simplify the entropy equation for the purposes of this algorithm.</p>
+<p>If you have an unknown value with <code>n</code> possibilities: <code>x1</code>, <code>x2</code>, …, <code>xn</code>,
+and each probability <code>P(x)</code> can be represented by <code>w1 / (w1 + w2 + ... + wn)</code>
+(<code>w</code> stands for “weight”), then the above entropy equation can be simplified.
+In practical terms, this is the case when you have a discrete probability
+distribution - that is, you associate a weight <code>wk</code> with each possibility <code>xk</code>.
+The probability of an outcome is its weight divided by the sum of all weights.</p>
+<p>Let <code>W = w1 + w2 + ... + wn</code> be the sum of all weights.</p>
+<p>Then the entropy of the unknown value is:</p>
+<p><code>log(W)  -  (w1*log(w1)  +  w2*log(w2)  +  ...  +  wn*log(wn))  /  W</code></p>
+<p>You can derive this equation from the original entropy equation and log
+identities. It’s very satisfying. Try it!</p>
+<h4 id="relative-tile-frequencies"><a class="zola-anchor" href="#relative-tile-frequencies" aria-label="Anchor link for: relative-tile-frequencies">Relative Tile Frequencies</a></h4>
+<p>This simplified entropy definition is relevant to choosing the next cell, as
+the <strong>frequency hint</strong> is effectively a discrete probability distribution of
+possible choices of tile.</p>
+<p>Let’s declare some methods of <code>FrequencyHints</code> and <code>CoreCell</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>FrequencyHints {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Returns the number of times the corresponding tile appears in the input.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// This corresponds to the weight of a possibility in the simplified entropy
+</span><span>    </span><span style="font-style:italic;color:#969896;">// equation.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">relative_frequency</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, tile_index: TileIndex) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">usize </span><span>{ </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreCell {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Add up the relative frequencies of all possible tiles.
+</span><span>    </span><span style="font-style:italic;color:#969896;">// This corresponds to the total weight (W) in the simplified entropy
+</span><span>    </span><span style="font-style:italic;color:#969896;">// equation.
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">total_possible_tile_frequency</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, freq_hint: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>FrequencyHints) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">usize </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> total </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(tile_index, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>is_possible) </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.possible.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> is_possible {
+</span><span>                total </span><span style="font-weight:bold;color:#a71d5d;">+=</span><span> freq_hint.</span><span style="color:#62a35c;">relative_frequency</span><span>(tile_index);
+</span><span>            }
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> total;
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Armed with these definitions, we can compute the entropy of a cell!</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">entropy</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, freq_hint: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>FrequencyHints) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">f32 </span><span>{
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> total_weight </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">total_possible_tile_frequency</span><span>(freq_hint) </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>;
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> sum_of_weight_log_weight </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            self.possible.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>().</span><span style="color:#62a35c;">map</span><span>(|(tile_index, &amp;is_possible)| {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> is_possible {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> rf </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> freq_hint.</span><span style="color:#62a35c;">relative_frequency</span><span>(tile_index) </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>;
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> rf </span><span style="font-weight:bold;color:#a71d5d;">*</span><span> rf.</span><span style="color:#62a35c;">log2</span><span>();
+</span><span>                } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0 </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>;
+</span><span>                }
+</span><span>            })
+</span><span>            .</span><span style="color:#62a35c;">sum</span><span>();
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> total_weight.</span><span style="color:#62a35c;">log2</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">- </span><span>(sum_of_weight_log_weight </span><span style="font-weight:bold;color:#a71d5d;">/</span><span> total_weight);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h4 id="caching"><a class="zola-anchor" href="#caching" aria-label="Anchor link for: caching">Caching</a></h4>
+<p>The <code>CoreCell::entropy</code> method currently iterates over all the tiles. It can be
+made constant time with caching. Throughout the course of this algorithm,
+possible tiles will be removed from cells. The only time a cell’s entropy
+changes is when a possible tile is removed. The caching strategy will be to keep
+a running total of:</p>
+<ul>
+<li><code>W = w1  +  w2  +  ...  +  wn</code> of the possible tiles</li>
+<li><code>w1*log(w1)  +  w2*log(w2)  +  ...  +  wn*log(wn)</code> of the possible tiles</li>
+</ul>
+<p>Adding to the definition of <code>CoreCell</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    sum_of_possible_tile_weights: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>
+</span><span>    sum_of_possible_tile_weight_log_weights: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>Keep these fields up to date:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">remove_tile</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, tile_index: TileIndex, freq_hint: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>FrequencyHints) {
+</span><span>        self.possible[tile_index] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> freq </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> freq_hint.</span><span style="color:#62a35c;">relative_frequency</span><span>(tile_index);
+</span><span>
+</span><span>        self.sum_of_possible_tile_weights </span><span style="font-weight:bold;color:#a71d5d;">-=</span><span> freq;
+</span><span>
+</span><span>        self.sum_of_possible_tile_weight_log_weights </span><span style="font-weight:bold;color:#a71d5d;">-=
+</span><span>            (freq </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>) </span><span style="font-weight:bold;color:#a71d5d;">* </span><span>(freq </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>).</span><span style="color:#62a35c;">log2</span><span>();
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>And now our entropy calculation becomes much simpler:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreCell {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">entropy</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">f32 </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span>(self.sum_of_possible_tile_weights </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>).</span><span style="color:#62a35c;">log2</span><span>()
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">- </span><span>(self.sum_of_possible_weight_log_weights </span><span style="font-weight:bold;color:#a71d5d;">/
+</span><span>                self.sum_of_possible_tile_weights </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>It may also be worth it to cache <code>(freq as f32) * (freq as f32).log2()</code> for
+each relative frequency, inside the <code>FrequencyHints</code> type, as it would then only
+need to be computed once for each tile rather than each time a tile is removed
+from a cell.</p>
+<h4 id="choosing-randomly"><a class="zola-anchor" href="#choosing-randomly" aria-label="Anchor link for: choosing-randomly">Choosing Randomly</a></h4>
+<p>The goal of this step is to choose randomly between the minimum entropy cells.
+So far we can compute the entropy of a cell, but if there’s a tie, how do we
+randomly break it. We <em>could</em> maintain a list of all the minimum entropy cells
+and then choose randomly from it, but this sounds like a lot of work.
+Instead, let’s
+just added a small amount of noise to each entropy calculation! We can save
+needing to invoke a random number generator for each entropy calculation by
+pre-computing a noise value for each cell.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>    sum_of_possible_tile_weights: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    sum_of_possible_tile_weight_log_weights: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// initialise to a tiny random value:
+</span><span>    entropy_noise: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>In the entropy calculation, just add <code>entropy_noise</code> to the previously
+calculated value to get a noisy value. If all the entropy calculations are
+noisy, there won’t be any ties to break!</p>
+<h4 id="choosing-the-minimum-entropy-cell"><a class="zola-anchor" href="#choosing-the-minimum-entropy-cell" aria-label="Anchor link for: choosing-the-minimum-entropy-cell">Choosing the Minimum Entropy Cell</a></h4>
+<p>We can now compute a noisy entropy for each cell, so now we just need to iterate
+over all the cells and keep track of the cell with the lowest entropy, right?</p>
+<p>Well we <em>could</em>, but remember there’s one cell per output image pixel, and
+200x200 pixel output images are not unheard of. Do we really want to iterate
+over 40,000 cells at <em>every</em> step of the algorithm? The definition of
+<code>CoreState::run</code> above invokes <code>choose_next_cell</code> once for each collapsed cell,
+which is effectively once per cell again. 40,000x40,000 is not a nice number!</p>
+<p>Rather than iterating over all the cells each time we need to choose the minimum
+entropy cell, maintain a
+<a href="https://en.wikipedia.org/wiki/Heap_(data_structure)">heap</a> of cells, keyed by
+their entropy. Whenever the entropy of a cell changes, push it to the heap.
+To find the minimum entropy cell, pop from the heap until you get a cell which
+hasn’t been collapsed yet. If a cell’s entropy changes multiple times, you’ll
+end up inserting it into the heap multiple times too. When popping from the
+heap, you need a way of knowing whether each cell that you pop has been
+collapsed yet so you can skip it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>    sum_of_possible_tile_weights: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    sum_of_possible_tile_weight_log_weights: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    entropy_noise: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// initialise to false, set to true after collapsing
+</span><span>    is_collapsed: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="font-style:italic;color:#969896;">// We will populate the heap with `EntropyCoord`s rather than CoreCell
+</span><span style="font-style:italic;color:#969896;">// references to keep the borrow checker happy!
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>EntropyCoord {
+</span><span>    entropy: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    coord: Coord2D,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Ord </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>EntropyCoord {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">cmp</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, other: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self</span><span>) -&gt; Ordering {
+</span><span>        </span><span style="font-style:italic;color:#969896;">// just compare the entropies
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreState {
+</span><span>    grid: Grid2D&lt;CoreCell&gt;,
+</span><span>    remaining_uncollapsed_cells: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_hints: FrequencyHints,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    entropy_heap: BinaryHeap&lt;EntropyCoord&gt;,
+</span><span>    ...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_next_cell</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) -&gt; Coord2D {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">while let </span><span style="color:#0086b3;">Some</span><span>(entropy_coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.entropy_heap.</span><span style="color:#62a35c;">pop</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.grid.</span><span style="color:#62a35c;">get</span><span>(entropy_coord.coord);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>cell.is_collapsed {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> entropy_coord.coord;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// should not end up here
+</span><span>        unreachable!(</span><span style="color:#183691;">&quot;entropy_heap is empty, but there are still \
+</span><span style="color:#183691;">            uncollapsed cells&quot;</span><span>);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h4 id="contradictions"><a class="zola-anchor" href="#contradictions" aria-label="Anchor link for: contradictions">Contradictions</a></h4>
+<p>It’s possible to get into a state where a
+cell has no possibilities remaining. I’ll call such a state a “contradiction”.
+The point of choosing the minimum entropy
+cell to collapse is to try to minimise this risk of contradiction, but sometimes
+it happens anyway.
+Certain sets of <strong>adjacency rules</strong> (ie. certain <strong>input images</strong>) increase the
+risk of contradictions.</p>
+<p>In practice, when a contradiction is reached, most implementations of WFC (including
+mine) just give up and start again, maintaining a counter of times this has
+happened, and stopping when it gets too high. Alternatives to this might be:</p>
+<ul>
+<li>saving checkpoints of the core state at various points throughout
+generation, and rolling back to a previous checkpoint upon contradiction</li>
+<li>making it possible to reverse the collapsing of a cell, making removed
+possibilities possible again, so the cell with no choices of tile has some
+choices again</li>
+</ul>
+<p>This is an interesting topic, but it’s out of scope for this post.</p>
+<h3 id="collapse-cell"><a class="zola-anchor" href="#collapse-cell" aria-label="Anchor link for: collapse-cell">Collapse Cell</a></h3>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// collapse the cell at a given coordinate
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">collapse_cell_at</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord2D) { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>}
+</span></code></pre>
+<p>The previous section explained how to choose which cell to collapse next.
+Now we need a way of choosing which tile to lock in. This method will select
+randomly between all possible tiles for the chosen cell, assigning probabilities
+based on <code>FrequencyHints</code>.</p>
+<p>We’ll now choose from a probability distribution, where possible values are the
+<strong>tile indices</strong> yielded by this iterator, and weights come from
+<code>FrequencyHints::relative_frequency</code>.</p>
+<p>Say for a given cell, the remaining possible <strong>tile indices</strong> are 2, 4, 7, and 8,
+and their relative frequencies are indicated by the width of their section of
+the strip below.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/probdist.png" alt="probdist.png" /></p>
+<p>We want to choose a random position within this strip, and see which section we
+ended up in. Naturally, we’re more likely to end up in one of the wider
+sections.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/probdist-choice.png" alt="probdist-choice.png" /></p>
+<p>Here we landed on 7, so we lock in 7 for this cell.</p>
+<p>Translating this diagram into code, we’ll choose a random number between <code>0</code> and
+<code>cell.sum_of_possible_tile_weights</code> (introduced in the
+<a href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/#caching">Caching</a> section). This is analogous to choosing a random position within the
+strip. To determine the tile index, we’ll decrease
+the chosen number by each weight (the width of strips) until doing so would make
+it negative.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreCell {
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// it will be convenient to be able to iterate over all possible tile indices
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">possible_tile_iter</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) -&gt; impl </span><span style="color:#0086b3;">Iterator</span><span>&lt;Item=TileIndex&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_tile_index</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, frequency_hints: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>FrequencyHints) -&gt; TileIndex {
+</span><span>        </span><span style="font-style:italic;color:#969896;">// the random position in the strip
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> remaining </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>            </span><span style="color:#62a35c;">random_int_between</span><span>(</span><span style="color:#0086b3;">0</span><span>, self.sum_of_possible_tile_weights);
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> possible_tile_index </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.</span><span style="color:#62a35c;">possible_tile_iter</span><span>() {
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// the width of the section of strip
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> weight </span><span style="font-weight:bold;color:#a71d5d;">=
+</span><span>                frequency_hints.</span><span style="color:#62a35c;">relative_frequency</span><span>(possible_tile_index);
+</span><span>
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> remaining </span><span style="font-weight:bold;color:#a71d5d;">&gt;=</span><span> weight {
+</span><span>                remaining </span><span style="font-weight:bold;color:#a71d5d;">-=</span><span> weight;
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> possible_tile_index;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// should not end up here
+</span><span>        unreachable!(</span><span style="color:#183691;">&quot;sum_of_possible_weights was inconsistent with \
+</span><span style="color:#183691;">            possible_tile_iter and FrequencyHints::relative_frequency&quot;</span><span>);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>It’s now fairly straightforward to implement <code>collapse_cell_at</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// collapse the cell at a given coordinate
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">collapse_cell_at</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord2D) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.grid.</span><span style="color:#62a35c;">get</span><span>(coord);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_index_to_lock_in </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> cell.</span><span style="color:#62a35c;">choose_tile_index</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.frequency_hints);
+</span><span>
+</span><span>        cell.is_collapsed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// remove all other possibilities
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(tile_index, possible) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> cell.possible.</span><span style="color:#62a35c;">iter_mut</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> tile_index </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span> tile_index_to_lock_in {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>possible </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>                </span><span style="font-style:italic;color:#969896;">// We _could_ call
+</span><span>                </span><span style="font-style:italic;color:#969896;">// `cell.remove_tile(tile_index, &amp;self.frequency_hints)` here
+</span><span>                </span><span style="font-style:italic;color:#969896;">// instead of explicitly setting `possible` to false, however
+</span><span>                </span><span style="font-style:italic;color:#969896;">// there&#39;s no need to update the cached sums of weights for this
+</span><span>                </span><span style="font-style:italic;color:#969896;">// cell. It&#39;s collapsed now, so we no longer care about its
+</span><span>                </span><span style="font-style:italic;color:#969896;">// entropy.
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="propagate"><a class="zola-anchor" href="#propagate" aria-label="Anchor link for: propagate">Propagate</a></h3>
+<p>Propagation enforces the <strong>adjacency rules</strong> by eliminating choices of tiles
+from cells. If we propagate after every cell is collapsed, no matter which cell,
+or possible tiles for the cell, are chosen, the resulting output of the core
+algorithm will respect the <strong>adjacency rules</strong>.</p>
+<p>Each time a tile is chosen for a cell, it’s likely that there will be fewer
+choices of tile available to the surrounding cells. This is because of the
+output must satisfy the <strong>adjacency rules</strong>. When a choice of tile is locked-in
+for a cell, the <strong>adjacency rules</strong> tell us which tiles may be chosen for the
+cells surrounding the locked-in cell.</p>
+<h4 id="looking-beyond-immediate-neighbours"><a class="zola-anchor" href="#looking-beyond-immediate-neighbours" aria-label="Anchor link for: looking-beyond-immediate-neighbours">Looking beyond immediate neighbours</a></h4>
+<p>In addition to updating the possibilities of cells adjacent to the collapsed
+cell, we can often remove some tile choices from cells further away. The key
+idea which this will rely on is:</p>
+<p><em>If it’s possible to place a tile in a cell, then in each of that cell’s four immediate
+neighbours, it must be possible to place a compatible tile, according to the
+<strong>adjacency rules</strong>.</em></p>
+<p>This is more applicable to propagation if we consider the contrapositive of this
+statement:</p>
+<p><em>For a given cell and tile, if in <strong>any</strong> of that cell’s immediate neighbours,
+it’s not possible to place a compatible tile, then the original tile may not be placed in that cell.</em></p>
+<p>As an example, let’s say the <strong>adjacency rules</strong> are:</p>
+<ul>
+<li>2 may appear to the RIGHT of 1</li>
+<li>2 may appear BELOW 1</li>
+<li>3 may appear to the RIGHT of 1</li>
+<li>3 may appear to the RIGHT of 2</li>
+<li>3 may appear to the RIGHT of 3</li>
+<li>3 may appear BELOW 1</li>
+<li>3 may appear BELOW 2</li>
+<li>4 may appear to the RIGHT of 2</li>
+<li>4 may appear BELOW 1</li>
+</ul>
+<p>For completeness, assume that each rule above has a corresponding rule in the
+opposite direction (e.g. the first would be “1 may appear to the LEFT of 2”).</p>
+<p>Suppose the possibilities of cells are represented by the numbers in
+corresponding cells of
+this table, and we just locked in 1 in the top-left corner.</p>
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td style="background-color:#ffcccc"> 1 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+<p>Propagating the effects to the immediate neighbours:</p>
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td  style="background-color:#ffcccc"> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td  style="background-color:#ffcccc"> 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+<p>But we’re not done yet. For example, what can we say about the middle cell?</p>
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 2, 3, 4 </td><td style="background-color:#ffcccc"> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+<p>Can the middle cell contain a 4? It’s possible for a 2 to be in the cell to its
+left, but it’s <strong>not</strong> possible for a 1 to be in the cell above it, so we can
+remove the 4 from the middle cell.</p>
+<table style="width:50%; text-align:center; font-weight:bold;">
+<tr><td> 1 </td><td> 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 2, 3, 4 </td><td style="background-color:#ffcccc"> 1, 2, 3 </td><td> 1, 2, 3, 4 </td></tr>
+<tr><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td><td> 1, 2, 3, 4 </td></tr>
+</table>
+<p>Propagation continues in this fashion until no further possibilities can be
+removed.</p>
+<h4 id="tile-enablers"><a class="zola-anchor" href="#tile-enablers" aria-label="Anchor link for: tile-enablers">Tile Enablers</a></h4>
+<p>For a given tile/cell combination, we’ll say that the possibility of another
+tile in an adjacent cell <strong>enables</strong> the first tile tile to appear in the first
+cell, if the adjacency of these 2 tiles would be allowed by the <strong>adjacency rules</strong>.
+We’ll say that a potential tile in a cell is <strong>enabled</strong> in a direction, if the
+immediate neighbour cell in that direction permits at least one tile which
+<strong>enables</strong> the first tile. Note that a tile/cell may have multiple enablers in
+a given direction. In the example above, the potential 3 in the middle cell is enabled in
+the LEFT direction by the potential 2 and the potential 3 in the cell to its
+left.</p>
+<p>A tile may <strong>not</strong> be placed in a cell if it has 0 enablers in <strong>any</strong>
+direction. That is, it needs at least 1 enabler in <strong>every</strong> direction to be
+a candidate tile for the cell.
+The potential 4 in the middle cell was <strong>not</strong> enabled by any potential
+tiles in the cell above it, so the potential 4 was removed.</p>
+<h4 id="cascading-removal"><a class="zola-anchor" href="#cascading-removal" aria-label="Anchor link for: cascading-removal">Cascading Removal</a></h4>
+<p>If removing the possibility of a tile from a cell caused a potential tile in a
+neighbouring cell to lose its last enabler, you must also remove the possibility
+of that second tile from the neighbouring cell. This can cause a cascade in
+which many potential tiles are removed from many cells in a single fell swoop.</p>
+<p>To keep track of which tiles must be removed from which cells, whenever a
+potential tile is removed from a cell, we’ll update a stack of removal updates.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// indicates the potential for tile_index appearing in the cell at coord
+</span><span style="font-style:italic;color:#969896;">// has been removed
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>RemovalUpdate {
+</span><span>    tile_index: TileIndex,
+</span><span>    coord: Coord2D,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreState {
+</span><span>    grid: Grid2D&lt;CoreCell&gt;,
+</span><span>    remaining_uncollapsed_cells: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_hints: FrequencyHints,
+</span><span>    entropy_heap: BinaryHeap&lt;EntropyCoord&gt;,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    tile_removals: </span><span style="color:#0086b3;">Vec</span><span>&lt;RemovalUpdate&gt;,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>The general strategy for propagation will be popping removal commands from
+the stack, and checking if the potential tile was removed was
+the final enabler for a potential tile in a neighbouring cell.
+If it was, then remove that potential tile, and add a <code>RemovalUpdate</code> about the
+newly-removed tile to the stack.
+When the stack is empty, propagation is complete, and its
+time to collapse the next cell.</p>
+<p>After collapsing a cell, the stack of <code>RemovalUpdate</code>s will be populated with
+updates about the removal of all but the locked-in tile. We can update the
+<code>collapse_cell_at</code> function with this in mind (see below the <code>// NEW CODE</code>
+comment).</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// collapse the cell at a given coordinate
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">collapse_cell_at</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, coord: Coord2D) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.grid.</span><span style="color:#62a35c;">get</span><span>(coord);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_index_to_lock_in </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> cell.</span><span style="color:#62a35c;">choose_tile_index</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.frequency_hints);
+</span><span>
+</span><span>        cell.is_collapsed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span>;
+</span><span>
+</span><span>        </span><span style="font-style:italic;color:#969896;">// remove all other possibilities
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(tile_index, possible) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> cell.possible.</span><span style="color:#62a35c;">iter_mut</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> tile_index </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span> tile_index_to_lock_in {
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>possible </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span>;
+</span><span>                </span><span style="font-style:italic;color:#969896;">// We _could_ call
+</span><span>                </span><span style="font-style:italic;color:#969896;">// `cell.remove_tile(tile_index, &amp;self.frequency_hints)` here
+</span><span>                </span><span style="font-style:italic;color:#969896;">// instead of explicitly setting `possible` to false, however
+</span><span>                </span><span style="font-style:italic;color:#969896;">// there&#39;s no need to update the cached sums of weights for this
+</span><span>                </span><span style="font-style:italic;color:#969896;">// cell. It&#39;s collapsed now, so we no longer care about its
+</span><span>                </span><span style="font-style:italic;color:#969896;">// entropy.
+</span><span>
+</span><span>                </span><span style="font-style:italic;color:#969896;">// NEW CODE
+</span><span>                self.tile_removals.</span><span style="color:#62a35c;">push</span><span>(RemovalUpdate {
+</span><span>                    tile_index,
+</span><span>                    coord,
+</span><span>                });
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h4 id="counting-enablers"><a class="zola-anchor" href="#counting-enablers" aria-label="Anchor link for: counting-enablers">Counting Enablers</a></h4>
+<p>Now we need a way of telling whether a removed potential tile was the final
+enabler for any potential tiles in neighbouring cells.
+For this, purpose we’ll maintain
+a count of enablers for each cell, for each potential tile, for each
+direction.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// define directions as integers
+</span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Direction </span><span style="font-weight:bold;color:#a71d5d;">= usize</span><span>;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">UP</span><span>:    Direction </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">DOWN</span><span>:  Direction </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">LEFT</span><span>:  Direction </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">2</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">RIGHT</span><span>: Direction </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">3</span><span>;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_DIRECTIONS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">4</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">ALL_DIRECTIONS</span><span>: [Direction; </span><span style="color:#0086b3;">NUM_DIRECTIONS</span><span>] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>[</span><span style="color:#0086b3;">UP</span><span>, </span><span style="color:#0086b3;">DOWN</span><span>, </span><span style="color:#0086b3;">LEFT</span><span>, </span><span style="color:#0086b3;">RIGHT</span><span>];
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>TileEnablerCount {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// `by_direction[d]` will be the count of enablers in direction `d`
+</span><span>    by_direction: [</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>; 4],
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>    sum_of_possible_tile_weights: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    sum_of_possible_tile_weight_log_weights: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    entropy_noise: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    is_collapsed: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// new fields:
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// `tile_enabler_counts[tile_index]` will be the counts for the
+</span><span>    </span><span style="font-style:italic;color:#969896;">// corresponding tile
+</span><span>    tile_enabler_counts: </span><span style="color:#0086b3;">Vec</span><span>&lt;TileEnablerCount&gt;,
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>For a given <code>cell</code>, for a tile with index <code>A</code>, in direction <code>D</code>,
+<code>cell.tile_enabler_counts[A].by_direction[D]</code> is the number of different
+<strong>tile indices</strong> permitted in the immediate neighbour of <code>cell</code> in direction <code>D</code>, which
+according to the <strong>adjacency rules</strong>, are permitted to appear adjacent to tile
+<code>A</code> in direction <code>D</code>.</p>
+<p>How should the counts be initialised?</p>
+<p>First, observe each cell will start with an identical vector of
+<code>TileEnablerCount</code>. As potential tiles are removed, the counts will change, but
+they all start out the same.</p>
+<p>As for the counts for each tile/direction combination, it should come as no
+surprise that we compute them from the <strong>adjacency rules</strong>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">initial_tile_enabler_counts</span><span>(
+</span><span>    num_tiles: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    adjacency_rules: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>AdjacencyRules,
+</span><span>) -&gt; </span><span style="color:#0086b3;">Vec</span><span>&lt;TileEnablerCount&gt;
+</span><span>{
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> ret </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span>::new():
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> tile_a </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>num_tiles {
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> counts </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> TileEnablerCount {
+</span><span>            by_direction: [</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0</span><span>],
+</span><span>        };
+</span><span>
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for &amp;</span><span>direction </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">ALL_DIRECTIONS</span><span>.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// iterate over all the tiles which may appear in the cell one space
+</span><span>            </span><span style="font-style:italic;color:#969896;">// in `direction` from a cell containing `tile_a`
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> tile_b </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> adjacency_rules.</span><span style="color:#62a35c;">compatible_tiles</span><span>(tile_a, direction) {
+</span><span>                counts.by_direction[direction] </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>            }
+</span><span>            ret.</span><span style="color:#62a35c;">push</span><span>(counts);
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> ret;
+</span><span>    }
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>Use this function to initialise the <code>tile_enabler_counts</code> field of each
+<code>CoreCell</code> in the <code>grid</code>.</p>
+<h4 id="propagation-algorithm"><a class="zola-anchor" href="#propagation-algorithm" aria-label="Anchor link for: propagation-algorithm">Propagation Algorithm</a></h4>
+<p>For each potential tile that was removed from a cell, propagation will visit
+each neighbour of that cell, and update their enabler counts. This relies on the
+fact that for a given tile permitted in a cell, all compatible potential tiles
+in a neighbouring cell will be contributing to the first tile’s enabler count in
+the appropriate direction. Removing potential compatible tiles therefore reduces
+the enabler count.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-style:italic;color:#969896;">// remove possibilities based on collapsed cell
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">propagate</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">while let </span><span style="color:#0086b3;">Some</span><span>(removal_update) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.tile_removals.</span><span style="color:#62a35c;">pop</span><span>() {
+</span><span>            </span><span style="font-style:italic;color:#969896;">// at some point in the recent past, removal_update.tile_index was
+</span><span>            </span><span style="font-style:italic;color:#969896;">// removed as a candidate for the tile in the cell at
+</span><span>            </span><span style="font-style:italic;color:#969896;">// removal_update.coord
+</span><span>
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">for &amp;</span><span>direction </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#0086b3;">ALL_DIRECTIONS</span><span>.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>                </span><span style="font-style:italic;color:#969896;">// propagate the effect to the neighbour in each direction
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> neighbour_coord </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> removal_update.coord.</span><span style="color:#62a35c;">neighbour</span><span>(direction);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> neighbour_cell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.grid.</span><span style="color:#62a35c;">get_mut</span><span>(neighbour_coord);
+</span><span>
+</span><span>                </span><span style="font-style:italic;color:#969896;">// iterate over all the tiles which may appear in the cell one
+</span><span>                </span><span style="font-style:italic;color:#969896;">// space in `direction` from a cell containing
+</span><span>                </span><span style="font-style:italic;color:#969896;">// `removal_update.tile_index`
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> compatible_tile </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self.adjacency_rules.</span><span style="color:#62a35c;">compatible_tiles</span><span>(
+</span><span>                    removal_update.tile_index,
+</span><span>                    direction,
+</span><span>                ) {
+</span><span>
+</span><span>                    </span><span style="font-style:italic;color:#969896;">// relative to `neighbour_cell`, the cell at
+</span><span>                    </span><span style="font-style:italic;color:#969896;">// `removal_update.coord` is in the opposite direction to
+</span><span>                    </span><span style="font-style:italic;color:#969896;">// `direction`
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> opposite_direction </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">opposite</span><span>(direction);
+</span><span>
+</span><span>                    </span><span style="font-style:italic;color:#969896;">// look up the count of enablers for this tile
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> enabler_counts </span><span style="font-weight:bold;color:#a71d5d;">= &amp;mut</span><span> neighbour_cell
+</span><span>                        .tile_enabler_counts[compatible_tile];
+</span><span>
+</span><span>                    </span><span style="font-style:italic;color:#969896;">// check if we&#39;re about to decrement this to 0
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> enabler_counts.by_direction[direction] </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">1 </span><span>{
+</span><span>
+</span><span>                        </span><span style="font-style:italic;color:#969896;">// if there is a zero count in another direction,
+</span><span>                        </span><span style="font-style:italic;color:#969896;">// the potential tile has already been removed,
+</span><span>                        </span><span style="font-style:italic;color:#969896;">// and we want to avoid removing it again
+</span><span>                        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>enabler_counts.</span><span style="color:#62a35c;">contains_any_zero_count</span><span>() {
+</span><span>                            </span><span style="font-style:italic;color:#969896;">// remove the possibility
+</span><span>                            neighbour_cell.</span><span style="color:#62a35c;">remove_tile</span><span>(
+</span><span>                                compatible_tile,
+</span><span>                                </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.frequency_hints,
+</span><span>                            );
+</span><span>                            </span><span style="font-style:italic;color:#969896;">// check for contradiction
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> neighbour_cell.</span><span style="color:#62a35c;">has_no_possible_tiles</span><span>() {
+</span><span>                                </span><span style="font-style:italic;color:#969896;">// CONTRADICTION!!!
+</span><span>                            }
+</span><span>                            </span><span style="font-style:italic;color:#969896;">// this probably changed the cell&#39;s entropy
+</span><span>                            self.entropy_heap.</span><span style="color:#62a35c;">push</span><span>(EntropyCoord {
+</span><span>                                entropy: neighbour_cell.</span><span style="color:#62a35c;">entropy</span><span>(),
+</span><span>                                coord: neighbour_coord,
+</span><span>                            });
+</span><span>                            </span><span style="font-style:italic;color:#969896;">// add the update to the stack
+</span><span>                            self.tile_removals.</span><span style="color:#62a35c;">push</span><span>(RemovalUpdate {
+</span><span>                                tile_index: compatible_tile,
+</span><span>                                coord: neoighbour_coord,
+</span><span>                            });
+</span><span>                        }
+</span><span>                    }
+</span><span>
+</span><span>                    enabler_counts.by_direction[direction] </span><span style="font-weight:bold;color:#a71d5d;">-= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="putting-it-all-together-1"><a class="zola-anchor" href="#putting-it-all-together-1" aria-label="Anchor link for: putting-it-all-together-1">Putting it all together</a></h3>
+<p>In the image processor section, the core exposed this interface:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_core</span><span>(
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_rules: FrequencyHints,
+</span><span>    output_size: (u32, u32),
+</span><span>) -&gt; Grid2D&lt;TileIndex&gt; { </span><span style="font-weight:bold;color:#a71d5d;">... </span><span>}
+</span></code></pre>
+<p>To satisfy this interface, we’ll need to construct a <code>CoreState</code>, and invoke the
+<code>run</code> method. It then needs to extract a <code>Grid2D&lt;TileIndex&gt;</code> from the <code>grid</code>
+field of <code>CoreState</code>.
+For simplicity, let’s assume that contradictions won’t happen.</p>
+<p>The complete <code>CoreState</code> and <code>CoreCell</code> types:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreCell {
+</span><span>    possible: </span><span style="color:#0086b3;">Vec</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>&gt;,
+</span><span>    sum_of_possible_tile_weights: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    sum_of_possible_tile_weight_log_weights: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    entropy_noise: </span><span style="font-weight:bold;color:#a71d5d;">f32</span><span>,
+</span><span>    is_collapsed: </span><span style="font-weight:bold;color:#a71d5d;">bool</span><span>,
+</span><span>    tile_enabler_counts: </span><span style="color:#0086b3;">Vec</span><span>&lt;TileEnablerCount&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>CoreState {
+</span><span>    grid: Grid2D&lt;CoreCell&gt;,
+</span><span>    remaining_uncollapsed_cells: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_hints: FrequencyHints,
+</span><span>    entropy_heap: BinaryHeap&lt;EntropyCoord&gt;,
+</span><span>    tile_removals: </span><span style="color:#0086b3;">Vec</span><span>&lt;RemovalUpdate&gt;,
+</span><span>}
+</span></code></pre>
+<p>Recall that <code>run</code> was implemented as:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">impl </span><span>CoreState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">run</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">while </span><span>self.remaining_uncollapsed_cells </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0 </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> next_coord </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.</span><span style="color:#62a35c;">choose_next_cell</span><span>();
+</span><span>            self.</span><span style="color:#62a35c;">collapse_cell_at</span><span>(next_coord);
+</span><span>            self.</span><span style="color:#62a35c;">propagate</span><span>();
+</span><span>            self.remaining_uncollapsed_cells </span><span style="font-weight:bold;color:#a71d5d;">-= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Now let’s implement <code>wfc_core</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">wfc_core</span><span>(
+</span><span>    adjacency_rules: AdjacencyRules,
+</span><span>    frequency_hints: FrequencyHints,
+</span><span>    output_size: (u32, u32),
+</span><span>) -&gt; Grid2D&lt;TileIndex&gt;
+</span><span>{
+</span><span>    </span><span style="font-style:italic;color:#969896;">// the adjacency rules should know how many tiles there are
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> num_tiles </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> adjacency_rules.</span><span style="color:#62a35c;">num_tiles</span><span>();
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// every cell in the grid will be initialised to this
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> cell_template </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CoreCell {
+</span><span>        </span><span style="font-style:italic;color:#969896;">// a vector of num_tiles bools where all are true
+</span><span>        possible: (</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>num_tiles).</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">true</span><span>).</span><span style="color:#62a35c;">collect</span><span>(),
+</span><span>        </span><span style="font-style:italic;color:#969896;">// add up all the relative frequencies
+</span><span>        sum_of_possible_tile_weights:
+</span><span>            (</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>num_tiles)
+</span><span>                .</span><span style="color:#62a35c;">map</span><span>(|index| frequency_hints.</span><span style="color:#62a35c;">relative_frequency</span><span>(index))
+</span><span>                .</span><span style="color:#62a35c;">sum</span><span>(),
+</span><span>        </span><span style="font-style:italic;color:#969896;">// add up all the relative frequencies multiplied by their log2
+</span><span>        sum_of_possible_tile_weight_log_weights:
+</span><span>            (</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>num_tiles)
+</span><span>                .</span><span style="color:#62a35c;">map</span><span>(|index| {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> w </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> frequency_hints.</span><span style="color:#62a35c;">relative_frequency</span><span>(index) </span><span style="font-weight:bold;color:#a71d5d;">as f32</span><span>;
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> w </span><span style="font-weight:bold;color:#a71d5d;">*</span><span> w.</span><span style="color:#62a35c;">log2</span><span>();
+</span><span>                })
+</span><span>                .</span><span style="color:#62a35c;">sum</span><span>(),
+</span><span>        </span><span style="font-style:italic;color:#969896;">// small random number to add to entropy to break ties
+</span><span>        entropy_noise: </span><span style="color:#62a35c;">random_float_between</span><span>(</span><span style="color:#0086b3;">0</span><span>, </span><span style="color:#0086b3;">0.0000001</span><span>),
+</span><span>        </span><span style="font-style:italic;color:#969896;">// initially every cell is uncollapsed
+</span><span>        is_collapsed: </span><span style="color:#0086b3;">false</span><span>,
+</span><span>        tile_enabler_counts:
+</span><span>            </span><span style="color:#62a35c;">initial_tile_enabler_counts</span><span>(num_tiles, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>adjacency_rules),
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// clone cell_template for each cell of the grid
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid2D::new_repeating(output_size.</span><span style="color:#0086b3;">0</span><span>, output_size.</span><span style="color:#0086b3;">1</span><span>, cell_template);
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> core_state </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> CoreState {
+</span><span>        grid,
+</span><span>        remaining_uncollapsed_cells: output_size.</span><span style="color:#0086b3;">0 </span><span style="font-weight:bold;color:#a71d5d;">*</span><span> output_size.</span><span style="color:#0086b3;">1</span><span>,
+</span><span>        adjacency_rules,
+</span><span>        frequency_hints,
+</span><span>        entropy_heap: BinaryHeap::new(), </span><span style="font-style:italic;color:#969896;">// starts empty
+</span><span>        tile_removals: </span><span style="color:#0086b3;">Vec</span><span>::new(), </span><span style="font-style:italic;color:#969896;">// starts empty
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// run the core algorithm
+</span><span>    core_state.</span><span style="color:#62a35c;">run</span><span>();
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// copy the result into the output grid
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> output_grid </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>Grid2d::new_repeating(output_size.</span><span style="color:#0086b3;">0</span><span>, output_size.</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">0</span><span>);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(coord, cell) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> core_state.grid.</span><span style="color:#62a35c;">enumerate_cells</span><span>() {
+</span><span>        </span><span style="font-style:italic;color:#969896;">// all cells are collapsed, so this method will return the chosen
+</span><span>        </span><span style="font-style:italic;color:#969896;">// tile index for a cell
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> tile_index </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> cell.</span><span style="color:#62a35c;">get_only_possible_tile_index</span><span>();
+</span><span>        output_grid.</span><span style="color:#62a35c;">set</span><span>(coord, tile_index);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> output_grid;
+</span><span>}
+</span></code></pre>
+<h2 id="further-reading"><a class="zola-anchor" href="#further-reading" aria-label="Anchor link for: further-reading">Further Reading</a></h2>
+<h3 id="my-rust-libraries"><a class="zola-anchor" href="#my-rust-libraries" aria-label="Anchor link for: my-rust-libraries">My Rust Libraries</a></h3>
+<p>Shameless plug!
+My rust libraries which implement this algorithm are here: <a href="https://github.com/gridbugs/wfc">github.com/gridbugs/wfc</a></p>
+<p>There are 2 crates:</p>
+<ul>
+<li><a href="https://crates.io/crates/wfc">wfc</a> is the image processor and core, which
+works with any grid of comparable values</li>
+<li><a href="https://crates.io/crates/wfc_image">wfc_image</a> is a wrapper of wfc
+specifically for working with image files</li>
+</ul>
+<p>It also contains some example applications and interesting input images.</p>
+<p>Of note is the <code>animate</code> example, which shows the process of generating the
+image, representing uncollapsed pixels with the frequency-hint-weighted average
+of colours of possible pixels. Visualising the possibilities for each cell, and
+the order in which cells are collapsed can help get a better understanding of
+WFC.</p>
+<pre data-lang="bash" style="background-color:#ffffff;color:#323232;" class="language-bash "><code class="language-bash" data-lang="bash"><span>$ cargo run --manifest-path wfc-image/Cargo.toml --example</span><span style="font-weight:bold;color:#a71d5d;">=</span><span>animate</span><span style="font-weight:bold;color:#a71d5d;"> -- </span><span>\
+</span><span>    --input wfc-image/examples/cat.png
+</span></code></pre>
+<video autoplay muted loop>
+  <source src="cat-animate.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+<p>The <code>simple</code> example is also quite useful. It just generates images files based
+on a specified image file. I used it for all the examples in this post.</p>
+<h3 id="model-synthesis"><a class="zola-anchor" href="#model-synthesis" aria-label="Anchor link for: model-synthesis">Model Synthesis</a></h3>
+<p>In 2007, Paul Merrell published an algorithm called “Model Synthesis” which uses
+a constraint solver to generate textures from examples. The Wave Function Collapse
+algorithm is heavily based on this work.</p>
+<p>For more info, see <a href="https://paulmerrell.org/model-synthesis/">the description on Paul Merrell’s website</a>,
+<a href="https://github.com/merrell42/model-synthesis">the source code for their implementation of Model Synthesis</a>,
+and a <a href="https://twitter.com/exppad/status/1421058939274371079">thread on twitter comparing Model Synthesis to WFC</a>.</p>
+<h3 id="wavefunctioncollaspe-repo"><a class="zola-anchor" href="#wavefunctioncollaspe-repo" aria-label="Anchor link for: wavefunctioncollaspe-repo">WaveFunctionCollaspe Repo</a></h3>
+<p>My inspiration to make this library, came from this repo:
+<a href="https://github.com/mxgmn/WaveFunctionCollapse">github.com/mxgmn/WaveFunctionCollapse</a>,
+There are many great WFC resources listed in the <a href="https://github.com/mxgmn/WaveFunctionCollapse#notable-ports-forks-and-spinoffs">Notable ports, forks and
+spinoffs</a>
+section.</p>
+<h3 id="fast-wfc"><a class="zola-anchor" href="#fast-wfc" aria-label="Anchor link for: fast-wfc">fast-wfc</a></h3>
+<p>One such port is <a href="https://github.com/math-fehr/fast-wfc">fast-wfc</a>, which I
+found to be particularly helpful as a reference for understanding how the
+algorithm works. Most of my knowledge of WFC came from reverse
+engineering this project.</p>
+<h2 id="outtakes"><a class="zola-anchor" href="#outtakes" aria-label="Anchor link for: outtakes">Outtakes</a></h2>
+<h3 id="accidental-procgen"><a class="zola-anchor" href="#accidental-procgen" aria-label="Anchor link for: accidental-procgen">Accidental Procgen</a></h3>
+<p>While generating images for this post I accidentally ran WFC on this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/all-tiles.png" alt="all-tiles.png" /></p>
+<p>The output motivated me to add this outtakes section:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/outtake1.png" alt="outtake1.png" /></p>
+<p>The gaps between the tiles in the input were transparent, and in the output they
+are black, which alerted me to the fact that the wfc_image crate currently
+throws away transparency.</p>
+<h3 id="broken-probability-distribution"><a class="zola-anchor" href="#broken-probability-distribution" aria-label="Anchor link for: broken-probability-distribution">Broken Probability Distribution</a></h3>
+<p>I was originally planning to use this image as an example:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/outtake2.png" alt="outtake2.png" /></p>
+<p>I expected to see a roughly equal number of upwards sloping tiles and downwards
+sloping tiles (as the input image is wrapped when sampling tiles):</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/outtake3.png" alt="outtake3.png" /></p>
+<p>But instead, the output was almost entirely made up of upwards sloping tiles:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/outtake4.png" alt="outtake4.png" /></p>
+<p>After much debugging, I traced the problem to a bug in my implementation of
+randomly choosing from a probability distribution:</p>
+<pre data-lang="patch" style="background-color:#ffffff;color:#323232;" class="language-patch "><code class="language-patch" data-lang="patch"><span>commit ede0ea4ed4560bdcf85b4dda989937484bfec21e
+</span><span>Author: Stephen Sherratt &lt;sfsherratt@gmail.com&gt;
+</span><span>Date:   Sun Feb 10 21:37:59 2019 +0000
+</span><span>
+</span><span>    Fix bug in probability distribution
+</span><span>
+</span><span>diff --git a/wfc/src/wfc.rs b/wfc/src/wfc.rs
+</span><span>index 21ac889..03e6cc7 100644
+</span><span style="background-color:#ffecec;font-weight:bold;font-style:italic;color:#bd2c00;">---</span><span style="font-style:italic;color:#969896;"> a/wfc/src/wfc.rs
+</span><span style="background-color:#eaffea;font-weight:bold;font-style:italic;color:#55a532;">+++</span><span style="font-style:italic;color:#969896;"> b/wfc/src/wfc.rs
+</span><span style="font-weight:bold;font-style:italic;color:#969896;">@@ -475,7 +475,7 @@ impl WaveCell {
+</span><span>         for (pattern_id, pattern_stats) in
+</span><span>             self.weighted_compatible_stats_enumerate(global_stats)
+</span><span>         {
+</span><span style="background-color:#ffecec;color:#323232;">-            if remaining &gt; pattern_stats.weight() {
+</span><span style="background-color:#eaffea;font-weight:bold;color:#55a532;">+</span><span style="background-color:#eaffea;color:#323232;">            if remaining &gt;= pattern_stats.weight() {
+</span><span>                 remaining -= pattern_stats.weight();
+</span><span>             } else {
+</span><span>                 assert!(global_stats.pattern_stats(pattern_id).is_some());
+</span></code></pre>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;2018-recap&#x2F;" aria-label="Previous">
+	  Previous: 2018 Recap
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;nes-emulator-debugging&#x2F;" aria-label="Next">
+	  Next: NES Emulator Debugging
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

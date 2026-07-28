@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 10 - Saving and Loading">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-03T19:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 10 - Saving and Loading
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-9&#x2F;" aria-label="Previous">
+	  Previous: Part 9 - Ranged Scrolls and Targeting
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-11&#x2F;" aria-label="Next">
+	  Next: Part 11 - Descending the Stairs
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 10 - Saving and Loading
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-08-03T19:00:00+10:00">
+    August 03, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll make it possible to save and load games, and add a main menu.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-10/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-9-end">part-9-end</a></p>
+<p>In this post:</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/#serializing-game-state">Serializing Game State</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/#main-menu">Main Menu</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/#saving">Saving</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/#loading">Loading</a></li>
+</ul>
+<h2 id="serializing-game-state"><a class="zola-anchor" href="#serializing-game-state" aria-label="Anchor link for: serializing-game-state">Serializing Game State</a></h2>
+<p>In order to save the game, we must describe a way to convert the <code>GameState</code>
+type to and from a sequence of bytes which can be stored in a file.
+In rust, the typical way to do this is using a crate called <a href="https://crates.io/crates/serde">serde</a>.
+It defines traits <code>Serialize</code> and <code>Deserialize</code>, which can be derived on a type
+just like <code>Clone</code>, <code>Copy</code>, <code>Debug</code>, etc.</p>
+<p>Many of the crates our game depend on can be configured to use serde to make the types they define
+implement <code>Serialize</code> and <code>Deserilaize</code>. The <code>GameState</code> type contains many types imported from
+crates. The first step is to configure these crates to allow the types they define to be serialized.
+Update the <code>[dependencies]</code> section of <code>Cargo.toml</code> to look like this:</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">chargrid_graphical </span><span>= </span><span style="color:#183691;">&quot;0.7&quot;
+</span><span style="color:#63a35c;">chargrid </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.4&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">coord_2d </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">grid_2d </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.15&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">rgb24 </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">direction </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.18&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;rand&quot;</span><span>, </span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">entity_table </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.2&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">spatial_table </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">rand </span><span>= </span><span style="color:#183691;">&quot;0.8&quot;
+</span><span style="color:#63a35c;">rand_isaac </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serde1&quot;</span><span>] }
+</span><span style="color:#63a35c;">shadowcast </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.8&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">meap </span><span>= </span><span style="color:#183691;">&quot;0.4&quot;
+</span><span style="color:#63a35c;">grid_search_cardinal </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.3&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">line_2d </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.5&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serialize&quot;</span><span>] }
+</span><span style="color:#63a35c;">serde </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;1.0&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;serde_derive&quot;</span><span>] }
+</span></code></pre>
+<p>Note the addition of the <code>serde</code> crate.
+Most existing crates have had a feature enabled which turn on serialization.</p>
+<p>Now in <code>game.rs</code>, import the <code>Serialize</code> and <code>Deserialize</code> traits from <code>serde</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// game.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>serde::{Deserialize, Serialize};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>…and derive them for the <code>GameState</code> type:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[derive(Serialize, Deserialize)]
+</span><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span>GameState {
+</span><span>    ...
+</span><span>}
+</span></code></pre>
+<p>The derived implementation of (de)serialization will invoke the (de)serialization
+methods for each of its fields. Some of its fields won’t <em>have</em> (de)serialization
+methods yet, so you’ll see many errors of the form:</p>
+<pre style="background-color:#ffffff;color:#323232;"><code><span>the trait `serde::Deserialize&lt;&#39;_&gt;` is not implemented for &lt;type&gt;
+</span></code></pre>
+<p>where <code>&lt;type&gt;</code> is a type defined in the game’s code.</p>
+<p>For each type that produces this error, derive the <code>Serialize</code> and <code>Deserialize</code> traits.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.0">part-10.0</a></p>
+<h2 id="main-menu"><a class="zola-anchor" href="#main-menu" aria-label="Anchor link for: main-menu">Main Menu</a></h2>
+<p>Now let’s add a main menu.</p>
+<p>Start by defining the main menu entry, view, select, and decorator types, and a function returning an <code>EventRoutine</code>, much as we did
+for the inventory menu:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>#[derive(Clone, Copy, Debug)]
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>MainMenuEntry {
+</span><span>    NewGame,
+</span><span>    Resume,
+</span><span>    Quit,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main_menu_instance</span><span>() -&gt; MenuInstanceChooseOrEscape&lt;MainMenuEntry&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>MainMenuEntry::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    MenuInstanceBuilder {
+</span><span>        items: vec![Resume, NewGame, Quit],
+</span><span>        hotkeys: </span><span style="color:#0086b3;">Some</span><span>(hashmap![</span><span style="color:#183691;">&#39;r&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> Resume, </span><span style="color:#183691;">&#39;n&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> NewGame, </span><span style="color:#183691;">&#39;q&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> Quit]),
+</span><span>        selected_index: </span><span style="color:#0086b3;">0</span><span>,
+</span><span>    }
+</span><span>    .</span><span style="color:#62a35c;">build</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">into_choose_or_escape</span><span>()
+</span><span>}
+</span><span>
+</span><span>#[derive(Default)]
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>MainMenuView {
+</span><span>    mouse_tracker: MenuInstanceMouseTracker,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>MenuIndexFromScreenCoord </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">menu_index_from_screen_coord</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, len: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>, coord: Coord) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>&gt; {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">menu_index_from_screen_coord</span><span>(len, coord)
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">new_frame</span><span>(context.offset);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(i, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>entry, maybe_selected) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.main_menu.</span><span style="color:#62a35c;">menu_instance</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let </span><span>(prefix, style) </span><span style="font-weight:bold;color:#a71d5d;">= if</span><span> maybe_selected.</span><span style="color:#62a35c;">is_some</span><span>() {
+</span><span>                (
+</span><span>                    </span><span style="color:#183691;">&quot;&gt;&quot;</span><span>,
+</span><span>                    Style::new()
+</span><span>                        .</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>))
+</span><span>                        .</span><span style="color:#62a35c;">with_bold</span><span>(</span><span style="color:#0086b3;">true</span><span>),
+</span><span>                )
+</span><span>            } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>                (</span><span style="color:#183691;">&quot; &quot;</span><span>, Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">187</span><span>)))
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> text </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entry {
+</span><span>                MainMenuEntry::Resume </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(r) Resume&quot;</span><span>,
+</span><span>                MainMenuEntry::NewGame </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(n) New Game&quot;</span><span>,
+</span><span>                MainMenuEntry::Quit </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(q) Quit&quot;</span><span>,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> size </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>StringViewSingleLine::new(style).</span><span style="color:#62a35c;">view_size</span><span>(
+</span><span>                format!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{} {}</span><span style="color:#183691;">&quot;</span><span>, prefix, text),
+</span><span>                context.</span><span style="color:#62a35c;">add_offset</span><span>(Coord::new(</span><span style="color:#0086b3;">0</span><span>, i </span><span style="font-weight:bold;color:#a71d5d;">as i32</span><span>)),
+</span><span>                frame,
+</span><span>            );
+</span><span>            self.mouse_tracker.</span><span style="color:#62a35c;">on_entry_view_size</span><span>(size);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>MainMenuSelect;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ChooseSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ChooseOutput </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>MenuInstanceChooseOrEscape&lt;MainMenuEntry&gt;;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ChooseOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.main_menu
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>DataSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>DataOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">data_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>DataOutput {
+</span><span>        input
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>ViewSelector </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuSelect {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewInput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>ViewOutput </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> MainMenuView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>input.main_menu_view
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view_mut</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self, input: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewInput) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a mut Self::</span><span>ViewOutput {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> input.main_menu_view
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>MainMenuDecorate;
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Decorate </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuDecorate {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>View </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppView;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">type </span><span>Data </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> AppData;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;E, F, C&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;Self::</span><span>Data,
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">mut </span><span>event_routine_view: EventRoutineView&lt;E&gt;,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) </span><span style="font-weight:bold;color:#a71d5d;">where
+</span><span>        E: EventRoutine&lt;Data = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>Data, View = </span><span style="font-weight:bold;color:#a71d5d;">Self::</span><span>View&gt;,
+</span><span>        F: Frame,
+</span><span>        C: ColModify,
+</span><span>    {
+</span><span>        BoundView {
+</span><span>            size: data.game_state.</span><span style="color:#62a35c;">size</span><span>(),
+</span><span>            view: AlignView {
+</span><span>                alignment: Alignment::centre(),
+</span><span>                view: FillBackgroundView {
+</span><span>                    rgb24: Rgb24::new_grey(</span><span style="color:#0086b3;">0</span><span>),
+</span><span>                    view: BorderView {
+</span><span>                        style: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>BorderStyle {
+</span><span>                            title: </span><span style="color:#0086b3;">None</span><span>,
+</span><span>                            title_style: Style::new().</span><span style="color:#62a35c;">with_foreground</span><span>(Rgb24::new_grey(</span><span style="color:#0086b3;">255</span><span>)),
+</span><span>                            </span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">Default</span><span>::default()
+</span><span>                        },
+</span><span>                        view: MinSizeView {
+</span><span>                            size: Size::new(</span><span style="color:#0086b3;">12</span><span>, </span><span style="color:#0086b3;">0</span><span>),
+</span><span>                            view: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> event_routine_view,
+</span><span>                        },
+</span><span>                    },
+</span><span>                },
+</span><span>            },
+</span><span>        }
+</span><span>        .</span><span style="color:#62a35c;">view</span><span>(data, context.</span><span style="color:#62a35c;">add_depth</span><span>(</span><span style="color:#0086b3;">10</span><span>), frame);
+</span><span>        event_routine_view.view.game_view.</span><span style="color:#62a35c;">view</span><span>(
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data.game_state,
+</span><span>            context.</span><span style="color:#62a35c;">compose_col_modify</span><span>(ColModifyMap(|c: Rgb24| c.</span><span style="color:#62a35c;">saturating_scalar_mul_div</span><span>(</span><span style="color:#0086b3;">1</span><span>, </span><span style="color:#0086b3;">2</span><span>))),
+</span><span>            frame,
+</span><span>        );
+</span><span>        event_routine_view
+</span><span>            .view
+</span><span>            .</span><span style="color:#62a35c;">render_ui</span><span>(</span><span style="color:#0086b3;">None</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>data, context, frame);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main_menu</span><span>() -&gt; impl EventRoutine&lt;
+</span><span>    Return = </span><span style="color:#0086b3;">Result</span><span>&lt;MainMenuEntry, menu::Escape&gt;,
+</span><span>    Data = AppData,
+</span><span>    View = AppView,
+</span><span>    Event = CommonEvent,
+</span><span>&gt; {
+</span><span>    MenuInstanceRoutine::new(MainMenuSelect)
+</span><span>        .</span><span style="color:#62a35c;">convert_input_to_common_event</span><span>()
+</span><span>        .</span><span style="color:#62a35c;">decorated</span><span>(MainMenuDecorate)
+</span><span>}
+</span></code></pre>
+<p>Note the <code>hashmap!</code> macro used to specify hotkeys for the main menu.
+This is from a crate called <code>maplit</code>, which needs to be imported.</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">maplit </span><span>= </span><span style="color:#183691;">&quot;1.0&quot;
+</span></code></pre>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>maplit::hashmap;
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add the relevant main menu types to <code>AppData</code> and <code>AppView</code>:</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    main_menu: MenuInstanceChooseOrEscape&lt;MainMenuEntry&gt;,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Data {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            main_menu: </span><span style="color:#62a35c;">main_menu_instance</span><span>(),
+</span><span>        }
+</span><span>
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppView {
+</span><span>    ...
+</span><span>    main_menu_view: MainMenuView,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            main_menu_view: MainMenuView::default(),
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>At the moment, when the escape key is pressed, the game exits. Let’s change it so that the
+menu opens instead. There’s no longer a need for the <code>GameReturn::Exit</code> variant, so remove it.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">enum </span><span>GameReturn {
+</span><span>    Menu,
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">handle_input</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, input: Input) -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameReturn&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> input {
+</span><span>            Input::Keyboard(key) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> key {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    keys::</span><span style="color:#0086b3;">ESCAPE </span><span style="font-weight:bold;color:#a71d5d;">=&gt; return </span><span style="color:#0086b3;">Some</span><span>(GameReturn::Menu),
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            }
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span>
+</span></code></pre>
+<p>Handle the <code>GameReturn::Menu</code> value in <code>game_loop</code>. Have it run the <code>main_menu()</code> event routine
+and handle the choice from that menu.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            GameReturn::Menu </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(</span><span style="color:#62a35c;">main_menu</span><span>().</span><span style="color:#62a35c;">and_then</span><span>(|choice| {
+</span><span>                make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> choice {
+</span><span>                    </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">None</span><span>)),
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(MainMenuEntry::Resume) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">None</span><span>)),
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(MainMenuEntry::Quit) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(</span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(MainMenuEntry::NewGame) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        Ei::B(SideEffect::new_with_view(|data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, _: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>_| {
+</span><span>                            data.</span><span style="color:#62a35c;">new_game</span><span>();
+</span><span>                            </span><span style="color:#0086b3;">None
+</span><span>                        }))
+</span><span>                    }
+</span><span>                }
+</span><span>            })),
+</span><span>            GameReturn::GameOver </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(</span><span style="color:#62a35c;">game_over</span><span>().</span><span style="color:#62a35c;">map</span><span>(|()| </span><span style="color:#0086b3;">Some</span><span>(()))),
+</span><span>            GameReturn::UseItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::C(</span><span style="color:#62a35c;">use_item</span><span>().</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>            GameReturn::DropItem </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::D(</span><span style="color:#62a35c;">drop_item</span><span>().</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>            GameReturn::Examine </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::E(TargetEventRoutine { name: </span><span style="color:#183691;">&quot;EXAMINE&quot; </span><span>}.</span><span style="color:#62a35c;">map</span><span>(|_| </span><span style="color:#0086b3;">None</span><span>)),
+</span><span>        })
+</span><span>    })
+</span><span>    .</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>In the <code>NewGame</code> case, we’re calling a <code>.new_game()</code> method of <code>AppData</code> which we’ve yet to implement.
+Implement this now. This will require adding some fields to <code>AppData</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">struct </span><span>AppData {
+</span><span>    ...
+</span><span>    game_area_size: Size,
+</span><span>    rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> game_area_size </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> screen_size.</span><span style="color:#62a35c;">set_height</span><span>(screen_size.</span><span style="color:#62a35c;">height</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">UI_NUM_ROWS</span><span>);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            game_area_size,
+</span><span>            rng_seed,
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new_game</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self) {
+</span><span>        self.rng_seed </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.rng_seed.</span><span style="color:#62a35c;">wrapping_add</span><span>(</span><span style="color:#0086b3;">1</span><span>);
+</span><span>        self.game_state </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>GameState::new(
+</span><span>            self.game_area_size,
+</span><span>            self.rng_seed,
+</span><span>            self.visibility_algorithm,
+</span><span>        );
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>The rng seed is incremented so each time a new game is started, its random number generator is
+in a different state, and the level will be generated differently.
+Since the rng seed is changing mid-game, rather than being set once at startup, move
+the code that prints the rng seed from <code>main</code> to <code>GameState::new</code>, so if you observe
+an error after hitting <code>New Game</code> several times, it’s still possible to easily reproduce it.</p>
+<p>Now that we have the ability to start a new game, change <code>game_loop</code> again so that when the player dies,
+a new game is started.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            GameReturn::GameOver </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::B(</span><span style="color:#62a35c;">game_over</span><span>().</span><span style="color:#62a35c;">and_then</span><span>(|()| {
+</span><span>                SideEffect::new_with_view(|data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, _: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>_| {
+</span><span>                    data.</span><span style="color:#62a35c;">new_game</span><span>();
+</span><span>                    </span><span style="color:#0086b3;">None
+</span><span>                })
+</span><span>            })),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        })
+</span><span>    })
+</span><span>    .</span><span style="color:#62a35c;">return_on_exit</span><span>(|_| ())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-10/menu1.png" alt="menu1.png" /></p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.1">part-10.1</a></p>
+<h2 id="saving"><a class="zola-anchor" href="#saving" aria-label="Anchor link for: saving">Saving</a></h2>
+<p>Add the <code>general_storage_file</code> crate which will help with storing and retrieving serialized state in a file.
+The goal of this crate is to present an abstract view of persistent data, backed by files in a directory.</p>
+<pre data-lang="toml" style="background-color:#ffffff;color:#323232;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="font-style:italic;color:#969896;"># Cargo.toml
+</span><span style="background-color:#f5f5f5;font-weight:bold;color:#b52a1d;">...</span><span>
+</span><span>[dependencies]
+</span><span style="color:#63a35c;">general_storage_file </span><span>= { </span><span style="color:#63a35c;">version </span><span>= </span><span style="color:#183691;">&quot;0.1&quot;</span><span>, </span><span style="color:#63a35c;">features </span><span>= [</span><span style="color:#183691;">&quot;json&quot;</span><span>, </span><span style="color:#183691;">&quot;compress&quot;</span><span>] }
+</span></code></pre>
+<p>Note the <code>json</code> and <code>compress</code> features. This crate lets you choose between a number of different data serialization
+formats, but all are disabled by default and require explicit features to enable. This is because each format
+depends on additional crates. We reduce the transitive dependencies of our game by only adding storage
+formats which we need.</p>
+<p>Now in <code>app.rs</code>, start using the crate, and define some constants that will configure how we use the crate.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span>general_storage_file::{format, FileStorage, IfDirectoryMissing, Storage};
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SAVE_DIR</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str = </span><span style="color:#183691;">&quot;save&quot;</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SAVE_FILE</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str = </span><span style="color:#183691;">&quot;save&quot;</span><span>;
+</span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">SAVE_FORMAT</span><span>: format::Compress&lt;format::Json&gt; </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>format::Compress(format::Json);
+</span></code></pre>
+<p><code>SAVE_DIR</code> is the directory in which the save file will be placed. <code>SAVE_FILE</code> is the name of the file
+which will contain the save game. <code>SAVE_FORMAT</code> defines how the game’s state will be serialized.
+<code>format::Compress(format::Json)</code> means create a json string representing the game’s state, then
+compress that (with gzip). An alternative format, <code>format::Bincode</code>
+is available with the <code>bincode</code> feature flag, which serializes with the <a href="https://crates.io/crates/bincode">bincode</a>
+crate. It’s not used here, as it causes programs to crash if the type definitions change between
+serializing and deserializing data (which <em>will</em> happen here as we’re constantly adding to this game!).
+In contrast, the json serializer just returns an error in this situation. Switch to bincode once the
+game is finished.</p>
+<p>Replace <code>MainMenu::Quit</code> with <code>MainMenu::SaveAndQuit</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span>MainMenuEntry {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    SaveAndQuit,
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main_menu_instance</span><span>() -&gt; MenuInstanceChooseOrEscape&lt;MainMenuEntry&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>MainMenuEntry::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    MenuInstanceBuilder {
+</span><span>        items: vec![Resume, NewGame, SaveAndQuit],
+</span><span>        hotkeys: </span><span style="color:#0086b3;">Some</span><span>(hashmap![</span><span style="color:#183691;">&#39;r&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> Resume, </span><span style="color:#183691;">&#39;n&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> NewGame, </span><span style="color:#183691;">&#39;q&#39; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> SaveAndQuit]),
+</span><span>        selected_index: </span><span style="color:#0086b3;">0</span><span>,
+</span><span>    }
+</span><span>    .</span><span style="color:#62a35c;">build</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">unwrap</span><span>()
+</span><span>    .</span><span style="color:#62a35c;">into_choose_or_escape</span><span>()
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>&gt; View&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData&gt; </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>MainMenuView {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">view</span><span>&lt;F: Frame, C: ColModify&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self,
+</span><span>        data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> AppData,
+</span><span>        context: ViewContext&lt;C&gt;,
+</span><span>        frame: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> F,
+</span><span>    ) {
+</span><span>        self.mouse_tracker.</span><span style="color:#62a35c;">new_frame</span><span>(context.offset);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(i, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>entry, maybe_selected) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> data.main_menu.</span><span style="color:#62a35c;">menu_instance</span><span>().</span><span style="color:#62a35c;">enumerate</span><span>() {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> text </span><span style="font-weight:bold;color:#a71d5d;">= match</span><span> entry {
+</span><span>                MainMenuEntry::Resume </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(r) Resume&quot;</span><span>,
+</span><span>                MainMenuEntry::NewGame </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(n) New Game&quot;</span><span>,
+</span><span>                MainMenuEntry::SaveAndQuit </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#183691;">&quot;(q) Save and Quit&quot;</span><span>,
+</span><span>            };
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            GameReturn::Menu </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(</span><span style="color:#62a35c;">main_menu</span><span>().</span><span style="color:#62a35c;">and_then</span><span>(|choice| {
+</span><span>                make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> choice {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(MainMenuEntry::SaveAndQuit) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        Ei::C(SideEffect::new_with_view(|data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, _: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>_| {
+</span><span>                            </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>                        }))
+</span><span>                    }
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>            })),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        })
+</span><span>    })
+</span><span>    .</span><span style="color:#62a35c;">return_on_exit</span><span>(|data| data.</span><span style="color:#62a35c;">save_game</span><span>())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Implement a method for saving the game state to a file.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">save_game</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> file_storage </span><span style="font-weight:bold;color:#a71d5d;">= match </span><span>FileStorage::next_to_exe(</span><span style="color:#0086b3;">SAVE_DIR</span><span>, IfDirectoryMissing::Create)
+</span><span>        {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(file_storage) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> file_storage,
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(error) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                eprintln!(</span><span style="color:#183691;">&quot;Failed to save game: </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, error);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>            }
+</span><span>        };
+</span><span>        println!(</span><span style="color:#183691;">&quot;Saving to </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, file_storage.</span><span style="color:#62a35c;">full_path</span><span>(</span><span style="color:#0086b3;">SAVE_FILE</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> file_storage.</span><span style="color:#62a35c;">store</span><span>(</span><span style="color:#0086b3;">SAVE_FILE</span><span>, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self.game_state, </span><span style="color:#0086b3;">SAVE_FORMAT</span><span>) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(()) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>(),
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(error) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                eprintln!(</span><span style="color:#183691;">&quot;Failed to save game: </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, error);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return</span><span>;
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>It creates a directory called “save” next to the game’s executable, and serializes the game’s state
+into a file in this directory, also called “save”.</p>
+<p>Now call this method from <code>game_loop</code>, both when <code>SaveAndQuit</code> is selected from the main menu, and when
+the game is closed.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">game_loop</span><span>() -&gt; impl EventRoutine&lt;Return = (), Data = AppData, View = AppView, Event = CommonEvent&gt;
+</span><span>{
+</span><span>    make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> D </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> E);
+</span><span>    Loop::new(|| {
+</span><span>        GameEventRoutine.</span><span style="color:#62a35c;">and_then</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>            GameReturn::Menu </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(</span><span style="color:#62a35c;">main_menu</span><span>().</span><span style="color:#62a35c;">and_then</span><span>(|choice| {
+</span><span>                make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> C);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> choice {
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(MainMenuEntry::SaveAndQuit) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                        Ei::C(SideEffect::new_with_view(|data: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> AppData, _: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>_| {
+</span><span>                            data.</span><span style="color:#62a35c;">save_game</span><span>();
+</span><span>                            </span><span style="color:#0086b3;">Some</span><span>(())
+</span><span>                        }))
+</span><span>                    }
+</span><span>                    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>                }
+</span><span>            })),
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        })
+</span><span>    })
+</span><span>    .</span><span style="color:#62a35c;">return_on_exit</span><span>(|data| data.</span><span style="color:#62a35c;">save_game</span><span>())
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.2">part-10.2</a></p>
+<h2 id="loading"><a class="zola-anchor" href="#loading" aria-label="Anchor link for: loading">Loading</a></h2>
+<p>Define a method in <code>AppData</code> which attempts to deserialize a game state from a file.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// app.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">load_game</span><span>() -&gt; </span><span style="color:#0086b3;">Option</span><span>&lt;GameState&gt; {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> file_storage </span><span style="font-weight:bold;color:#a71d5d;">= match </span><span>FileStorage::next_to_exe(</span><span style="color:#0086b3;">SAVE_DIR</span><span>, IfDirectoryMissing::Create) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(file_storage) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span> file_storage,
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(error) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                eprintln!(</span><span style="color:#183691;">&quot;Failed to load game: </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, error);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">None</span><span>;
+</span><span>            }
+</span><span>        };
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if !</span><span>file_storage.</span><span style="color:#62a35c;">exists</span><span>(</span><span style="color:#0086b3;">SAVE_FILE</span><span>) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">None</span><span>;
+</span><span>        }
+</span><span>        println!(</span><span style="color:#183691;">&quot;Loading from </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, file_storage.</span><span style="color:#62a35c;">full_path</span><span>(</span><span style="color:#0086b3;">SAVE_FILE</span><span>));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> file_storage.</span><span style="color:#62a35c;">load</span><span>(</span><span style="color:#0086b3;">SAVE_FILE</span><span>, </span><span style="color:#0086b3;">SAVE_FORMAT</span><span>) {
+</span><span>            </span><span style="color:#0086b3;">Ok</span><span>(game_state) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">Some</span><span>(game_state),
+</span><span>            </span><span style="color:#0086b3;">Err</span><span>(error) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>                eprintln!(</span><span style="color:#183691;">&quot;Failed to load game: </span><span style="color:#0086b3;">{:?}</span><span style="color:#183691;">&quot;</span><span>, error);
+</span><span>                </span><span style="color:#0086b3;">None
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>If it fails to deserialize the state, it prints a warning and continues.
+This will likely happen from time to time, since the (de)serialization logic is derived from
+the structure of the types used in the game. Whenever we change the definition of a type,
+the game is no longer able to understand the serialized representation of the old versions
+of these types.</p>
+<p>Call <code>load_game</code> when creating a new <code>AppData</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>AppData {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(screen_size: Size, rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>, visibility_algorithm: VisibilityAlgorithm) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> game_state </span><span style="font-weight:bold;color:#a71d5d;">= Self</span><span>::load_game()
+</span><span>            .</span><span style="color:#62a35c;">unwrap_or_else</span><span>(|| GameState::new(game_area_size, rng_seed, visibility_algorithm));
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-10.3">part-10.3</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-11/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-9&#x2F;" aria-label="Previous">
+	  Previous: Part 9 - Ranged Scrolls and Targeting
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-11&#x2F;" aria-label="Next">
+	  Next: Part 11 - Descending the Stairs
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Every Game I Made Since 2019 had a Lighting Bug">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/">
+
+	
+	    <meta name="description" content="I&#x27;ve used the same game engine for all the roguelikes I&#x27;ve made since 2019 and I found out this year that they are all affected by a bug in the way lighting is calculated. This post describes the bug, the fix, and shows the effect fixing the bug had on all the affected games.">
+	    <meta property="og:description" content="I&#x27;ve used the same game engine for all the roguelikes I&#x27;ve made since 2019 and I found out this year that they are all affected by a bug in the way lighting is calculated. This post describes the bug, the fix, and shows the effect fixing the bug had on all the affected games.">
+	
+
+	
+	    <meta property="article:published_time" content="2024-11-07T00:00:00+00:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/og_image.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Every Game I Made Since 2019 had a Lighting Bug
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/blog/">blog</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">Every Game I Made Since 2019 had a Lighting Bug</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2024-11-07T00:00:00+00:00">
+    November 07, 2024
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/gamedev" aria-label="tag">gamedev</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/lighting" aria-label="tag">lighting</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  
+</p>
+
+
+  
+
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/banner.jpg" alt="Banner from a screenshot from the game Rain Forest showing a lamp in some fog" /></p>
+<p>I’ve used the same game engine for all the roguelikes I’ve made since 2019 and I
+found out this year that they are all affected by a bug in the way lighting is
+calculated. This post describes the bug, the fix, and shows the effect fixing the
+bug had on all the affected games.</p>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#the-bug">The bug</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#fixing-all-my-games">Fixing all my games (with side-by-side comparisons)</a>
+<ul>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#rip">Rip</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#slime99">slime99</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#orbital-decay">Orbital Decay</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#rain-forest">Rain Forest</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#electric-organ">Electric Organ</a></li>
+<li><a href="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/#small-wolf">Small Wolf</a></li>
+</ul>
+</li>
+</ul>
+<p>In late 2019 I returned to Australia after living abroad for two years and had
+a few months to myself before starting my next job. I spent some of this
+time consolidating my roguelike development side projects into a collection of Rust
+libraries and a template that comprises the ad-hoc game engine that I’ve
+been using ever since. These include libraries for path-finding, rendering grids
+of text with WebGPU, a real-time particle system, a database for organizing
+entities, and a lighting system which is the subject of this post.</p>
+<p>There are two tasks the lighting system needs to do. The first is to determine
+which parts of the map are illuminated by each light. This is the same problem
+as detecting which parts of the map the player can see and is solved by a
+library I made called <a href="https://github.com/gridbugs/shadowcast">shadowcast</a>.
+This library knows how to compute which parts of the map are visible, and which
+parts of the map are lit by each light, and combine this information to
+determine what the player should see.</p>
+<p>For example this screenshot shows a player (the @-sign) standing in a room lit with white
+light, and to their south there is a doorway leading into a room lit with red
+light. Note the wall to the player’s right is illuminated with white light, as the
+player can see the side of the wall facing the white light but not the side of
+the wall facing the red light.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/shadowcast-demo1.png" alt="A square grid map showing the player in a room lit with white light next to a doorway leading south into a second room lit with red light" /></p>
+<p>Now look what happens when the player walks through the door into the room lit
+with red light:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/shadowcast-demo2.png" alt="A square grid map showing the player in a room lit with red light next to a doorway leading north into a second room lit with white light" /></p>
+<p>That same piece of wall now appears as red, because the side of the wall visible
+to the player is now illuminated by red light. It’s the same wall, and as far as
+game logic is concerned it’s just a row of wall tiles, but the lighting system
+takes edges and corners of walls into account so tiles are rendered in colours
+according to the colours of only the lights that illuminate the parts of walls
+that the player can see.</p>
+<p>This library is rock solid and I haven’t had to think about it in years; it’s so
+reliable that I’ve started taking it for granted. It’s
+not the source of today’s bug. I just wanted to show off a bit.</p>
+<p>The second task performed by the lighting system is determining the intensity of
+the light at each point of the map. Notice in the images above that there are
+parts of the map that are well-lit, and others that appear in shadow. The lights
+themselves aren’t visible in those images, but the further a point is from a
+light source, the dimmer the effect of the light will be at that point. The
+relationship between brightness and distance is some fairly simple arithmetic -
+much much simpler than computing the lit area of the map - but I got the maths
+wrong and didn’t notice for almost five years!</p>
+<p>Well I did suspect something was wrong with it a couple of times. The brightness
+of the lights seemed to drop off with distance in an unnatural-looking way. Too
+slowly up to a point and then too quickly. I checked and double checked the
+maths and managed to convince myself that it was correct, and then I’d just
+compensate for it by messing with the brightness of the lights in whatever game
+I was working on. Pretty much all the roguelike development I’ve done over the
+past five years has been in a game jam setting and I was always too busy with
+the jam to properly investigate. That is until this year’s 7DRL when I finally
+relented and sat down with a pen and paper to conclude once and for all that
+the maths was wrong and had been wrong this whole time, and when I fixed it my
+game went from looking like this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/electric-organ-bad.png" alt="Gameplay from the traditional roguelike “Electric Organ” from before this bug was fixed" /></p>
+<p>To this:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/electric-organ-good.png" alt="The same screenshot as above, but with the lighting fixed. There’s a much bigger visual difference between the dark areas and let areas of the map." /></p>
+<p>Obviously it’s not a fair comparison because most of the aesthetic decisions
+about the game were made after fixing this bug. But getting the lighting right
+was crucial to the visuals I was trying to create, with
+lots of dark places and flickering fire light and it’s important that the
+dynamic changes to the lighting were accurately reflected in the environment.</p>
+<p>So now that the bug is fixed I thought it might be interesting to dig through
+the history of how this code was written and to try to understand why I
+implemented such a simple piece of arithmetic incorrectly, and how to fix it.
+I’ll also backport the fix to all the games I’ve made since 2019 that suffer
+from this bug and share some before and after pics.</p>
+<h2 id="the-bug"><a class="zola-anchor" href="#the-bug" aria-label="Anchor link for: the-bug">The bug</a></h2>
+<p>The intensity of a light at a point is proportional to the inverse of the
+square of the distance from the light source to that point. This is known as
+the <a href="https://en.wikipedia.org/wiki/Inverse-square_law">Inverse-square law</a>. The easiest way to
+implement diminishing lighting is to multiply the red, green and blue components
+of the light’s colour by <code>1 / distance²</code>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot1.png" alt="A plot of y=1/d², where y is Light Intensity and d = Distance" /></p>
+<p>The first issue with this is that the function is not defined at a distance of
+0. Since this lighting system is for games rendered as a grid of tiles, the
+shortest possible distance between a light’s tile and any other tile is 1. Thus
+my original solution was to limit the distance to the light to 1 in lighting
+calculations.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot2.png" alt="A plot of y=1/max(d², 1), where y is Light Intensity and d = Distance" /></p>
+<p>Now that this function is defined at all distances we can visualize it by
+plotting the function on a heatmap:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map1.png" alt="A heatmap of 1/max(d², 1) where d is the distance from the centre" /></p>
+<p>On the heatmap there’s a solid circle with radius 1 corresponding to the flat
+part of the function below a distance of 1, and then the brightness quickly
+drops off approaching 0 as the distance increases.</p>
+<p>I wanted a way of slowing down the rate with which the light diminishes so that
+it spreads out over a larger area so I added a parameter <code>C</code> which can be used
+to tune the light diminishing rate, effectively stretching out the
+curve horizontally.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot3.png" alt="A plot of y=1/(C × max(d², 1)), where y is Light Intensity and d = Distance" /></p>
+<p>And this was the bug. I didn’t account for the fact that stretching out the
+curve horizontally would also stretch it <em>vertically</em>. Assuming the colour of
+the light is white, this will effectively clip the curve at y=1, causing
+saturation:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot4.png" alt="A plot of y=min(1, 1/(C × max(d², 1))), where y is Light Intensity and d = Distance" /></p>
+<p>Visualizing with a heatmap, this has the effect of creating a large bright spot
+in the saturated region which then quickly drops off outside that region which
+matches the original symptom of the bug.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map2.png" alt="A heatmap of min(1, 1/(C × max(d², 1))), where d is the distance from the centre and C=0.1" /></p>
+<p>My first thought for how to fix this would be stop flattening the curve below a
+distance of 1, but instead ensure that the function is defined at a distance of
+0 by <em>shifting</em> the entire curve to the left such that it has a value of 1 at a
+distance of 0.</p>
+<p>I switched to the formula <code>1 / (Cd² + 1)</code>. Like before, <code>C</code> can be used to
+control how quickly the light diminishes. I didn’t realize at the time that I
+made this change (remember I was mid game jam!) but this function changes the
+shape of the curve to be less steep around a distance of 0 as is clear in the
+following plot.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot5.png" alt="A plot of y=1/(Cd² + 1), where y is Light Intensity and d = Distance" /></p>
+<p>Here’s the new heatmap:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map3.png" alt="A heatmap of 1/(Cd² + 1), where d is the distance from the centre and C=0.1" /></p>
+<p>I didn’t find out until revisiting the lighting maths while writing this post,
+but the shape of these curves is actually physically accurate, and I had stumbled
+upon the formula for the intensity of the light on the ground a horizontal
+distance from a light, at a fixed height. The <code>C</code> parameter controls the height
+of the light, with <code>C = 1/height²</code>.</p>
+<p>To demonstrate imagine we have a light <code>H</code> distance above the ground, and we’re
+interested in finding the light intensity at a point <code>p</code> with a horizontal
+distance of <code>d</code> from the light.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/pythag.jpg" alt="Diagram showing a light H units above the ground, and a point p with a horizontal distance d from the light. A line connecting the light to P forms the hypotenuse of a triangle, labelled with sqrt(d² + H²)." /></p>
+<p>The line from <code>p</code> to the light is the hypotenuse of a right triangle, so the
+distance from <code>p</code> to the light is <code>sqrt(d² + H²)</code>. Now according to the
+Inverse-square law, the intensity of the light at <code>p</code> is proportional to <code>1/sqrt(d² + H²)² = 1/(d² + H²)</code>.
+When <code>d=0</code>, this will have the value of <code>1/H²</code> (the distance is just the height
+of the light above the ground). To match the rest of the post I’d rather the
+intensity be 1 at <code>d=0</code> so multiply the formula by <code>H²</code> to get <code>H²/(d² + H²)</code>.
+Now divide the top and bottom of this fraction by <code>H²</code> to get <code>1/(d²/H² + 1)</code>
+which is the same as <code>1/(Cd² + 1)</code> where <code>C = 1/H²</code>.</p>
+<p>The formula above was good enough for the game jam, but while working on this
+post I wanted to take things a step further. My solution so far is physically accurate
+for lights a given distance above the ground that shine uniformly in all
+directions, but sometimes the effect of these lights on the ground looks too
+unfocused. Occasionally I want a sharp point of light that radiates out in all
+directions, diminishing at a configurable rate. <code>1/d²</code> has the shape I want
+but it’s not defined at 0, however <code>1/(d + 1)²</code> has the same shape but is
+shifted to the left such that it has the value 1 at <code>d=0</code>. To control the rate of
+diminishing, multiply <code>d</code> by a constant parameter <code>C</code> as before:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot6.png" alt="A plot of y=1/(Cd + 1)², where y is Light Intensity and d = Distance" /></p>
+<p>The heatmap shows a much more focused point of light compared to the previous
+formula:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map4.png" alt="A heatmap of 1/(Cd + 1)², where d is the distance from the centre and C=0.1" /></p>
+<p>The final step is to combine the two different lighting formulae into a single
+formula and add a second parameter for interpolating between them.</p>
+<p>Recall that the unfocused lighting formula is <code>1/(d²/H² + 1)</code> and the focused
+formula is <code>1/(Cd + 1)²</code>. Start with the denominator of the focused formula: <code>(Cd + 1)²,</code>.
+This is equivalent to <code>C²d² + 2Cd + 1</code>, so the focused formula becomes <code>1/(C²d² + 2Cd + 1)</code>.
+Now if we replace the constant <code>C</code> with the constant expression <code>1/H</code>, the
+second formula becomes <code>1/(d²/H² + 2d/H + 1)</code> which is very similar to the
+unfocused lighting formula. The only difference is the <code>2d/H</code> term in the
+denominator. We can introduce a new parameter <code>F</code> (for “focus”) and multiply it
+by that term, and then we’ll be able to smoothly interpolate between the
+unfocused and focused lighting formulae by changing <code>F</code> between 0 and 1.
+The formula becomes <code>1/(d²/H² + 2Fd/H + 1)</code>, which can be made more readable by
+multiplying the top and bottom by <code>H²</code> to get <code>H²/(d² + 2FHd + H²)</code>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/plot7.png" alt="A plot of y=H²/(d² + 2FHd + H²), where y is Light Intensity and d = Distance" /></p>
+<p>So now we can use a single formula to represent both focused and unfocused
+lights, as well as everything in between.</p>
+<p>Here’s a heatmap of a totally unfocused light:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map5.png" alt="A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=0" /></p>
+<p>Here’s a heatmap of a partially focused light:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map6.png" alt="A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=0.5" /></p>
+<p>And here’s a heatmap of a focused light:</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/every-game-i-made-since-2019-had-a-lighting-bug/map7.png" alt="A heatmap of H²/(d² + 2FHd + H²), where d is the distance from the centre. H=10, F=1" /></p>
+<h2 id="fixing-all-my-games"><a class="zola-anchor" href="#fixing-all-my-games" aria-label="Anchor link for: fixing-all-my-games">Fixing all my games</a></h2>
+<h3 id="rip"><a class="zola-anchor" href="#rip" aria-label="Anchor link for: rip">Rip</a></h3>
+<p>Rip was the project I was working on when I implemented the lighting system and
+most of the rest of my roguelike game engine. It wasn’t really a game, just a
+collection of demos of different engine components such as the particle system
+used to implement the explosions in the videos below. The video on the right has
+the lighting bug corrected. The lighting is softer and there’s more of a
+gradient.</p>
+<p><video autoplay muted loop>
+  <source src="rip-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="rip-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<h3 id="slime99"><a class="zola-anchor" href="#slime99" aria-label="Anchor link for: slime99">slime99</a></h3>
+<p><a href="https://gridbugs.github.io/gridbugs.org/slime99/">slime99</a> was my 7DRL entry in 2020.
+The game has lots of glowing green acid pools whose brightness
+dynamically changes in realtime but the effect was kind of lost until this
+lighting bug was fixed.</p>
+<p><video autoplay muted loop>
+  <source src="slime99-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="slime99-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<h3 id="orbital-decay"><a class="zola-anchor" href="#orbital-decay" aria-label="Anchor link for: orbital-decay">Orbital Decay</a></h3>
+<p><a href="https://gridbugs.github.io/gridbugs.org/orbital-decay/">Orbital Decay</a> was my 7DRL entry in 2021.
+This game didn’t
+do as much with lighting as the previous game but fixing the bug caused the
+lighting gradients to become more apparent.</p>
+<p><video autoplay muted loop>
+  <source src="orbital-decay-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="orbital-decay-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<h3 id="rain-forest"><a class="zola-anchor" href="#rain-forest" aria-label="Anchor link for: rain-forest">Rain Forest</a></h3>
+<p><a href="https://gridbugs.github.io/gridbugs.org/rain-forest/">Rain Forest</a> was my 7DRL entry in 2022.
+This game didn’t have a lot of gameplay and was more of an exercise in using
+visuals to set the mood than an actual game. Still it’s very pretty and fixing
+the lighting makes it even prettier, softening up the edges on the pools of
+light.</p>
+<p><video autoplay muted loop>
+  <source src="rainforest1-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="rainforest1-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<p>Here’s another comparison from Rain Forest. After fixing the lighting the door
+of the cabin now casts a shadow, where its shadow was washed out by the
+over-saturated lights in the original version.</p>
+<p><video autoplay muted loop>
+  <source src="rainforest2-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="rainforest2-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<p>(We skipped 2023 as that year’s game doesn’t use the lighting system.)</p>
+<h3 id="electric-organ"><a class="zola-anchor" href="#electric-organ" aria-label="Anchor link for: electric-organ">Electric Organ</a></h3>
+<p><a href="https://gridbugs.github.io/gridbugs.org/electric-organ/">Electric Organ</a> was my 7DRL in 2024.
+I fixed the lighting bug while working on it, so it didn’t actually have this
+bug. I re-introduced the bug for the purposes of comparison, but the effect is
+very subtle. The corrected version is slightly darker and the lighting gradients
+are more apparent. For the games made before the bug was fixed, the lights were
+configured to be darker than the lights in this game to compensate for the lighting bug
+which caused the lights to be oversaturated near the light source. Electric
+Organ didn’t need to compensate in this way. Its lights are naturally
+brighter, so the effect of re-introducing the bug is less pronounced.</p>
+<p><video autoplay muted loop>
+  <source src="electric-organ-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="electric-organ-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<h3 id="small-wolf"><a class="zola-anchor" href="#small-wolf" aria-label="Anchor link for: small-wolf">Small Wolf</a></h3>
+<p>This bug also appears in another <a href="https://github.com/gridbugs/small-wolf/">small
+project</a> I did a few years ago where I
+recreated a simple version of the Wolfenstein 3D render in javascript.
+Originally the brightness of the walls would get saturated at the max and min
+brightness causing the gradients to be lost, ruining the 3D effect. I fixed that
+while I was at it and it now looks much better.</p>
+<p><video autoplay muted loop>
+  <source src="small-wolf-old-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+
+<video autoplay muted loop>
+  <source src="small-wolf-new-lighting.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
+</p>
+<h2 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">Conclusion</a></h2>
+<p>I’m not going to re-release any of the fixed games. This is partly because they
+were playtested on the buggy lighting system and fixing it may cause some parts
+of the games to be too dark or not look the way I originally intended. Also in
+making this post I found that the graphical and web versions of the older games
+(especially Rip and slime99) had bitrotted quite badly. The Rust libraries for
+rendering with WebGPU and for working with WebAssembly were in a very
+experimental state back in 2019, and even with lockfiles it’s
+non-trivial to get some Rust libraries from over 5 years ago to play nice with the current
+versions of drivers and system libraries, at least on Linux. I got them running
+on MacOS though, and all the relevant git repos now have a <code>lighting-fix</code> branch
+so curious and determined folks can try them out.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;setting-up-winget-for-the-first-time&#x2F;" aria-label="Previous">
+	  Previous: Setting up WinGet for the First Time
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;making-a-home-made-oscilloscope-to-play-scope-creep-in-hard-mode&#x2F;" aria-label="Next">
+	  Next: Making a Home-Made Oscilloscope to Play Scope Creep in Hard Mode
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

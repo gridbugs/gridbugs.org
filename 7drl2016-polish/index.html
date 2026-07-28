@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2016: Polish">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2016-polish/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2016-polish/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2016-03-10T02:18:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2016: Polish
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-pathfinding&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Pathfinding
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-ending&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Ending
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2016: Polish</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2016-03-10T02:18:00+10:00">
+    March 10, 2016
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I finished the level generator, adding weapons and items.
+I fixed a bug in my recursive shadowcast implementation causing strange
+behaviour when looking at the edge of the map.
+I tweaked a
+couple of mechanics, namely:</p>
+<ul>
+<li>explosions destroy nearby walls regardless of whether one side is pressurized
+<ul>
+<li>this is unlike bullets, which  only damage walls if one side is
+pressurized and the other isn’t</li>
+</ul>
+</li>
+<li>flames from the flamethrower don’t stop when they hit an enemy</li>
+<li>doors can’t be closed if there is an enemy standing in the way</li>
+</ul>
+<p>I spent the rest of my time tonight polishing the game’s UI.</p>
+<p>Here are some death screens from playtesting!</p>
+<p>Shooting a bloat at point-blank range. Never a good idea.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-polish/s0.png" alt="s0.png" /></p>
+<p>Tried to kill some zombies by blowing up a nearby bloat. Didn’t end well.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-polish/s1.png" alt="s1.png" /></p>
+<p>Getting sucked out of the ship as a section decompresses due to a hull breach.
+<img src="https://gridbugs.github.io/gridbugs.org/7drl2016-polish/s2.png" alt="s2.png" /></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-pathfinding&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2016: Pathfinding
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2016-ending&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2016: Ending
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

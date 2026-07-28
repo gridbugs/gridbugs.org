@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="7 Day Roguelike 2018: Meters, Objectives">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2018-03-09T00:39:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/logo.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+7 Day Roguelike 2018: Meters, Objectives
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/devlogs/">devlogs</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-npcs&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: NPCs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-success&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Success
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+<article>
+<h1 class="title">7 Day Roguelike 2018: Meters, Objectives</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2018-03-09T00:39:00+10:00">
+    March 09, 2018
+  </time>
+  
+</p>
+
+
+  
+
+<p>Tonight I added new meters and objectives.</p>
+<p>In this screenshot, the player has just activated an emergency beacon - the objective
+of the level. Doing so alerts all NPCs of the player’s presence, so getting to the
+stairs will be challenging.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/beacon.png" alt="beacon.png" /></p>
+<span id="continue-reading"></span>
+<p>Another new objective is killing some “super eggs” before they hatch. The game displays
+a bar for each egg, showing how close it is to hatching. If an egg hatches, you fail
+the objective, and don’t receive any upgrades for completing the level. Also, a Queen
+hatches from the egg.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/eggs.png" alt="eggs.png" /></p>
+<p>The first new meter is the compass. It shows the shortest distance (ignoring NPCs) from
+the player to their nearest objective, or the stairs/exit if the level’s objective is
+complete.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/compass.png" alt="compass.png" /></p>
+<p>The second new meter is the “metabol” - a weapon which emits a wave that slows the
+metabolism of enemies, effectively delaying their transformations.
+The alien special infesting the dungeon has a life cycle of
+egg -&gt; larvae -&gt; chrysalis -&gt; arachnoid/beetoid, and super-egg -&gt; queen. Enemies
+tend to get tougher the further along the life cycle they are, so a weapon to delay
+this progression may come in handy.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/metabol-before.png" alt="metabol-before.png" /></p>
+<p>After activating the weapon a wave radiates out from the player, delaying everything
+it touches.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/metabol-during.png" alt="metabol-during.png" /></p>
+<p>Here’s the aftermath.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/7drl2018-meters-objectives/metabol-after.png" alt="metabol-after.png" /></p>
+<p>There’s one day left! I’m almost finished adding content. I want to add two more meters:
+one which allows the player to teleport a short distance, and another which pushes away
+enemies which are close to the player. After that, I’ll be play-testing and polishing.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-npcs&#x2F;" aria-label="Previous">
+	  Previous: 7 Day Roguelike 2018: NPCs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;7drl2018-success&#x2F;" aria-label="Next">
+	  Next: 7 Day Roguelike 2018: Success
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="slime99">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/slime99/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/slime99/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-03-08T06:00:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/slime99/screenshot.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+slime99
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/projects/">projects</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+
+
+<article>
+<h1 class="title">slime99</h1>
+
+  
+<p class="post-meta">
+  <time datetime="2020-03-08T06:00:00+10:00">
+    March 08, 2020
+  </time>
+  
+  in
+  
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/roguelikes" aria-label="tag">roguelikes</a>
+  <a href="https://gridbugs.github.io/gridbugs.org/tags/7drl" aria-label="tag">7drl</a>
+  
+</p>
+
+
+  
+
+<p>A traditional roguelike where the outcomes of attacking and defending are pre-determined and visible.
+Gameplay revolves around fighting slimes, adding to your sequence of combat outcomes, and using
+abilities to modify the order in which combat outcomes occur. It’s set in a neon sewer!</p>
+<p>It’s my entry in the 2020 7 Day Roguelike game jam.</p>
+<p>Play or download slime99 on <a href="https://gridbugs.itch.io/slime99">its itch.io page</a>.</p>
+<p>View the <a href="https://github.com/gridbugs/slime99">source code on github</a>.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/slime99/screenshot.png" alt="screenshot.png" /></p>
+<span id="continue-reading"></span><h2 id="reflection"><a class="zola-anchor" href="#reflection" aria-label="Anchor link for: reflection">Reflection</a></h2>
+<h3 id="2x2-cells"><a class="zola-anchor" href="#2x2-cells" aria-label="Anchor link for: 2x2-cells">2x2 Cells</a></h3>
+<p>The player is shown a sequence of attack damage values. Their next attack will remove the next damage value
+from the sequence, and deal that much damage to the enemy they chose to attack. Therefore the main tactical
+decision for the player, at least when it comes to attacking, is choosing which enemy to deal damage to.
+In order for this decision to be meaningful, the player needs to know how much health each enemy has left.</p>
+<p>I limit myself to text-only graphics. The game is rendered as a grid of cells, each containing a unicode
+character, and a foreground and background colour. Text-only “graphics” in roguelikes is a
+<a href="https://en.wikipedia.org/wiki/Rogue_(video_game)">tradition as old as the genre itself</a>, but typically
+each cell of the game world is represented by a single character. To convey enemy health, I needed more
+than one character per game cell.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/slime99/2x2.png" alt="2x2.png" /></p>
+<p>Game cells are rendered as 2x2 squares of unicode characters. A 2-digit number representing enemy
+health can easily be drawn as part of the enemy’s tile. An unintended benefit of 2x2 squares is that
+the stairs can look like real stairs with some creative use of block characters.</p>
+<p>A complication introduced by 2x2 squares is if you <em>want</em> a single character in a game cell - you can’t just
+draw it twice as big to fill the cell. I wanted to represent the player character as an ‘@’ sign (as is customary)
+so I had to improvise an ‘@’-looking arrangement of unicode box-drawing characters.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/slime99/2x2player.png" alt="2x2player.png" /></p>
+<p>Each enemy is drawn as 4 characters: a letter indicating what type of enemy they are, 2-digits for their health.
+But what to do with the 4th character?</p>
+<h3 id="enemies-telegraph-their-next-actions"><a class="zola-anchor" href="#enemies-telegraph-their-next-actions" aria-label="Anchor link for: enemies-telegraph-their-next-actions">Enemies telegraph their next actions</a></h3>
+<p>The top-right character of each enemy’s 2x2 character cell is used to show the player which direction that
+enemy will move on their next turn. I did this <a href="https://gridbugs.github.io/gridbugs.org/get-well-soon/">last year</a> too, but since each
+enemy was rendered with a single character, I had to draw the arrow on the ground.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/slime99/gws.png" alt="gws.png" /></p>
+<p>Enemies pre-committing to, and declaring their movement drastically changes the feel of the game.
+Since more information is known about the next turn, each decision about where and when to move
+is more informed, and feels more meaningful. This can make combat feel more like a puzzle than
+in a typical roguelike where enemy actions aren’t known. I think it works for this game, which already
+has a fairly puzzle-like vibe due to the public sequence of attack/defense outcomes,
+but it’s definitely something that should be added to a game deliberately.</p>
+<p>It also has implications for AI. The AI runs to decide where each enemy will move. The result of this isn’t
+applied right away (as it would be if enemies didn’t pre-commit to their actions), but instead is used to
+indicate to the player where enemies will move on their <em>next</em> turn.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/slime99/ai.png" alt="ai.png" /></p>
+<p>Also on the subject of AI, I want to do some work on my AI system to remove the above situation.
+In this example, both enemies want to get closer to the player, but the one on top is moving to the right,
+which takes it further away. It does this because at the point when it decided where to move, there was
+an enemy below it. The top enemy didn’t account for the fact that when it’s turn came to move, the
+bottom enemy would have gotten out of the way. If enemies didn’t try to avoid walking into each other,
+this problem would go away, but be replaced by the problem of enemies with conflicting goals colliding
+and getting stuck on each other.</p>
+<p>Clearly more experimentation is needed!</p>
+<h3 id="not-working"><a class="zola-anchor" href="#not-working" aria-label="Anchor link for: not-working">Not Working</a></h3>
+<p>I was between jobs during this year’s 7DRL. I initially intended to spend all my time working on my game,
+but this proved unrealistic. I found that I got diminishing returns on time spent working on the game
+after maybe 6 hours of work. I took regular, lengthy breaks, and slept a lot (for a 7DRL, which I guess is
+just the usual amount!). I think scope-wise slime99 is similar to my previous 7DRLs, though at the end
+of the week I feel a lot more positive than I usually do after the 7DRL.</p>
+<h3 id="wave-function-collapse"><a class="zola-anchor" href="#wave-function-collapse" aria-label="Anchor link for: wave-function-collapse">Wave Function Collapse</a></h3>
+<p>Like last year, levels are generated using <a href="https://gridbugs.github.io/gridbugs.org/wave-function-collapse/">the Wave Function Collapse algorithm</a>.
+The main difference in my use of WFC this year is I only use it to place walls.
+Sludge pools, doors and bridges are
+placed by hand-crafted post-processing steps that run on the direct output of WFC.
+I had no post-processing last year, and as a result features like doors and bridges over sludge pools
+weren’t possible (high level rules like “the level must be connected”) can’t be satisfied by WFC.
+To compensate for the lack of these features, last year I tried to make the level layout itself interesting,
+by crafting complex input patterns for WFC. This caused level generation to take a (sometimes painfully) long time.
+This year the input is simpler, and level generation is effectively instant.</p>
+<h3 id="escape-from-state-machine-hell"><a class="zola-anchor" href="#escape-from-state-machine-hell" aria-label="Anchor link for: escape-from-state-machine-hell">Escape from State Machine Hell</a></h3>
+<p><a href="https://gridbugs.github.io/gridbugs.org/7drl2019-day4/">Last year</a> I lamented that as the number of menus and other interactive UI
+elements grew, the complexity of knowing what to render, and what to do with inputs, grew to the point
+of unmaintainability. In response to this, I made a library for implementing reusable, composable, “pseudo-synchronous”
+state machines.</p>
+<p>My game is tick-based. Every time a key is pressed, the mouse is moved, or a new frame is rendered,
+a function is called which updates the state of the application, and tells the renderer what to render.
+At any point, the application could be displaying a menu, displaying the game, displaying a UI for aiming,
+displaying some text (e.g. story screen, controls list). In each of these states, input needs to be interpreted
+differently, and different stuff needs to be rendered. In the past I had a giant state machine, and explicitly coded
+state transitions. The renderer would look at the current state to know what to draw, and the input system
+would look at the current state to know how to interpret input.
+<a href="https://github.com/gridbugs/gws/blob/38d0181ec536023ae584feb9bb81a89fd34fcdb4/prototty/src/lib.rs#L531">This rapidly got out of hand as more states were added.</a></p>
+<p>This year I did something different. I made a library defining an interface I call an “EventRoutine”.
+An event routine is a state machine which can be rendered, respond to inputs and timer events, and
+eventually stop, possibly returning a value. A library of combinators make it possible to write code that
+“looks synchronous”, even though it’s actually tick-based. Imagine being able to call a function which displays
+a menu, and returns whatever was selected by the user. This library makes it almost look like you’re calling
+a function that does just this, but actually produces a tick-based state machine.</p>
+<p>Here’s some code from the game, which displays the “choose an ability” menu.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span> Ei::A(</span><span style="color:#62a35c;">game</span><span>())
+</span><span>    .</span><span style="color:#62a35c;">repeat</span><span>(|game_return| </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> game_return {
+</span><span>        GameReturn::LevelChange(ability_choice) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>{
+</span><span>            Handled::Continue(Ei::C(</span><span style="color:#62a35c;">level_change_menu</span><span>(ability_choice)
+</span><span>                    .</span><span style="color:#62a35c;">and_then</span><span>(|choice| {
+</span><span>                make_either!(Ei </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> A </span><span style="font-weight:bold;color:#a71d5d;">|</span><span> B);
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> choice {
+</span><span>                    </span><span style="color:#0086b3;">Err</span><span>(menu::Escape) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span>Ei::A(Value::new(GameReturn::Pause)),
+</span><span>                    </span><span style="color:#0086b3;">Ok</span><span>(ability) </span><span style="font-weight:bold;color:#a71d5d;">=&gt;
+</span><span>                        Ei::B(</span><span style="color:#62a35c;">game_injecting_inputs</span><span>(vec![
+</span><span>                            InjectedInput::LevelChange(ability),
+</span><span>                        ])),
+</span><span>                }
+</span><span>            })))
+</span><span>        }
+</span><span>        </span><span style="font-style:italic;color:#969896;">// handle other GameReturn values here
+</span></code></pre>
+<p>The behaviour of this code is roughly:</p>
+<p>Run the game until it stops for some reason.
+When it stops, if it stops because the level changed (<code>GameReturn::LevelChange</code>) run the <code>level_change_menu</code> event routine,
+which takes a list of abilities, displays a menu, and “returns” when a choice is made.
+If the choice was to cancel the menu (<code>Err(menu::Escape)</code>), pause the game (displays the main menu).
+Otherwise, if an ability was chosen, run the <code>game_injecting_inputs</code> event routine, which runs
+the game starting with a specified input event. Specify the input event which gives the player the chosen ability.</p>
+<p>This is much more ergonomic than an explicit state machine!</p>
+<h3 id="playtesting"><a class="zola-anchor" href="#playtesting" aria-label="Anchor link for: playtesting">Playtesting</a></h3>
+<p>I spent a long time on the last day just playing the game and tweaking things which I thought were too hard, too easy,
+or too confusing. I cut several types of enemy and combat outcome which lead to confusing interactions.
+I even roped my partner into playing the game a few times to see whether the game was too easy/hard for someone who
+hadn’t spent the past 7 days making it. I think the end result is fun to play. Right before submitting I needed some
+more screenshots and did a playthrough to get them, but forgot to record any (though it was like 3am).</p>
+<h3 id="synergy"><a class="zola-anchor" href="#synergy" aria-label="Anchor link for: synergy">Synergy</a></h3>
+<p>Here’s an interaction I’m very happy with:</p>
+<p>Each enemy has a chance to drop an item when they die. There’s one kind of enemy called a “divide slime” which splits
+into two when damaged. If you push this enemy into a sludge pool, over the course of several turns it splits several times
+into many slimes, which eventually die from the sludge. And drop items, so this would be an easy way to farm items…except
+all the items are now in a sludge pool, so you have to decide whether it’s worth the damage you will receive
+picking them up.</p>
+<h3 id="what-to-improve-next"><a class="zola-anchor" href="#what-to-improve-next" aria-label="Anchor link for: what-to-improve-next">What to improve next</a></h3>
+<p>Music is broken on non-web versions of my engine. The game crashes after a few minutes of music playing.
+This seems to be a problem with a low-level audio library I’m using. Further testing is needed.</p>
+<p>Animation still needs work. It’s easy to add realtime animations to entities, such as making sludge flicker between colours,
+or making enemies slide away from you when you use “Repel”. What’s still messy is adding delays after the enemy acts
+so you can see intermediate states, such as a divide slime splitting when taking damage from sludge.</p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;get-well-soon&#x2F;" aria-label="Previous">
+	  Previous: Get Well Soon
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;orbital-decay&#x2F;" aria-label="Next">
+	  Next: Orbital Decay
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="gridbugs">
+    <meta property="og:type" content="website">
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    
+	<meta property="og:type" content="article">
+	<meta property="og:title" content="Part 12 - Increasing Difficulty">
+	<link rel="canonical" href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-12/">
+	<meta property="og:url" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-12/">
+
+	
+
+	
+	    <meta property="article:published_time" content="2020-08-15T19:30:00+10:00">
+	
+
+	
+	    <meta property="og:image" content="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-12/screenshot-end.png">
+	
+    
+
+    <link rel="icon" type="image/x-icon" href="https://gridbugs.github.io/gridbugs.org/favicon.png">
+    <link rel="alternate" type="application/rss+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="gridbugs" href="https://gridbugs.github.io/gridbugs.org/atom.xml">
+
+    <link rel="stylesheet" href="https://gridbugs.github.io/gridbugs.org/style.css">
+    <title>
+Roguelike Tutorial 2020: Part 12 - Increasing Difficulty
+</title>
+  </head>
+  <body>
+    <div id="content">
+      <header>
+  <div class="header-nav-container">
+    <nav>
+      <ul>
+	<li class="lhs"><a href="https://gridbugs.github.io/gridbugs.org">gridbugs</a></li>
+	
+	
+	
+	<li class="lhs slash-before"><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020/">roguelike tutorial 2020</a></li>
+	
+	
+	<li class="first-rhs rhs"><a href="https://gridbugs.github.io/gridbugs.org/about">about</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">tags</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+      
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-11&#x2F;" aria-label="Previous">
+	  Previous: Part 11 - Descending the Stairs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-13&#x2F;" aria-label="Next">
+	  Next: Part 13 - Equipment
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+<article>
+<h1 class="title">
+  Part 12 - Increasing Difficulty
+</h1>
+
+
+<p class="post-meta">
+  <time datetime="2020-08-15T19:30:00+10:00">
+    August 15, 2020
+  </time>
+  
+</p>
+
+
+<p>In this part we’ll update terrain generation logic such that the game gets
+more difficult the deeper you descend into the dungeon.</p>
+<p><img src="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-12/screenshot-end.png" alt="screenshot-end.png" /></p>
+<p>This part is loosely based on <a href="http://rogueliketutorials.com/tutorials/tcod/part-12/">this part</a> of the
+python tcod tutorial.</p>
+<p>Reference implementation branch for starting point: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-11-end">part-11-end</a></p>
+<p>We’ll start by replacing the logic for choosing which NPC and item to spawn with a generic probability distribution.
+This will make it easier to increase the chance of spawning more dangerous NPCs and more powerful items, the deeper
+the player descends. It will also make it easier to balance the game later, as the logic for placing NPCs and items
+will be separate from the specification of how likely each NPC and item is to spawn.</p>
+<p>Add this function to <code>terrain.rs</code>. It takes a probability distribution represented by a slice of pairs of values and numbers,
+where the relative size of numbers determines the chance that a value is chosen.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">choose_from_probability_distribution</span><span>&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;a</span><span>, T, R: Rng&gt;(
+</span><span>    probability_distribution: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> [(T, u32)],
+</span><span>    rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;a</span><span> T {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> sum </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> probability_distribution.</span><span style="color:#62a35c;">iter</span><span>().</span><span style="color:#62a35c;">map</span><span>(|(_, p)| p).sum::&lt;</span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>&gt;();
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span> choice </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> rng.</span><span style="color:#62a35c;">gen_range</span><span>(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span>sum);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span>(value, probability) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span> probability_distribution.</span><span style="color:#62a35c;">iter</span><span>() {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Some</span><span>(remaining_choice) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> choice.</span><span style="color:#62a35c;">checked_sub</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>probability) {
+</span><span>            choice </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> remaining_choice;
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">else </span><span>{
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">return</span><span> value;
+</span><span>        }
+</span><span>    }
+</span><span>    unreachable!()
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Add functions which generate probability distributions for NPCs and items.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">make_npc_probability_distribution</span><span>(level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="color:#0086b3;">Vec</span><span>&lt;(NpcType, </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>)&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>NpcType::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    vec![(Orc, </span><span style="color:#0086b3;">20</span><span>), (Troll, level)]
+</span><span>}
+</span><span>
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">make_item_probability_distribution</span><span>(level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>) -&gt; </span><span style="color:#0086b3;">Vec</span><span>&lt;(ItemType, </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>)&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">use </span><span>ItemType::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span>;
+</span><span>    vec![
+</span><span>        (HealthPotion, </span><span style="color:#0086b3;">20</span><span>),
+</span><span>        (
+</span><span>            FireballScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">5</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">10</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>        (
+</span><span>            ConfusionScroll,
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">match</span><span> level {
+</span><span>                </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">1 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">1</span><span>,
+</span><span>                </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">..=</span><span style="color:#0086b3;">4 </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#0086b3;">3</span><span>,
+</span><span>                </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#0086b3;">5</span><span>,
+</span><span>            },
+</span><span>        ),
+</span><span>    ]
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>During play-testing, these are values that can be tweaked to adjust the difficulty of the game.</p>
+<p>Update <code>Room::place_npcs</code> and <code>Room::place_items</code> to use generic probability distributions.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>Room {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` randomly chosen NPCs at random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_npcs</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        probability_distribution: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[(NpcType, u32)],
+</span><span>        grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>npc_type </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">choose_from_probability_distribution</span><span>(probability_distribution, rng);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Npc(npc_type));
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Place `n` items at random positions within the room
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">place_items</span><span>&lt;R: Rng&gt;(
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>self,
+</span><span>        n: </span><span style="font-weight:bold;color:#a71d5d;">usize</span><span>,
+</span><span>        probability_distribution: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>[(ItemType, u32)],
+</span><span>        grid: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>Grid&lt;</span><span style="color:#0086b3;">Option</span><span>&lt;TerrainTile&gt;&gt;,
+</span><span>        rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R,
+</span><span>    ) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">for</span><span> coord </span><span style="font-weight:bold;color:#a71d5d;">in </span><span>self
+</span><span>            .</span><span style="color:#62a35c;">coords</span><span>()
+</span><span>            .</span><span style="color:#62a35c;">filter</span><span>(|</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>coord| grid.</span><span style="color:#62a35c;">get_checked</span><span>(coord).</span><span style="color:#62a35c;">unwrap</span><span>() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span>TerrainTile::Floor)
+</span><span>            .</span><span style="color:#62a35c;">choose_multiple</span><span>(rng, n)
+</span><span>        {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>item </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">choose_from_probability_distribution</span><span>(probability_distribution, rng);
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">*</span><span>grid.</span><span style="color:#62a35c;">get_checked_mut</span><span>(coord) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span>(TerrainTile::Item(item));
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span></code></pre>
+<p>Update <code>generate_dungeon</code> to create probability distributions.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#969896;">// terrain.rs
+</span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">generate_dungeon</span><span>&lt;R: Rng&gt;(size: Size, level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Grid&lt;TerrainTile&gt; {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> npc_probability_distribution </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">make_npc_probability_distribution</span><span>(level);
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> item_probability_distribution </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">make_item_probability_distribution</span><span>(level);
+</span><span>
+</span><span>    </span><span style="font-style:italic;color:#969896;">// Attempt to add a room a constant number of times
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">NUM_ATTEMPTS</span><span>: </span><span style="font-weight:bold;color:#a71d5d;">usize = </span><span style="color:#0086b3;">100</span><span>;
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">for _ in </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#0086b3;">NUM_ATTEMPTS </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">if</span><span> room.</span><span style="color:#62a35c;">only_intersects_empty</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>grid) {
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add npcs to the room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>num_npcs </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">NPCS_PER_ROOM_DISTRIBUTION</span><span>.</span><span style="color:#62a35c;">choose</span><span>(rng).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            room.</span><span style="color:#62a35c;">place_npcs</span><span>(num_npcs, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>npc_probability_distribution, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid, rng);
+</span><span>
+</span><span>            </span><span style="font-style:italic;color:#969896;">// Add items to the room
+</span><span>            </span><span style="font-weight:bold;color:#a71d5d;">let &amp;</span><span>num_items </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">ITEMS_PER_ROOM_DISTRIBUTION</span><span>.</span><span style="color:#62a35c;">choose</span><span>(rng).</span><span style="color:#62a35c;">unwrap</span><span>();
+</span><span>            room.</span><span style="color:#62a35c;">place_items</span><span>(num_items, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span>item_probability_distribution, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> grid, rng);
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Update <code>world.rs</code> to pass a level to <code>generate_dungeon</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>World {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">populate</span><span>&lt;R: Rng&gt;(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, level: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span>, rng: </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> R) -&gt; Populate {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> terrain </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>terrain::generate_dungeon(self.spatial_table.</span><span style="color:#62a35c;">grid_size</span><span>(), level, rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>And update <code>game.rs</code> to pass the current level to <code>World::populate</code>.</p>
+<pre data-lang="rust" style="background-color:#ffffff;color:#323232;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-weight:bold;color:#a71d5d;">...
+</span><span style="font-weight:bold;color:#a71d5d;">impl </span><span>GameState {
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span>(
+</span><span>        screen_size: Size,
+</span><span>        rng_seed: </span><span style="font-weight:bold;color:#a71d5d;">u64</span><span>,
+</span><span>        initial_visibility_algorithm: VisibilityAlgorithm,
+</span><span>    ) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span>{
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> dungeon_level </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate {
+</span><span>            player_entity,
+</span><span>            ai_state,
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">=</span><span> world.</span><span style="color:#62a35c;">populate</span><span>(dungeon_level, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span> rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">player_level_up_and_descend</span><span>(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self, level_up: LevelUp) {
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>        self.dungeon_level </span><span style="font-weight:bold;color:#a71d5d;">+= </span><span style="color:#0086b3;">1</span><span>;
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span> Populate {
+</span><span>            player_entity,
+</span><span>            ai_state,
+</span><span>        } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span>self.world.</span><span style="color:#62a35c;">populate</span><span>(self.dungeon_level, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut </span><span>self.rng);
+</span><span>        </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>    }
+</span><span>    </span><span style="font-weight:bold;color:#a71d5d;">...
+</span><span>}
+</span></code></pre>
+<p>Now play the game a bunch and tweak the probabilities of NPCs and items until it’s fun.
+There’s one more part after this one, in which we’ll add equipment.</p>
+<p>Reference implementation branch: <a href="https://github.com/gridbugs/chargrid-roguelike-tutorial-2020/tree/part-12.0">part-12.0</a></p>
+<p><a href="https://gridbugs.github.io/gridbugs.org/roguelike-tutorial-2020-part-13/">Click here for the next part!</a></p>
+
+</article>
+
+
+<div class="next-prev-nav-container">
+  <nav>
+    <ul>
+      
+      
+      
+      
+      <li class="nav-prev">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-11&#x2F;" aria-label="Previous">
+	  Previous: Part 11 - Descending the Stairs
+	</a>
+	
+      </li>
+      <li class="nav-next">
+	
+	<a href="https:&#x2F;&#x2F;gridbugs.github.io&#x2F;gridbugs.org&#x2F;roguelike-tutorial-2020-part-13&#x2F;" aria-label="Next">
+	  Next: Part 13 - Equipment
+	</a>
+	
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+
+      <footer>
+  <div class="footer-nav-container">
+    <nav>
+      <ul>
+	<li><a href="https://github.com/gridbugs">github</a></li>
+	<li><a href="https://gridbugs.itch.io">itch.io</a></li>
+	<li><a href="https://hachyderm.io/@gridbugs">mastodon</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/blog">Blog</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/projects">Projects</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/devlogs">Devlogs</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/about">About</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/contact">Contact</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/external">External</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/tags">Tags</a></li>
+      </ul>
+    </nav>
+    <nav>
+      <ul>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/atom.xml">Atom</a></li>
+	<li><a href="https://gridbugs.github.io/gridbugs.org/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+  <ul class="copyright">
+    <li>
+      Built with <a href="https://www.getzola.org/">Zola</a>.
+    </li>
+    <li>
+      © 2015-2026 Stephen Sherratt.
+    </li>
+  </ul>
+</footer>
+
+    </div>
+  </body>
+</html>
